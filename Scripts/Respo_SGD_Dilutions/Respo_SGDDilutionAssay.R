@@ -60,7 +60,7 @@ BioData <- read_csv(here("Data","RespoFiles","Fragment_Info_prelimtest.csv")) ##
 
 
 # join the data together
-Sample_Info <- left_join(RespoMeta, BioData, multiple="all")
+Sample_Info <- left_join(RespoMeta, BioData)
 # set multiple = all warning --> bc sample_id matches multiple rows 
 
 #View(Sample.Info)
@@ -93,22 +93,23 @@ colnames(RespoR) <- c("FileID_csv","Intercept", "umol.L.sec","Temp.C")
 
 ###forloop##### 
 for(i in 1:length(filenames_final)) {
-  FRow <- as.numeric(which(Sample_Info$FileID_csv==filenames_final[1])) # stringsplit this renames our file
-  Respo.Data1 <- read_csv(skip=1,file.path(path.p, paste0(file.names.full[1]))) %>% # reads in each file in list
+  FRow <- as.numeric(which(Sample_Info$FileID_csv==filenames_final[i])) # stringsplit this renames our file
+  Respo.Data1 <- read_csv(skip=1,file.path(path.p, paste0(file.names.full[i]))) %>% # reads in each file in list
     dplyr::select(Date, Time, Value, Temp) %>% # keep only what we need: Time stamp per 1sec, Raw O2 value per 1sec, in situ temp per 1sec
     unite(Date,Time,col="Time",remove=T, sep = " ") %>% 
+    drop_na() %>%
     mutate(Time = mdy_hms(Time)) %>% # convert time
     drop_na() # drop NAs
   
   Respo.Data1 <- Respo.Data1 %>%
-    filter(dplyr::between(Time, Sample_Info$start_time[FRow], Sample_Info$stop_time[FRow])) # select only data between start and stop time
+    filter(between(Time, Sample_Info$start_time[FRow], Sample_Info$stop_time[FRow])) # select only data between start and stop time
 
   
   Respo.Data1 <-  Respo.Data1[-c(1:180),] %>% #we want to start at minute 3 to avoid any noise from the start of the trial
     mutate(sec = 1:n())  # create a new column for every second for the regression
   
   # Get the filename without the .csv
-  rename<- sub(".csv","", filenames_final[1])
+  rename<- sub(".csv","", filenames_final[i])
   
   
   ### plot and export the raw data ####
@@ -161,9 +162,9 @@ for(i in 1:length(filenames_final)) {
   
   # fill in all the O2 consumption and rate data
   # need clarity on what this is
-  RespoR[1,2:3] <- Regs$allRegs[1,c(4,5)] #inserts slope and intercept in the dataframe
-  RespoR[1,1] <- paste0(rename,".csv") #stores the file name in the Date column
-  RespoR[1,4] <- mean(Respo.Data1$Temp, na.rm=T)  #stores the Temperature from the incubation in the Temp.C column
+  RespoR[i,2:3] <- Regs$allRegs[1,c(4,5)] #inserts slope and intercept in the dataframe
+  RespoR[i,1] <- paste0(rename,".csv") #stores the file name in the Date column
+  RespoR[i,4] <- mean(Respo.Data1$Temp, na.rm=T)  #stores the Temperature from the incubation in the Temp.C column
 }  
 
 
@@ -207,20 +208,21 @@ RespoR2 <- RespoR %>%
 #View(RespoR)
 
 RespoR_Normalized <- RespoR2 %>%
-  group_by(run_block, light_dark) %>% # also add block here if one blank per block --> Hannah's blanks are weird, so took that out of this grouping 
-  group_by(BLANK)%>% # also add block here if one blank per block
-  summarise(umol.sec = mean(umol.sec, na.rm=TRUE)) %>% # get mean value of blanks per run
-  filter(BLANK == "y") %>% # only keep the actual blanks
-  group_by(run_block, light_dark) %>% 
-  dplyr::select(blank.rate = umol.sec) %>% # rename the blank rate column
-  right_join(RespoR2) %>% # join with the respo data
+  #group_by(day_block, SGD_dil, light_dark, colony_number) %>% # also add block here if one blank per block --> Hannah's blanks are weird, so took that out of this grouping 
+  #group_by(BLANK)%>% # also add block here if one blank per block
+  #summarise(umol.sec = mean(umol.sec, na.rm=TRUE)) %>% # get mean value of blanks per run
+  filter(colony_number== "BLANK") %>% # only keep the actual blanks
+  #group_by(day_block, SGD_dil, light_dark) %>% 
+  mutate(blank.rate = umol.sec) %>%
+  dplyr::select(day_block, SGD_dil, light_dark, blank.rate) %>%
+  #dplyr::select(blank.rate = umol.sec) %>% # rename the blank rate column
+  right_join(RespoR2, multiple = "all") %>% # join with the respo data
   mutate(umol.sec.corr = umol.sec - blank.rate, # subtract the blank rates from the raw rates
-         mmol.gram.hr = 0.001*(umol.sec.corr*3600)/AFDW.g, # convert to mmol g-1 hr-1
-         mmol.gram.hr_uncorr = 0.001*(umol.sec*3600)/AFDW.g) %>% 
-  filter(is.na(BLANK)) %>% # remove the Blank data
+         mmol.gram.hr = 0.001*(umol.sec.corr*3600)/weight_g, # convert to mmol g-1 hr-1
+         mmol.gram.hr_uncorr = 0.001*(umol.sec*3600)/weight_g) %>% 
+  filter(colony_number!="BLANK") %>% # remove the Blank data
   ungroup() %>% 
-  dplyr::select(Date, SampleID, AT, ET, light_dark, run_block, AFDW.g, Ch.Volume.ml, mmol.gram.hr, chamber_channel, 
-                Temp.C, mmol.gram.hr_uncorr)  #keep only what we need
+  dplyr::select(date, sample_ID, colony_number, SGD_dil, light_dark, run_block, weight_g, Ch.Volume.mL, mmol.gram.hr, chamber_channel, mmol.gram.hr_uncorr)  #keep only what we need
 
 # CALCULATING R AND GP
 
@@ -247,10 +249,11 @@ RespoR_Normalized2 <- full_join(RespoR_Normalized_light, RespoR_Normalized_dark)
 
 #make column for GP and group by fragment ID and temp to keep R and NP together
 RespoR_NormalizedGP <- RespoR_Normalized2 %>% 
-  group_by(SampleID, AT, ET) %>% 
+  group_by(colony_number, SGD_dil) %>% 
   summarize(mmol.gram.hr = sum(mmol.gram.hr),
             mmol.gram.hr_uncorr = sum(mmol.gram.hr_uncorr), # NP + R = GP
-            Temp.C = mean(Temp.C)) %>% # get mean temperature of light and dark runs
+            #Temp.C = mean(Temp.C)
+            ) %>% # get mean temperature of light and dark runs
   mutate(P_R="GP") %>% # Label for Gross Photosynthesis
   mutate(light_dark = "LIGHT") %>% 
   mutate(mmol.gram.hr = ifelse(mmol.gram.hr < 0, 0, mmol.gram.hr), # for any values below 0, make 0
@@ -258,7 +261,7 @@ RespoR_NormalizedGP <- RespoR_Normalized2 %>%
 
 # rejoin for full df with NP, R, and GP rates
 RespoR_Normalized_Full <- RespoR_Normalized2 %>% 
-  dplyr::select(SampleID, AT, ET, light_dark, P_R, mmol.gram.hr, mmol.gram.hr_uncorr, Temp.C) %>% 
+  dplyr::select(colony_number, SGD_dil, light_dark, P_R, mmol.gram.hr, mmol.gram.hr_uncorr) %>% 
   full_join(RespoR_NormalizedGP)
 
 
@@ -272,22 +275,25 @@ my_pal <- pnw_palette(name="Starfish",n=2,type="discrete")
 
 # plot GP, NP and R
 RatesPlot <- RespoR_Normalized_Full %>% 
-  ggplot(aes(x=ET, 
+  mutate(colony_number = as.factor(colony_number)) %>%
+  ggplot(aes(x=SGD_dil, 
              y=mmol.gram.hr,
-             color = AT))+
-  geom_boxplot(aes(color = AT))+ 
-  geom_jitter(aes(color = AT), position = position_jitterdodge()) +
+             color = colony_number))+
+  #geom_boxplot(aes(color = colony_number))+ 
+  geom_point() +
+  geom_smooth() +
+  #geom_jitter(aes(color = colony_number), position = position_jitterdodge()) +
   theme_bw()+
   #geom_text_repel(aes(label = SampleID)) +
   theme(strip.background = element_rect(fill = "white"))+
-  labs(x = "Environmental Treatment (High or Low)",
-       color = "Assemblage \n Treatment",
-       y = "Rate (mmol O2 gram-1 hr-1)",
-       title = "Rate of O2 production or consumption") +
+  #labs(x = "Environmental Treatment (High or Low)",
+      # color = "Assemblage \n Treatment",
+      # y = "Rate (mmol O2 gram-1 hr-1)",
+      # title = "Rate of O2 production or consumption") +
   scale_color_manual(values=my_pal)  +
-  facet_wrap(~ P_R, scales = "fixed")
+  facet_wrap(~ colony_number, scales = "fixed")
 RatesPlot
-ggsave(here("Output", "RespoOutput","AllRates.pdf"), RatesPlot, device = "pdf", width = 10, height = 10)
+ggsave(here("Outputs", "RespoOutput","AllRates.pdf"), RatesPlot, device = "pdf", width = 10, height = 10)
 
 
 # quick modeling
