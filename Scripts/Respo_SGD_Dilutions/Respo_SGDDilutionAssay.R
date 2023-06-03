@@ -55,7 +55,9 @@ ch.vol <- 600 #mL #of small chambers
 
 #Load your respiration data file, with all the times, water volumes(mL), #not doing dry weight just SA
 RespoMeta <- read_csv(here("Data","RespoFiles","Respo_TestTrials_MetadataSheet.csv"))
-BioData <- read_csv(here("Data","RespoFiles","Fragment_Info_prelimtest.csv")) ## trying now with prelim fake data, switch to real calculated 
+Bio_Data <- read_csv(here("Data","RespoFiles","Fragment_Info_trialrun.csv"))
+#View(BioData)
+## trying now with prelim fake data, switch to real calculated 
 #data after getting volumes and weight and surface area
 
 
@@ -181,7 +183,7 @@ RespoR2 <- RespoR %>%
   drop_na(FileID_csv) %>% # drop NAs
   left_join(Sample_Info) %>% # Join the raw respo calculations with the metadata
   #mutate(Ch.Volume.ml = ifelse(is.na(volume_ml),ch.vol,ch.vol-volume_ml)) %>% # add 6 L for volume of all blanks and subtract org volume from chamber vol for all else
-  mutate(Ch.Volume.mL = 600) %>% # hannah change all  this volume stuff later
+  mutate(Ch.Volume.mL = 600-volume_mL) %>% # hannah change all  this volume stuff later
   mutate(Ch.Volume.L = Ch.Volume.mL * 0.001) %>% # mL to L conversion
   mutate(umol.sec = umol.L.sec*Ch.Volume.L) %>% #Account for chamber volume to convert from umol L-1 s-1 to umol s-1. This standardizes across water volumes (different because of coral size) and removes per Liter
   mutate_if(sapply(., is.character), as.factor) %>% #convert character columns to factors
@@ -218,11 +220,11 @@ RespoR_Normalized <- RespoR2 %>%
   #dplyr::select(blank.rate = umol.sec) %>% # rename the blank rate column
   right_join(RespoR2, multiple = "all") %>% # join with the respo data
   mutate(umol.sec.corr = umol.sec - blank.rate, # subtract the blank rates from the raw rates
-         mmol.gram.hr = 0.001*(umol.sec.corr*3600)/weight_g, # convert to mmol g-1 hr-1
-         mmol.gram.hr_uncorr = 0.001*(umol.sec*3600)/weight_g) %>% 
+         mmol.gram.hr = 0.001*(umol.sec.corr*3600)/SA_cm2, # convert to mmol g-1 hr-1
+         mmol.gram.hr_uncorr = 0.001*(umol.sec*3600)/SA_cm2) %>% 
   filter(colony_number!="BLANK") %>% # remove the Blank data
   ungroup() %>% 
-  dplyr::select(date, sample_ID, colony_number, SGD_dil, light_dark, run_block, weight_g, Ch.Volume.mL, mmol.gram.hr, chamber_channel, mmol.gram.hr_uncorr)  #keep only what we need
+  dplyr::select(date, sample_ID, colony_number, SGD_dil, light_dark, run_block, weight_g, Ch.Volume.mL, mmol.gram.hr, chamber_channel, mmol.gram.hr_uncorr, SA_cm2)  #keep only what we need
 
 # CALCULATING R AND GP
 
@@ -274,27 +276,57 @@ RespoR_Normalized_Full <- read_csv(here("Data","RespoFiles","Respo_RNormalized_A
 my_pal <- pnw_palette(name="Starfish",n=2,type="discrete")
 
 # plot GP, NP and R
-RatesPlot <- RespoR_Normalized_Full %>% 
+# R first 
+RatesPlot_R <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
   mutate(colony_number = as.factor(colony_number)) %>%
   ggplot(aes(x=SGD_dil, 
              y=mmol.gram.hr,
-             color = colony_number))+
-  #geom_boxplot(aes(color = colony_number))+ 
-  geom_point() +
-  geom_smooth() +
-  #geom_jitter(aes(color = colony_number), position = position_jitterdodge()) +
-  theme_bw()+
-  #geom_text_repel(aes(label = SampleID)) +
+             color = colony_number)) +
+  geom_line() +
+  scale_x_log10(#limits=c(0,5),
+    breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) +
+ # scale_x_continuous(limits=c(0,5),
+                    # breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) + 
+  facet_wrap(~ colony_number)#, scales = "fixed") +
+#geom_smooth(method="lm") +
+  theme_bw() +
   theme(strip.background = element_rect(fill = "white"))+
   #labs(x = "Environmental Treatment (High or Low)",
       # color = "Assemblage \n Treatment",
       # y = "Rate (mmol O2 gram-1 hr-1)",
       # title = "Rate of O2 production or consumption") +
+  scale_color_manual(values=my_pal) 
+
+RatesPlot_R
+
+## GP (NP-R) 
+RatesPlot_GP <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  mutate(colony_number = as.factor(colony_number)) %>%
+  ggplot(aes(x=SGD_dil, 
+             y=mmol.gram.hr,
+             color = colony_number)) +
+  geom_line() +
+  #scale_x_continuous() + 
+  scale_x_log10(#limits=c(0,5),
+                breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) +
+  facet_wrap(~ colony_number)#, scales = "fixed")
+  theme_bw()+
+  theme(strip.background = element_rect(fill = "white"))+
+  geom_smooth() +
+  #labs(x = "Environmental Treatment (High or Low)",
+  # color = "Assemblage \n Treatment",
+  # y = "Rate (mmol O2 gram-1 hr-1)",
+  #title = "Rate of O2 production or consumption") +
   scale_color_manual(values=my_pal)  +
-  facet_wrap(~ colony_number, scales = "fixed")
-RatesPlot
+  
+
+RatesPlot_GP
+  
 ggsave(here("Outputs", "RespoOutput","AllRates.pdf"), RatesPlot, device = "pdf", width = 10, height = 10)
 
+RatesPlot_GP + RatesPlot_R
 
 # quick modeling
 # check assumptions for all (referencing Biometry notes below)
@@ -304,19 +336,19 @@ library(agricolae) # HSD.test()
 
 # models
 GPData <- RespoR_Normalized_Full %>% filter(P_R == "GP")
-model1 <- lm(data = GPData, mmol.gram.hr ~ AT*ET)
+model1 <- lm(data = GPData, mmol.gram.hr ~ SGD_dil)
 anova(model1)
-HSD.test(model1, "AT", console=TRUE)
+HSD.test(model1, "SGD_dil", console=TRUE)
 
 NPData <- RespoR_Normalized_Full %>% filter(P_R == "NP")
-model2 <- lm(data = NPData, mmol.gram.hr ~ AT*ET)
+model2 <- lm(data = NPData, mmol.gram.hr ~ SGD_dil)
 anova(model2)
-HSD.test(model2, "AT", console=TRUE)
+HSD.test(model2, "SGD_dil", console=TRUE)
 
 RData <- RespoR_Normalized_Full %>% filter(P_R == "R")
-model3 <- lm(data = RData, mmol.gram.hr ~ AT*ET)
+model3 <- lm(data = RData, mmol.gram.hr ~ SGD_dil)
 anova(model3)
-HSD.test(model3, "AT", console=TRUE)
+HSD.test(model3, "SGD-dil", console=TRUE)
 
 
 #Now let's check our assumptions
@@ -334,8 +366,8 @@ plot(model3)
 # normality was fishy so do a qqp
 library(car)
 qqp(model1) # just a little off, but it's good enough
-qqp(model1) # just a little off, but it's good enough
-qqp(model1) # just a little off, but it's good enough
+qqp(model2) # just a little off, but it's good enough
+qqp(model3) # just a little off, but it's good enough
 
 #I'm not 100% sure about the normal probability plot. Let's try it with confidence intervals
 library(car)
@@ -347,7 +379,6 @@ qqp(resid2, "norm")
 
 resid3<-residuals(model3)
 qqp(resid3, "norm")
-
 
 
 #If you wanted to do a post-hoc test
