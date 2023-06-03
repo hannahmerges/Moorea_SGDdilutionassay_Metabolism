@@ -37,7 +37,9 @@ library(tidyverse)
 library(here)
 library(PNWColors)
 library(ggrepel)
-
+ 
+############# now it's time to code ############
+################################################
 # get the file path
 
 #set the path to all of the raw oxygen datasheets
@@ -53,9 +55,11 @@ file.names.full<-list.files(path = path.p, pattern = "csv$", recursive = TRUE)
 #empty chamber volume
 ch.vol <- 600 #mL #of small chambers 
 
+######### Load and tidy files ###############
+############################################
 #Load your respiration data file, with all the times, water volumes(mL), #not doing dry weight just SA
 RespoMeta <- read_csv(here("Data","RespoFiles","Respo_TestTrials_MetadataSheet.csv"))
-Bio_Data <- read_csv(here("Data","RespoFiles","Fragment_Info_trialrun.csv"))
+BioData <- read_csv(here("Data","RespoFiles","Fragment_Info_trialruns.csv"))
 #View(BioData)
 ## trying now with prelim fake data, switch to real calculated 
 #data after getting volumes and weight and surface area
@@ -70,7 +74,7 @@ Sample_Info <- left_join(RespoMeta, BioData)
 ##### Make sure times are consistent ####
 # make start and stop times real times, so that we can join the respo output and sample_info data frames
 Sample_Info <- Sample_Info %>% 
-  drop_na(sample_ID) %>% 
+  #drop_na(sample_ID) %>% 
   unite(date,start_time,col="start_time",remove=F, sep=" ") %>% 
   unite(date,stop_time,col="stop_time",remove=F, sep=" ") %>% 
   mutate(start_time = mdy_hms(start_time)) %>% 
@@ -93,6 +97,9 @@ filenames_final <- file.names
 RespoR <- data.frame(matrix(NA, nrow=length(filenames_final), ncol=4)) # use instead of tidyverse tibble
 colnames(RespoR) <- c("FileID_csv","Intercept", "umol.L.sec","Temp.C")
 
+######### Create a for loop! ###############
+############################################
+
 ###forloop##### 
 for(i in 1:length(filenames_final)) {
   FRow <- as.numeric(which(Sample_Info$FileID_csv==filenames_final[i])) # stringsplit this renames our file
@@ -101,7 +108,8 @@ for(i in 1:length(filenames_final)) {
     unite(Date,Time,col="Time",remove=T, sep = " ") %>% 
     drop_na() %>%
     mutate(Time = mdy_hms(Time)) %>% # convert time
-    drop_na() # drop NAs
+    drop_na() #%>% # drop NAs 
+   #mutate(help = i) ##if stuck in forloop with error from filter, can check RespoR and see at what row the forloop stopped working  
   
   Respo.Data1 <- Respo.Data1 %>%
     filter(between(Time, Sample_Info$start_time[FRow], Sample_Info$stop_time[FRow])) # select only data between start and stop time
@@ -170,6 +178,8 @@ for(i in 1:length(filenames_final)) {
 }  
 
 
+######### end of for loop - celebrate victory of getting through that ###############
+############################################
 
 #export raw data and read back in as a failsafe 
 #this allows me to not have to run the for loop again 
@@ -177,10 +187,11 @@ write_csv(RespoR, here("Data","RespoFiles","Respo_R.csv"))
 
 RespoR <- read_csv(here("Data","RespoFiles","Respo_R.csv"))
 
-# Calculate Respiration rate
+######### Calculate Respiration rate ###############
+############################################
 
 RespoR2 <- RespoR %>%
-  drop_na(FileID_csv) %>% # drop NAs
+  #drop_na(FileID_csv) %>% # drop NAs
   left_join(Sample_Info) %>% # Join the raw respo calculations with the metadata
   #mutate(Ch.Volume.ml = ifelse(is.na(volume_ml),ch.vol,ch.vol-volume_ml)) %>% # add 6 L for volume of all blanks and subtract org volume from chamber vol for all else
   mutate(Ch.Volume.mL = 600-volume_mL) %>% # hannah change all  this volume stuff later
@@ -205,8 +216,6 @@ RespoR2 <- RespoR %>%
 
 #Account for blank rate by light/Dark and Block (if we do one blank per block)
 
-
-
 #View(RespoR)
 
 RespoR_Normalized <- RespoR2 %>%
@@ -220,13 +229,14 @@ RespoR_Normalized <- RespoR2 %>%
   #dplyr::select(blank.rate = umol.sec) %>% # rename the blank rate column
   right_join(RespoR2, multiple = "all") %>% # join with the respo data
   mutate(umol.sec.corr = umol.sec - blank.rate, # subtract the blank rates from the raw rates
-         mmol.gram.hr = 0.001*(umol.sec.corr*3600)/SA_cm2, # convert to mmol g-1 hr-1
-         mmol.gram.hr_uncorr = 0.001*(umol.sec*3600)/SA_cm2) %>% 
+         mmol.gram.hr = 0.001*(umol.sec.corr*3600)/weight_g, # convert to mmol g-1 hr-1
+         mmol.gram.hr_uncorr = 0.001*(umol.sec*3600)/weight_g) %>% 
   filter(colony_number!="BLANK") %>% # remove the Blank data
   ungroup() %>% 
-  dplyr::select(date, sample_ID, colony_number, SGD_dil, light_dark, run_block, weight_g, Ch.Volume.mL, mmol.gram.hr, chamber_channel, mmol.gram.hr_uncorr, SA_cm2)  #keep only what we need
+  dplyr::select(date, sample_ID, colony_number, SGD_dil, light_dark, run_block, weight_g, Ch.Volume.mL, mmol.gram.hr, chamber_channel, mmol.gram.hr_uncorr, SA_cm2, salinity)  #keep only what we need
 
-# CALCULATING R AND GP
+########## CALCULATING R AND GP ###############
+###############################################
 
 # make the respiration values positive (pull out data for dark treatments)
 RespoR_Normalized_dark <- RespoR_Normalized %>% 
@@ -251,11 +261,11 @@ RespoR_Normalized2 <- full_join(RespoR_Normalized_light, RespoR_Normalized_dark)
 
 #make column for GP and group by fragment ID and temp to keep R and NP together
 RespoR_NormalizedGP <- RespoR_Normalized2 %>% 
-  group_by(colony_number, SGD_dil) %>% 
+  group_by(colony_number, SGD_dil, salinity) %>% 
   summarize(mmol.gram.hr = sum(mmol.gram.hr),
             mmol.gram.hr_uncorr = sum(mmol.gram.hr_uncorr), # NP + R = GP
             #Temp.C = mean(Temp.C)
-            ) %>% # get mean temperature of light and dark runs
+            ) %>% 
   mutate(P_R="GP") %>% # Label for Gross Photosynthesis
   mutate(light_dark = "LIGHT") %>% 
   mutate(mmol.gram.hr = ifelse(mmol.gram.hr < 0, 0, mmol.gram.hr), # for any values below 0, make 0
@@ -263,71 +273,258 @@ RespoR_NormalizedGP <- RespoR_Normalized2 %>%
 
 # rejoin for full df with NP, R, and GP rates
 RespoR_Normalized_Full <- RespoR_Normalized2 %>% 
-  dplyr::select(colony_number, SGD_dil, light_dark, P_R, mmol.gram.hr, mmol.gram.hr_uncorr) %>% 
+  dplyr::select(colony_number, SGD_dil, salinity, light_dark, P_R, mmol.gram.hr, mmol.gram.hr_uncorr) %>% 
   full_join(RespoR_NormalizedGP)
 
 
 write_csv(RespoR_Normalized_Full , here("Data","RespoFiles","Respo_RNormalized_AllRates.csv"))  
 
 
-### PLOT
+########## PLOT IT! ###############
+###############################################
 RespoR_Normalized_Full <- read_csv(here("Data","RespoFiles","Respo_RNormalized_AllRates.csv"))
 
 my_pal <- pnw_palette(name="Starfish",n=2,type="discrete")
 
 # plot GP, NP and R
-# R first 
-RatesPlot_R <- RespoR_Normalized_Full %>%
+
+### R first ####
+## all dilutions on one plot for Respiration 
+RatesPlot_R_alldils <- RespoR_Normalized_Full %>%
   filter(P_R == "R") %>%
   mutate(colony_number = as.factor(colony_number)) %>%
+  #filter(colony_number=="2") %>%
+  #filter(SGD_dil==0.00|SGD_dil==0.01|SGD_dil==0.03|SGD_dil==0.1|SGD_dil==0.2|SGD_dil==0.3|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.0|SGD_dil==3.5) %>% 
   ggplot(aes(x=SGD_dil, 
              y=mmol.gram.hr,
              color = colony_number)) +
   geom_line() +
-  scale_x_log10(#limits=c(0,5),
-    breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) +
+  #scale_x_continuous() +
+  scale_x_log10(breaks=c(0.00, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) +
+  #scale_x_continuous(breaks=c(0, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 3.5)) +
  # scale_x_continuous(limits=c(0,5),
                     # breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) + 
-  facet_wrap(~ colony_number)#, scales = "fixed") +
-#geom_smooth(method="lm") +
-  theme_bw() +
-  theme(strip.background = element_rect(fill = "white"))+
+  facet_wrap(~ colony_number) +
+  labs(title="All Dilutions- Respiration")
+ggsave(here("Outputs", "RespoOutput","AllDilutions_R.jpg"), 
+       width = 10, height = 10)
+  #, scales = "fixed") +
+  #geom_smooth(method="lm") +
+  #theme_bw() +
+  #theme(strip.background = element_rect(fill = "white"))+
   #labs(x = "Environmental Treatment (High or Low)",
       # color = "Assemblage \n Treatment",
       # y = "Rate (mmol O2 gram-1 hr-1)",
       # title = "Rate of O2 production or consumption") +
-  scale_color_manual(values=my_pal) 
+  #scale_color_manual(values=my_pal) 
+ 
 
-RatesPlot_R
+#RatesPlot_R
+
+## to find specific curve for dilutions for actual runs 
+RatesPlot_R_proposeddils1 <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
+  mutate(colony_number = as.factor(colony_number)) %>%
+  filter(SGD_dil==0.00|SGD_dil==0.01|SGD_dil==0.03|SGD_dil==0.1|SGD_dil==0.2|SGD_dil==0.3|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.0|SGD_dil==3.5) %>% 
+  ggplot(aes(x=SGD_dil, 
+             y=mmol.gram.hr,
+             color = colony_number)) +
+  geom_line() +
+  #scale_x_continuous() +
+  scale_x_log10(breaks=c(0.0, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 3.5, 5.0)) +
+  #scale_x_continuous(breaks=c(0, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 3.5)) +
+  # scale_x_continuous(limits=c(0,5),
+  # breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) + 
+  facet_wrap(~ colony_number) +
+  labs(title="Proposed Dils 1- Respiration")
+ggsave(here("Outputs", "RespoOutput","ProposedRDils1.jpg"), 
+       width = 10, height = 10)
+
+## second proposed dilutions 
+RatesPlot_R_proposeddils2 <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
+  mutate(colony_number = as.factor(colony_number)) %>%
+  filter(SGD_dil==0.00|SGD_dil==0.01|SGD_dil==0.03|SGD_dil==0.05|SGD_dil==0.1|SGD_dil==0.3|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.5) %>% 
+  ggplot(aes(x=SGD_dil, 
+             y=mmol.gram.hr,
+             color = colony_number)) +
+  geom_line() +
+  #scale_x_continuous() +
+  scale_x_log10(breaks=c(0.0, 0.01, 0.03, 0.05, 0.1, 0.3, 0.5, 1.0, 2.5)) +
+  #scale_x_continuous(breaks=c(0, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 3.5)) +
+  # scale_x_continuous(limits=c(0,5),
+  # breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) + 
+  facet_wrap(~ colony_number) +
+  labs(title="Proposed Dils 2- Respiration")
+ggsave(here("Outputs", "RespoOutput","ProposedRDils2.jpg"), 
+       width = 10, height = 10)
+
+##
+##
+## third proposed dilutions 
+RatesPlot_R_proposeddils3 <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
+  mutate(colony_number = as.factor(colony_number)) %>%
+  filter(SGD_dil==0.00|SGD_dil==0.01|SGD_dil==0.03|SGD_dil==0.05|SGD_dil==0.1|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.0|SGD_dil==4.0) %>% 
+  ggplot(aes(x=SGD_dil, 
+             y=mmol.gram.hr,
+             color = colony_number)) +
+  geom_line() +
+  #scale_x_continuous() +
+  scale_x_log10(breaks=c(0.0, 0.01, 0.03, 0.05, 0.1, 0.5, 1.0, 2.0, 4.0)) +
+  #scale_x_continuous(breaks=c(0, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 3.5)) +
+  # scale_x_continuous(limits=c(0,5),
+  # breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) + 
+  facet_wrap(~ colony_number) +
+  labs(title="Proposed Dils 3- Respiration")
+ggsave(here("Outputs", "RespoOutput","ProposedRDils3.jpg"), 
+       width = 10, height = 10)
+
+
+
+############### Now do GP ############ 
 
 ## GP (NP-R) 
-RatesPlot_GP <- RespoR_Normalized_Full %>%
+RatesPlot_GP_alldils <- RespoR_Normalized_Full %>%
   filter(P_R == "GP") %>%
   mutate(colony_number = as.factor(colony_number)) %>%
+  #filter(SGD_dil==0|SGD_dil==0.03|SGD_dil==0.1|SGD_dil==0.2|SGD_dil==0.3|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.0|SGD_dil==3.5) %>%
   ggplot(aes(x=SGD_dil, 
              y=mmol.gram.hr,
              color = colony_number)) +
   geom_line() +
   #scale_x_continuous() + 
   scale_x_log10(#limits=c(0,5),
-                breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) +
-  facet_wrap(~ colony_number)#, scales = "fixed")
-  theme_bw()+
-  theme(strip.background = element_rect(fill = "white"))+
-  geom_smooth() +
+                breaks=c(0.00, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) +
+  facet_wrap(~ colony_number) + 
+  labs(title="All Dilutions - GP") + #, scales = "fixed")
+  #theme_bw()+
+  #theme(strip.background = element_rect(fill = "white"))+
+  #geom_smooth() +
   #labs(x = "Environmental Treatment (High or Low)",
   # color = "Assemblage \n Treatment",
   # y = "Rate (mmol O2 gram-1 hr-1)",
   #title = "Rate of O2 production or consumption") +
-  scale_color_manual(values=my_pal)  +
-  
+  #scale_color_manual(values=my_pal) 
+ggsave(here("Outputs", "RespoOutput","AllGPDils.jpg"), 
+       width = 10, height = 10)
 
-RatesPlot_GP
-  
-ggsave(here("Outputs", "RespoOutput","AllRates.pdf"), RatesPlot, device = "pdf", width = 10, height = 10)
+##
+##
 
-RatesPlot_GP + RatesPlot_R
+##proposed dilution series 1 
+RatesPlot_GP_proposeddils1 <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  mutate(colony_number = as.factor(colony_number)) %>%
+  filter(SGD_dil==0|SGD_dil==0.03|SGD_dil==0.1|SGD_dil==0.2|SGD_dil==0.3|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.0|SGD_dil==3.5) %>%
+  ggplot(aes(x=SGD_dil, 
+             y=mmol.gram.hr,
+             color = colony_number)) +
+  geom_line() +
+  #scale_x_continuous() + 
+  scale_x_log10(#limits=c(0,5),
+    breaks=c(0.0, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 3.5, 5.0)) +
+  facet_wrap(~ colony_number) + 
+  labs(title="Proposed Dilutions 1- GP")
+ggsave(here("Outputs", "RespoOutput","ProposedGPDils1.jpg"), 
+       width = 10, height = 10)
 
+##
+##
+
+## proposed dilution series 2 
+RatesPlot_GP_proposeddils2 <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  mutate(colony_number = as.factor(colony_number)) %>%
+  filter(SGD_dil==0.00|SGD_dil==0.01|SGD_dil==0.03|SGD_dil==0.05|SGD_dil==0.1|SGD_dil==0.3|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.5) %>%
+  ggplot(aes(x=SGD_dil, 
+             y=mmol.gram.hr,
+             color = colony_number)) +
+  geom_line() +
+  #scale_x_continuous() + 
+  scale_x_log10(#limits=c(0,5),
+    breaks=c(0.0, 0.01, 0.03, 0.05, 0.1, 0.3, 0.5, 1.0, 2.5)) +
+  facet_wrap(~ colony_number)#, scales = "fixed")
+ggsave(here("Outputs", "RespoOutput","ProposedGPDils2.jpg"), 
+       width = 10, height = 10)
+
+##
+##
+
+### proposed dilution series 3 
+RatesPlot_GP_proposeddils3 <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  mutate(colony_number = as.factor(colony_number)) %>%
+  filter(SGD_dil==0.00|SGD_dil==0.01|SGD_dil==0.03|SGD_dil==0.05|SGD_dil==0.1|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.0|SGD_dil==4.0) %>%
+  ggplot(aes(x=SGD_dil, 
+             y=mmol.gram.hr,
+             color = colony_number)) +
+  geom_line() +
+  #scale_x_continuous() + 
+  scale_x_log10(#limits=c(0,5),
+    breaks=c(0.0, 0.01, 0.03, 0.05, 0.1, 0.5, 1.0, 2.0, 4.0)) +
+  facet_wrap(~ colony_number) + 
+  labs(title= "Proposed GP Dilutions 3")#, scales = "fixed")
+ggsave(here("Outputs", "RespoOutput","ProposedGPDils3.jpg"), 
+       width = 10, height = 10)
+
+
+#ggsave(here("Outputs", "RespoOutput","AllRates.pdf"), RatesPlot, device = "pdf", width = 10, height = 10)
+
+#RatesPlot_GP + RatesPlot_R
+
+####### now make plots with PARAMETERS #### 
+###############################################
+# parameters for dilutions = TA, fDOM, nutrients, salinity, pH, DO, and temp 
+
+RatesPlot_R_alldils_salinity <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
+  mutate(colony_number = as.factor(colony_number)) %>%
+  #filter(SGD_dil==0.00|SGD_dil==0.01|SGD_dil==0.03|SGD_dil==0.1|SGD_dil==0.2|SGD_dil==0.3|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.0|SGD_dil==3.5) %>% 
+  ggplot(aes(x=salinity, 
+             y=mmol.gram.hr,
+             color = colony_number)) +
+  geom_line() +
+  scale_x_continuous(breaks=c(39.9, 39.8, 39.7, 39.6, 39.4, 39.2, 38.9, 38.8, 38.0, 37.7, 37.2, 36.4)) +
+  #scale_x_log10(breaks=c(0.00, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) +
+  #scale_x_continuous(breaks=c(0, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 3.5)) +
+  # scale_x_continuous(limits=c(0,5),
+  # breaks=c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0)) + 
+  facet_wrap(~ colony_number) +
+  labs(title="All Dilutions- salinity")
+ggsave(here("Outputs", "RespoOutput","AllDilutionsR_salinity.jpg"), 
+       width = 10, height = 10)
+
+RatesPlot_GP_alldils_salinity <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  mutate(colony_number = as.factor(colony_number)) %>%
+  #filter(SGD_dil==0|SGD_dil==0.03|SGD_dil==0.1|SGD_dil==0.2|SGD_dil==0.3|SGD_dil==0.5|SGD_dil==1.0|SGD_dil==2.0|SGD_dil==3.5) %>%
+  ggplot(aes(x=salinity, 
+             y=mmol.gram.hr,
+             color = colony_number)) +
+  geom_line() +
+  #scale_x_continuous() + 
+  scale_x_log10(#limits=c(0,5),
+    breaks=c(39.9, 39.8, 39.7, 39.6, 39.4, 39.2, 38.9, 38.8, 38.0, 37.7, 37.2, 36.4)) +
+  facet_wrap(~ colony_number) + 
+  labs(title="All Dilutions - GP") #+ #, scales = "fixed")
+  #theme_bw()+
+  #theme(strip.background = element_rect(fill = "white"))+
+  #geom_smooth() +
+  #labs(x = "Environmental Treatment (High or Low)",
+  # color = "Assemblage \n Treatment",
+  # y = "Rate (mmol O2 gram-1 hr-1)",
+  #title = "Rate of O2 production or consumption") +
+  #scale_color_manual(values=my_pal) 
+  ggsave(here("Outputs", "RespoOutput","AllGPDils_salinity.jpg"), 
+         width = 10, height = 10)
+
+
+
+
+
+############ if want to run some stats ######## 
+###############################################
 # quick modeling
 # check assumptions for all (referencing Biometry notes below)
 # if not seeing growth trends look at my photos and see pigment changes / mortality
