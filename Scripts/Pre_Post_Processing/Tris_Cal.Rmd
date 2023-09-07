@@ -1,0 +1,84 @@
+---
+title: "Tris_Calibr"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Calculating pH from Tris 
+Using Nyssa's code from SantaCruz_EcoFun code 
+-  can skip most of beginning because not working with loggers 
+
+## Loading libraries
+```{r}
+### Tris calibration for pH probes! 
+
+library(tidyverse)
+library(seacarb)
+library(broom)
+library(here)
+library(lubridate)
+library(calecopal)
+library(ggridges)
+
+```
+
+## Load Tris Cal csv 
+-  bring in pH calibration files and raw data files
+```{r}
+## bring in Tris Cal info and pH calibration files and raw data files
+pHcalib<-read_csv(here("Data","TrisCal_20230614.csv")) #%>% ## tris cal date is listed as a character here 
+#pHcalib$TrisCalDate <- ymd(pHcalib$TrisCalDate) %>% 
+ # mutate(TrisCalDate = ymd(TrisCalDate))
+pHcalib <- pHcalib[-c(13,14), ]
+
+pHData <- read_csv(here("Data", "RespoFiles", "Fragment_MeasurementSampling_Cabral_Varari.csv")) 
+pHData <- pHData[-c(294,303,435),]
+pHData <- pHData[,-(14:17)]
+
+```
+
+## Calculate pH Slope 
+
+```{r}
+pHSlope<-pHcalib %>%
+  #filter(HOBO_Orion =="Orion") %>% # extract only the orion data
+  nest_by(TrisCalDate) %>%
+  dplyr::mutate(fitpH = list(lm(mVTRis~Ttris, data = data))) %>% # linear regression of mV and temp of the tris
+  dplyr::summarise(broom::tidy(fitpH)) %>% # make the output tidy
+  select(TrisCalDate, term, estimate) %>%
+  pivot_wider(names_from = term, values_from = estimate) %>% # put slope and intercept in their own column
+  right_join(.,pHData) %>% # join with the pH sample data
+  mutate(mVTRis = temp_C*Ttris + `(Intercept)`) %>% 
+  mutate(pH = pH(Ex=mV,Etris=mVTRis,S=salinity,T=temp_C)) # calculate pH of the samples using the pH seacarb function
+
+   # calculate the mV of the tris at temperature in which the pH of samples were measured
+  #drop_na(TempInSitu)%>%
+  #drop_na(mV) %>%
+  ## figure out this line
+  
+View(pHSlope)
+
+```
+
+```{r}
+if(plotgraph=='yes'){
+  # Plot pH data
+  p<-list()
+  p[[1]]<-pHSlope %>% 
+    ggplot(aes(x = date, y = pH_total, color = TempInSitu)) + 
+    geom_line() + 
+    theme_bw() +
+    labs(x = "Date", color = "Temperature (C)") +
+    ggtitle(paste("pH",pH_Serial))
+}
+  
+## write the data
+# write out the clean data
+write_csv(pHSlope, here("Data", "pHSlope.csv"))
+```
+

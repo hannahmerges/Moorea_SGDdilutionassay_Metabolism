@@ -1,0 +1,288 @@
+---
+title: "VisualizationPlots_RespoData"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading libraries 
+
+```{r }
+library(segmented)
+library(plotrix)
+library(gridExtra)
+library(LoLinR)
+library(lubridate)
+library(chron)
+library(patchwork)
+library(tidyverse)
+library(here)
+library(PNWColors)
+library(ggrepel)
+#library(PerformanceAnalytics)
+library(reshape2)
+library(viridis)
+library(car)
+library(GGally)
+library(corrplot)
+```
+
+## Taking RespoR table from original script/for loop and loading it here
+
+```{r}
+RespoR <- read_csv(here("Data","RespoFiles","Respo_R.csv"))
+View(RespoR)
+
+RespoR2 <- RespoR %>%
+  #drop_na(FileID_csv) %>% # drop NAs
+  left_join(Sample_Info) %>% # Join the raw respo calculations with the metadata in Sample Info 
+  #mutate(Ch.Volume.ml = ifelse(is.na(volume_ml),ch.vol,ch.vol-volume_ml)) %>% # add 6 L for volume of all blanks and subtract org volume from chamber vol for all else
+  mutate(Ch.Volume.mL = 600-volume_mL) %>% # hannah changed all this volume stuff to match my project
+  mutate(Ch.Volume.L = Ch.Volume.mL * 0.001) %>% # mL to L conversion
+  mutate(umol.sec = umol.L.sec*Ch.Volume.L) %>% #Account for chamber volume to convert from umol L-1 s-1 to umol s-1. This standardizes across water volumes (different because of coral size) and removes per Liter
+  mutate_if(sapply(., is.character), as.factor) %>% #convert character columns to factors
+  mutate(colony_number= as.factor(colony_number), 
+         date_block= factor(date)) #make the blank column a factor
+```
+
+## Now try to average the blanks 
+- Have been having trouble with getting this to a point that I feel confident about 
+```{r}
+RespoR_Normalized_AvgBlanks <- RespoR2 %>% 
+  group_by(SGD_number, light_dark, date_block, colony_number, site) %>% 
+  filter(colony_number== "BLANK") %>%
+  summarise(umol.sec = mean(umol.sec, na.rm=TRUE)) %>% # get mean value of blanks per each dilution 
+  dplyr::select(blank.rate = umol.sec, site) %>%  ## rename the blank column 
+  ungroup() %>% 
+  dplyr::select(SGD_number, light_dark, blank.rate, date_block, site) %>%
+  right_join(RespoR2) %>% # join with the respo data
+  #arrange(FileID_csv) %>% 
+  mutate(umol.sec.corr = umol.sec - blank.rate, # subtract the blank rates from the raw rates #### HOW IS THIS NORMALIZING THE DATA IS EVERYTHING IS JUST GOING TO BE 0 #####   
+         mmol.cm2.hr = 0.001*(umol.sec.corr*3600)/SA_cm2, # convert to mmol g-1 hr-1
+         mmol.cm2.hr_uncorr = 0.001*(umol.sec*3600)/SA_cm2) %>% 
+  filter(colony_number!="BLANK") %>% # remove the Blank data
+  #ungroup() %>%
+  dplyr::select(date, sample_ID, light_dark, run_block, SA_cm2, run_block, mmol.cm2.hr, chamber_channel, 
+                Temp.C, mmol.cm2.hr_uncorr, colony_number, salinity, pH, site, SGD_number)
+```
+
+## Plot to see if averaged blanks worked out and only have one per SGD dilution 
+```{r}
+### plot the averaged blanks to see if it is working properly ### 
+plot_Blank_Rates_Averaged <- RespoR_Normalized_AvgBlanks %>% 
+  ggplot(aes(x=SGD_number, 
+             y=mmol.cm2.hr_uncorr)) +
+  scale_x_continuous(trans="log10") +
+  geom_point() + 
+  facet_wrap(site~light_dark)
+
+##there are still multiple points even tho it is supposed to be taking an average 
+
+```
+
+## once blanks are sorted - use that dataset to calculate R, GP, and NP 
+```{r}
+# make the respiration values positive (pull out data for dark treatments)
+
+RespoR_Normalized_dark <- RespoR_Normalized_AvgBlanks %>% 
+  filter(light_dark == "DARK") %>% 
+  mutate(mmol.cm2.hr = mmol.cm2.hr*-1,
+         mmol.cm2.hr_uncorr = mmol.cm2.hr_uncorr*-1) %>% 
+  mutate(mmol.cm2.hr = ifelse(mmol.cm2.hr < 0, 0, mmol.cm2.hr), # for any values below 0, make 0
+         mmol.cm2.hr_uncorr = ifelse(mmol.cm2.hr_uncorr < 0, 0, mmol.cm2.hr_uncorr)) %>% 
+  mutate(P_R = "R") # all dark run rates get R for respiration
+
+# all light run rates get NP for net photosynthesis
+RespoR_Normalized_light <- RespoR_Normalized_AvgBlanks %>% 
+  filter(light_dark == "LIGHT") %>% 
+  mutate(mmol.cm2.hr = ifelse(mmol.cm2.hr < 0, 0, mmol.cm2.hr), # for any values below 0, make 0
+         mmol.cm2.hr_uncorr = ifelse(mmol.cm2.hr_uncorr < 0, 0, mmol.cm2.hr_uncorr)) %>% 
+  mutate(P_R = "NP")
+
+# rejoin data into single df
+RespoR_Normalized2 <- full_join(RespoR_Normalized_light, RespoR_Normalized_dark) #%>% 
+#drop_na(mmol.gram.hr) # removes anticipated sampleID's that were not actually run
+
+
+#make column for GP and group by fragment ID and salinity to keep R and NP together
+RespoR_NormalizedGP <- RespoR_Normalized2 %>% 
+  group_by(colony_number, SGD_number, site, salinity, pH) %>% 
+  summarize(mmol.cm2.hr = sum(mmol.cm2.hr),
+            mmol.cm2.hr_uncorr = sum(mmol.cm2.hr_uncorr), # NP + R = GP
+            #Temp.C = mean(Temp.C)
+  ) %>% 
+  mutate(P_R="GP") %>% # Label for Gross Photosynthesis
+  mutate(light_dark = "LIGHT") %>% 
+  mutate(mmol.cm2.hr = ifelse(mmol.cm2.hr < 0, 0, mmol.cm2.hr), # for any values below 0, make 0
+         mmol.cm2.hr_uncorr = ifelse(mmol.cm2.hr_uncorr < 0, 0, mmol.cm2.hr_uncorr))
+
+# rejoin for full df with NP, R, and GP rates
+RespoR_Normalized_Full <- RespoR_Normalized2 %>% 
+  dplyr::select(colony_number, pH, SGD_number, site, salinity, light_dark, P_R, mmol.cm2.hr, mmol.cm2.hr_uncorr) %>% 
+  full_join(RespoR_NormalizedGP)
+
+
+write_csv(RespoR_Normalized_Full , here("Data","RespoFiles","Respo_RNormalized_AllRates.csv"))  
+
+View(RespoR_Normalized_Full)
+
+```
+
+## Now make some plots to look at the respo data 
+Salinity should be main priority 
+Then pH 
+Then nutrients (probably silicate will be most telling) and TA once I have them 
+
+## First few = Repiration rates across SGD dilutions 
+What does mmol.cm2.hr really mean?? 
+-  Represents the molar units 
+- standardized by cm2 which is surface area of coral 
+- by an hour of R/P runs 
+
+## Calculating respiration 
+- rate of oxygen change: Change in % O2 min-1--> mg L --> umol L (as referenced in Krueger 2019)
+- converstion rate of O2 concentration (umol L) to rate of total amount of O2 produced/consumed (umol min) including volume 
+- Calc based on assumption that O2-generation and consumption are proportional to actual carbon
+metabolism
+
+```{r}
+RespoR_Normalized_Full <- read_csv(here("Data","RespoFiles","Respo_RNormalized_AllRates.csv"))
+
+my_pal <- pnw_palette(name="Starfish",n=2,type="discrete")
+
+##### Respiration rates with dilutions and u.mol ######### 
+RespRates_SGDdil <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
+  ggplot(aes(x=SGD_number, 
+             y=mmol.cm2.hr, 
+             color=colony_number)) +
+  facet_wrap(colony_number~site, scales = "free_y") +
+  geom_point() +
+  scale_x_continuous(trans="log10") +
+  labs(title="Respiration Normalized to Avg Blanks for SGD Dils")
+ggsave(here("Outputs", "RespoOutput","RespRates_SGDdils.jpg"), 
+       width = 10, height = 10)
+
+RespRates_SGDdil <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
+  ggplot(aes(x=SGD_number, 
+             y=mmol.cm2.hr, 
+             color=colony_number)) +
+  facet_wrap(~site, scales = "free_y") +
+  geom_boxplot() +
+  scale_x_continuous(trans="log10") +
+  labs(title="Respiration Normalized to Avg Blanks for SGD Dils")
+
+
+
+
+##### GP Rates based on SGD Dils #########
+RatesPlot_GP <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  ggplot(aes(x=SGD_number, 
+             y=mmol.cm2.hr, 
+             color=colony_number)) +
+  facet_wrap(~site, scales = "free_y") +
+  geom_point() +
+  scale_x_continuous(trans="log10") +
+  labs(title="GP Rates for SGD Dils")
+ggsave(here("Outputs", "RespoOutput","GPRates_SGDdils.jpg"), 
+       width = 10, height = 10)
+
+
+## first plot shows separated by replicates, second just shows all by site. Don't really see a trend - at least not a full curve, though Cabral seems to go down a little bit 
+
+RatesPlot_GP <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  ggplot(aes(x=SGD_number, 
+             y=mmol.cm2.hr, 
+             color=colony_number)) +
+  facet_wrap(~site, scales = "free_y") +
+  geom_boxplot() +
+  scale_x_continuous(trans="log10") +
+  labs(title="GP Rates for SGD Dils")
+#ggsave(here("Outputs", "RespoOutput","GPRates_SGDdils_BoxPlot.jpg"), 
+    #   width = 10, height = 10)
+
+## Cabral is at least at much higher GP rates than Varari -- greater difference with GP than R 
+
+```
+## Environmental Parameters
+- Starting with salinity 
+
+```{r}
+## Gross Photosynthesis with salinity 
+RatesPlot_GP_EnvParameters <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  ggplot(aes(x=salinity, 
+             y=mmol.cm2.hr, 
+             color=colony_number)) +
+  facet_wrap(~site, scales = "free") +
+  geom_point() +
+  geom_smooth(method = "lm")+
+  labs(title="GP with Environmental Parameters")
+
+
+## Respiration with salinity 
+RatesPlot_R_EnvParameters <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
+  ggplot(aes(x=salinity, 
+             y=mmol.gram.hr, 
+             color=colony_number)) +
+  geom_smooth(method = "lm")+
+  facet_wrap(colony_number~site, scales = "free") +
+  geom_point() +
+  labs(title="Respiration with Environmental Parameters")
+
+
+### log scale NOT faceted by replicate
+RatesPlot_R_EnvParameters <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  ggplot(aes(x=SGD_number, 
+             y=salinity, 
+             color=colony_number)) +
+  scale_x_continuous(trans="log10") +
+  facet_wrap(~site, scales = "free") +
+  geom_point() +
+  geom_line()+
+  labs(title="GP with Environmental Parameters")
+
+
+RatesPlot_R_EnvParameters <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  ggplot(aes(x=SGD_number, 
+             y=pH, 
+             color=colony_number)) +
+  scale_x_continuous(trans="log10") +
+  facet_wrap(colony_number~site, scale = "free") +
+  geom_line() +
+  geom_point()
+labs(title="Respiration with Environmental Parameters")
+```
+
+
+
+
+
+## Some notes: 
+- oxygen = *produced* during photosynthesis 
+- oxygen = *consumed* during respiration 
+- NP = GP-R
+- Muscatine et al. 1981 uses mg C rather than mmol 
+
+
+## pH-TA technique
+-  used to calculate the difference between the downstream and upstream concentrations of DIC
+- use standard equations that describe the seawater inorganic carbon system 
+- forward TA reaction is based on Redfield ration of C:N:P
+- See Gattuso et al 1999 for equation 
+
+## QUESTIONS/COMMENTS 
+
+
+
+

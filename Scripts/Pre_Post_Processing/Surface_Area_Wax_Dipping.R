@@ -11,8 +11,8 @@ library(here)
 
 ######## Load data ######################################################
 ## read in CSVs from anyone who wax dipped/calculated surface area curves 
-sa <-  read_csv(here("Data", "Wax_Dipping", "colonyfrag_weight_sainfo.csv")) %>% 
-  drop_na()
+sa <-  read_csv(here("Data", "Wax_Dipping", "Cabral_Varari_coralsurfacearea.csv")) # %>% 
+ # drop_na()
 
 ## dc <- read_csv(here("Data","Wax_Dipping","donor_colony_info.csv")) #%>%
   #select(!CowTagID) %>%
@@ -35,7 +35,7 @@ sa_corals <- sa %>%
 
 sa_hannah_coral <- sa_corals %>%
   filter(Person_Measuring == "Hannah") %>%
-  mutate(Surface_area_corals_cm2 = ((Weight_wax_g-hannah_intercept)/hannah_slope)) #calculate surface area of fragments hannah measured
+  mutate(SA_cm2 = ((Weight_wax_g-hannah_intercept)/hannah_slope)) #calculate surface area of fragments hannah measured
 
 #sa_maya_coral <- sa_corals %>%
   #filter(Person_measuring == "Maya") %>%
