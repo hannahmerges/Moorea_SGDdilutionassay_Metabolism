@@ -54,7 +54,7 @@ pHSlope<-pHcalib %>%
   pivot_wider(names_from = term, values_from = estimate) %>% # put slope and intercept in their own column
   right_join(.,pHData) %>% # join with the pH sample data
   mutate(mVTRis = temp_C*Ttris + `(Intercept)`) %>% 
-  mutate(pH = pH(Ex=mV,Etris=mVTRis,S=salinity,T=temp_C)) # calculate pH of the samples using the pH seacarb function
+  mutate(new_pH = pH(Ex=mV,Etris=mVTRis,S=salinity,T=temp_C)) # calculate pH of the samples using the pH seacarb function
 
    # calculate the mV of the tris at temperature in which the pH of samples were measured
   #drop_na(TempInSitu)%>%

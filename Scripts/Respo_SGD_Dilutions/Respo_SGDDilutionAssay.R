@@ -475,13 +475,16 @@ RatesPlot_R_EnvParameters <- RespoR_Normalized_Full %>%
 
 ## data 
 corr_matrix_envparams <- BioData[-c(1:6,13:17)] 
-
+  
+corr_matrix_envparams2 <- RespoR_Normalized_Full %>% 
+  select(salinity, new_pH)
+  
 ##visualize it 
-ggcorr(corr_matrix_envparams, method = c("everything", "pearson")) 
+ggcorr(corr_matrix_envparams2, method = c("everything", "pearson")) 
 
 ###############################
 ### Dani B's methods #######
-cor_mat <- round(cor(corr_matrix_envparams),4)
+cor_mat <- round(cor(corr_matrix_envparams2),4)
 head(cor_mat)
 
 #melt the correlation matrix means it reassembles data frame to be more effective to complete corr matrix
