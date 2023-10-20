@@ -645,7 +645,7 @@ AIC(model_GPbypH_V)
 
 ```{r}
 ##################################
-## linear regression with env params #### 
+## mixed model regression with env params #### 
 ###### Models for GP_R ratio #######
 GPR_Ratio <- wide_RespoRNormalizedFull %>% 
   filter(site=="Cabral") %>% 
@@ -810,11 +810,172 @@ ggsave(here("Outputs", "RespoOutput","AllRatesPlot_Salinity"), AllRatesPlot_Sali
 
 ```
 
-
-
-### testing assumptions of final models 
+## FOR DANIELLE TO LOOK AT 
 ```{r}
 
+###########################
+### making plots to just visualize relationship/trends 
+###########################
+
+## Gross Photosynthesis with salinity 
+RatesPlot_GP_salinity <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr, 
+             color=new_colonynumber)) +
+  facet_wrap(site~new_colonynumber, scales = "free") +
+  geom_point() +
+  geom_smooth(method = "lm")+
+  labs(title="GP by Salinity")
+ggsave(here("Outputs", "PrelimOutputs","GPRates_Salinity.jpg"), 
+       width = 10, height = 10)
+
+RatesPlot_GP_salinity
+
+## Respiration with salinity 
+RatesPlot_R_salinity <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr, 
+             color=new_colonynumber)) +
+  geom_smooth(method = "lm") +
+  facet_wrap(site~new_colonynumber, scales = "free") +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title="Respiration by Salinity")
+ggsave(here("Outputs", "PrelimOutputs","RRates_Salinity.jpg"), 
+       width = 10, height = 10)
+
+RatesPlot_R_salinity
+
+##### GP Rates based on SGD Dils #########
+RatesPlot_GP_SGD <- RespoR_Normalized_Full %>%
+  filter(P_R == "GP") %>%
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr, 
+             color=new_colonynumber)) +
+  facet_wrap(site~new_colonynumber, scales = "free_y") +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_x_continuous(trans="log10") +
+  labs(title="GP Rates for SGD Dils")
+ggsave(here("Outputs", "PrelimOutputs","GPRates_SGDdils.jpg"), 
+       width = 10, height = 10)
+
+RatesPlot_GP_SGD
+
+##### look at umol by colony numbers for RESPIRATION for SGD dilutions 
+SGDdil_bycolony <- RespoR_Normalized_Full %>%
+  filter(P_R == "R") %>%
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr, ##switched to umol but values are still off? 
+             color=new_colonynumber)) + ## colony number breakdowns: 1-8=Varari, 13-20=Cabral
+  facet_wrap(site~new_colonynumber, scales = "free_y") +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_x_continuous(trans="log10") +
+  labs(title="Respiration Normalized to Avg Blanks for SGD Dils per colony")
+
+###########################
+#### making mixed models to test for significance 
+###########################
+
+model_RbySalinity <- lmer(data = RData_C, 
+             umol.cm2.hr ~ salinity + (1|new_colonynumber/date))
+
+anova(model_RbySalinity) 
+summary(model_RbySalinity)
+ranef(model_RbySalinity)
+
+model2_SGDbyR <- lmer(data = RData_C, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+anova(model2_SGDbyR) 
+
+### WHEN RUNNING DATE AS AN INTERACTION: THERE IS SIGNFICANT EFFECT OF DATE 
+
+model_SGDbyR_V <- lmer(data = RData_V, 
+             umol.cm2.hr ~ SGD_number*date + (1|new_colonynumber))
+
+anova(model_SGDbyR_V) 
+summary(model_SGDbyR_V)
+
+### no significance of SGD with date as rnadom effect 
+model2_SGDbyR_V <- lmer(data = RData_V, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+anova(model2_SGDbyR_V) 
+summary(model2_SGDbyR_V)
+
+##nor by pH 
+model_RbySalinity_V <- lmer(data = RData_V, 
+             umol.cm2.hr ~ salinity + (1|new_colonynumber/date))
+
+anova(model_RbySalinity_V) 
+summary(model_RbySalinity_V)
+
+
+############ FOR GP #############
+## almost significant effect og SGD on GP rates, just barely over 
+model2_SGDbyGP <- lmer(data = GPData_C, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+anova(model2_SGDbyGP) 
+plot(model2_SGDbyGP)
+#qqp(model2_SGDbyGP)
+
+## no significant effect of salinity at Cabral or Varari 
+
+## BUT THERE IS A SIGNIFICANT EFFECT OF PH ON GP AT VARARI 
+
+
+#####################################
+##### making plots to show all the rates together based on SGD number and salinity bc pH was kinda wonky 
+####################################
+
+# plot GP, NP and R
+#my_pal <- pnw_palette(name="Starfish")
+
+AllRatesPlot_SGD <- RespoR_Normalized_Full %>%
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr,
+             color = SGD_number))+
+  #scale_x_continuous(trans="log10") + 
+  #geom_boxplot(aes(color = SGD_number),
+              # outlier.shape = NA)+ 
+  geom_jitter(aes(color = SGD_number), position = position_jitterdodge()) + 
+  theme_bw()+
+  #geom_text_repel(aes(label = SampleID), size = 2.5, max.overlaps = 15) +
+  theme(strip.background = element_rect(fill = "white"))+
+  labs(x = "Environmental Treatment (SGD Level)",
+       color = "SGD_number",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Rate of O2 production or consumption") +
+  #scale_color_manual(values=my_pal) +
+  facet_wrap(~ P_R, scales = "fixed")
+AllRatesPlot_SGD
+
+ggsave(here("Outputs", "RespoOutput","AllRatesPlot_SGD.png"), AllRatesPlot_SGD, device = "png", width = 6, height = 6)
+#ggsave(here("Outputs", "RespoOutput","AllRates.pdf"), RatesPlot, device = "pdf", width = 6, height = 6)
+
+
+AllRatesPlot_Salinity <- RespoR_Normalized_Full %>%
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr,
+             color = salinity))+
+  #scale_x_continuous(trans="log10") + 
+  #geom_boxplot(aes(color = SGD_number),
+              # outlier.shape = NA)+ 
+  geom_jitter(aes(color = salinity), position = position_jitterdodge()) + 
+  theme_bw()+
+  #geom_text_repel(aes(label = SampleID), size = 2.5, max.overlaps = 15) +
+  theme(strip.background = element_rect(fill = "white"))+
+  labs(x = "Environmental Treatment (SGD Level)",
+       color = "Salinity (ppt)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Rate of O2 production or consumption") +
+  #scale_color_manual(values=my_pal) +
+  facet_wrap(~ P_R, scales = "fixed")
+AllRatesPlot_Salinity
+
+ggsave(here("Outputs", "RespoOutput","AllRatesPlot_Salinity"), AllRatesPlot_Salinity, device = "png", width = 6, height = 6)
 
 ```
 
