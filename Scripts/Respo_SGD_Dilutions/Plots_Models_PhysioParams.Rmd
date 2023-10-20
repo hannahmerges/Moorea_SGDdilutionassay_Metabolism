@@ -1,7 +1,7 @@
 ---
-title: "VisualizationPlots_RespoData"
+title: "Plots_Models_PhysioParams"
 author: "Hannah Merges"
-date: "`r Sys.Date()`"
+date: '`r Sys.Date()`'
 output: html_document
 ---
 
@@ -11,8 +11,7 @@ knitr::opts_chunk$set(echo = TRUE,
                       message=FALSE)
 ```
 
-### Loading libraries 
-
+## Load libraries 
 ```{r, echo= FALSE}
 library(segmented)
 library(plotrix)
@@ -43,6 +42,9 @@ library(modelsummary)
 library(tidymodels)
 library(flextable)
 library(performance)
+library(agricolae)
+library(ggeffects)
+library(sjPlot)
 ```
 
 ### Taking RespoR table from original script/for loop and loading it here
@@ -68,7 +70,6 @@ pHData <- read_csv(here("Data", "RespoFiles", "Fragment_MeasurementSampling_Cabr
 pHData <- pHData[-c(294,303,435),]
 pHData <- pHData[,-(14:17)]
 
-
 #View(pHData)
 
 pHSlope<-pHcalib %>%
@@ -82,7 +83,7 @@ pHSlope<-pHcalib %>%
   mutate(mVTRis = temp_C*Ttris + `(Intercept)`) %>% 
   mutate(new_pH = pH(Ex=mV,Etris=mVTRis,S=salinity,T=temp_C)) # calculate pH of the samples using the pH seacarb function
 
-View(pHSlope)
+#View(pHSlope)
 ######### Respo table #############
 RespoR2 <- RespoR %>%
   #drop_na(FileID_csv) %>% # drop NAs
@@ -95,7 +96,7 @@ RespoR2 <- RespoR %>%
   mutate(new_colonynumber= as.factor(new_colonynumber), 
          date_block= factor(date)) #make the blank column a factor
 
-View(RespoR2)
+#View(RespoR2)
 ```
 
 ### Now try to average the blanks 
@@ -138,13 +139,13 @@ RespoR_Normalized_AvgBlanks <- RespoR2 %>%
   dplyr::select(date, sample_ID, light_dark, run_block, SA_cm2, run_block, umol.cm2.hr, chamber_channel, 
                 Temp.C, umol.cm2.hr_uncorr, new_colonynumber, salinity, pH, site, SGD_number)
 
-View(RespoR_Normalized_AvgBlanks)
+#View(RespoR_Normalized_AvgBlanks)
 
 ## try to join in new pH data here## 
 TrispH_RespoRNormalized_AvgBlanks <- RespoR_Normalized_AvgBlanks %>% 
   left_join(pHSlope)
 
-View(TrispH_RespoRNormalized_AvgBlanks)
+#View(TrispH_RespoRNormalized_AvgBlanks)
 
 ### try to plot lines 92-95 #######
 #RespoR_Normalized_AvgBlanks <- RespoR2 %>% 
@@ -209,11 +210,10 @@ RespoR_Normalized2 <- full_join(RespoR_Normalized_light, RespoR_Normalized_dark)
 
 #make column for GP and group by fragment ID and salinity to keep R and NP together
 RespoR_NormalizedGP <- RespoR_Normalized2 %>% 
-  group_by(new_colonynumber, SGD_number, site, salinity, new_pH) %>% 
+  group_by(new_colonynumber, SGD_number, site, date, salinity, new_pH) %>% 
   summarize(umol.cm2.hr = sum(umol.cm2.hr),
-            umol.cm2.hr_uncorr = sum(umol.cm2.hr_uncorr), # NP + R = GP
-            #Temp.C = mean(Temp.C)
-  ) %>% 
+            umol.cm2.hr_uncorr = sum(umol.cm2.hr_uncorr)) %>% # NP + R = GP
+            #Temp.C = mean(Temp.C)) %>% 
   mutate(P_R="GP") %>% # Label for Gross Photosynthesis
   mutate(light_dark = "LIGHT") %>% 
   mutate(umol.cm2.hr = ifelse(umol.cm2.hr < 0, 0, umol.cm2.hr), # for any values below 0, make 0
@@ -231,67 +231,24 @@ write_csv(RespoR_Normalized_Full , here("Data","RespoFiles","Respo_RNormalized_A
 
 ```
 
-#### Now make some plots to look at the respo data 
-Salinity should be main priority 
-Then pH 
-Then nutrients (probably silicate will be most telling) and TA once I have them 
-
-#### First few figures = Repiration and GP rates across SGD dilutions
-What does umol.cm2.hr really mean?? 
--  Represents the molar units 
--  standardized by cm2 which is surface area of coral 
--  by an hour of R/P runs 
-
-#### Calculating respiration 
--  rate of oxygen change: Change in % O2 min-1--> mg L --> umol L (as referenced in Krueger 2019)
--  converstion rate of O2 concentration (umol L) to rate of total amount of O2 produced/consumed (umol min) including volume 
--  Calc based on assumption that O2-generation and consumption are proportional to actual carbon
-metabolism
-
+### Visualizing Respiration rates via plots 
 ```{r}
 RespoR_Normalized_Full <- read_csv(here("Data","RespoFiles","Respo_RNormalized_AllRates.csv"))
 
 my_pal <- pnw_palette(name="Starfish",n=2,type="discrete")
 
 
-##### look at umol by colony numbers 
+##### look at umol by colony numbers for RESPIRATION 
 SGDdil_bycolony <- RespoR_Normalized_Full %>%
   filter(P_R == "R") %>%
   ggplot(aes(x=SGD_number, 
-             y=umol.cm2.hr, 
-             color=new_colonynumber)) +
-  facet_wrap(~new_colonynumber, scales = "free_y") +
+             y=umol.cm2.hr, ##switched to umol but values are still off? 
+             color=new_colonynumber)) + ## colony number breakdowns: 1-8=Varari, 13-20=Cabral
+  facet_wrap(site~new_colonynumber, scales = "free_y") +
   geom_point() +
   geom_smooth(method = "lm") +
   scale_x_continuous(trans="log10") +
   labs(title="Respiration Normalized to Avg Blanks for SGD Dils per colony")
-
-
-##### Respiration rates with dilutions and u.mol ######### 
-RespRates_SGDdil <- RespoR_Normalized_Full %>%
-  filter(P_R == "R") %>%
-  ggplot(aes(x=SGD_number, 
-             y=umol.cm2.hr, 
-             color=new_colonynumber)) +
-  facet_wrap(new_colonynumber~site, scales = "free_y") +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  scale_x_continuous(trans="log10") +
-  labs(title="Respiration Normalized to Avg Blanks for SGD Dils")
-ggsave(here("Outputs", "PrelimOutputs","RespRates_SGDdils.jpg"), 
-       width = 10, height = 10)
-
-RespRates_SGDdil
-
-#RespRates_SGDdil <- RespoR_Normalized_Full %>%
- # filter(P_R == "R") %>%
- # ggplot(aes(x=SGD_number, 
-  #           y=mmol.cm2.hr, 
-  #           color=new_colonynumber)) +
-  #facet_wrap(~site, scales = "free_y") +
- # geom_boxplot() +
- # scale_x_continuous(trans="log10") +
- # labs(title="Respiration Normalized to Avg Blanks for SGD Dils")
 
 ```
 #### GP 
@@ -302,7 +259,7 @@ RatesPlot_GP_SGD <- RespoR_Normalized_Full %>%
   ggplot(aes(x=SGD_number, 
              y=umol.cm2.hr, 
              color=new_colonynumber)) +
-  facet_wrap(new_colonynumber~site, scales = "free_y") +
+  facet_wrap(site~new_colonynumber, scales = "free_y") +
   geom_point() +
   geom_smooth(method = "lm") +
   scale_x_continuous(trans="log10") +
@@ -311,28 +268,9 @@ ggsave(here("Outputs", "PrelimOutputs","GPRates_SGDdils.jpg"),
        width = 10, height = 10)
 
 RatesPlot_GP_SGD
-
-## first plot shows separated by replicates, second just shows all by site. Don't really see a trend - at least not a full curve, though Cabral seems to go down a little bit 
-
-#RatesPlot_GP <- RespoR_Normalized_Full %>%
- # filter(P_R == "GP") %>%
- # ggplot(aes(x=SGD_number, 
-            # y=mmol.cm2.hr, 
-           #  color=new_colonynumber)) +
-  #facet_wrap(~site, scales = "free_y") +
- # geom_boxplot() +
-  #scale_x_continuous(trans="log10") +
-  #labs(title="GP Rates for SGD Dils")
-#ggsave(here("Outputs", "RespoOutput","GPRates_SGDdils_BoxPlot.jpg"), 
-    #   width = 10, height = 10)
-
-## Cabral is at least at much higher GP rates than Varari -- greater difference with GP than R
 ```
 
-#### Environmental Parameters
-- Starting with salinity 
-- calculated new pH from Tris Calibration 
-
+### Salinity plots 
 ```{r}
 ## Gross Photosynthesis with salinity 
 RatesPlot_GP_salinity <- RespoR_Normalized_Full %>%
@@ -340,7 +278,7 @@ RatesPlot_GP_salinity <- RespoR_Normalized_Full %>%
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
              color=new_colonynumber)) +
-  facet_wrap(~new_colonynumber, scales = "free") +
+  facet_wrap(site~new_colonynumber, scales = "free") +
   geom_point() +
   geom_smooth(method = "lm")+
   labs(title="GP by Salinity")
@@ -356,7 +294,7 @@ RatesPlot_R_salinity <- RespoR_Normalized_Full %>%
              y=umol.cm2.hr, 
              color=new_colonynumber)) +
   geom_smooth(method = "lm") +
-  facet_wrap(~site, scales = "free") +
+  facet_wrap(site~new_colonynumber, scales = "free") +
   geom_point() +
   geom_smooth(method = "lm") +
   labs(title="Respiration by Salinity")
@@ -373,13 +311,13 @@ salinity_combined <- RespoR_Normalized_Full %>%
   group_by(SGD_number, date) 
 
 ## Respiration with salinity 
-RatesPlot_R_GroupedSalinity <- RespoR_Normalized_Full %>%
+RatesPlot_R_GroupedSalinity <- salinity_combined %>%
   filter(P_R == "R") %>%
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
              color=new_colonynumber)) +
   geom_smooth(method = "lm") +
-  facet_wrap(~site, scales = "free") +
+  facet_wrap(site~new_colonynumber, scales = "free") +
   geom_point() +
   geom_smooth(method = "lm") +
   labs(title="Respiration by (Grouped) Salinity")
@@ -388,35 +326,23 @@ ggsave(here("Outputs", "PrelimOutputs","RRates_Salinity2.jpg"),
 
 RatesPlot_R_GroupedSalinity
 
-RatesPlot_NP_GroupedSalinity <- RespoR_Normalized_Full %>%
-  filter(P_R == "NP") %>%
+RatesPlot_GP_GroupedSalinity <- salinity_combined %>%
+  filter(P_R == "GP") %>%
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
              color=new_colonynumber)) +
   facet_wrap(~site, scales = "free") +
   geom_point() +
   geom_smooth(method = "lm")+
+  facet_wrap(site~new_colonynumber, scales = "free") +
   labs(title="GP by (Grouped) Salinity")
-ggsave(here("Outputs", "PrelimOutputs","NPRates_Salinity.jpg"), 
+ggsave(here("Outputs", "PrelimOutputs","GPRates_Salinity.jpg"), 
        width = 10, height = 10)
 
-RatesPlot_NP_GroupedSalinity
-
-### log scale NOT faceted by replicate
-#RatesPlot_R_EnvParameters <- RespoR_Normalized_Full %>%
-  #filter(P_R == "GP") %>%
-  #ggplot(aes(x=SGD_number, 
-             #y=salinity, 
-            # color=new_colonynumber)) +
-  #scale_x_continuous(trans="log10") +
-  #facet_wrap(~site, scales = "free") +
-  #geom_point() +
-  #geom_line()+
- # labs(title="GP with Environmental Parameters")
-
-
+RatesPlot_GP_GroupedSalinity
 
 ```
+
 #### Now with pH 
 ```{r}
 ## need to show pH by day rather than colony 
@@ -424,20 +350,20 @@ pH_combined <- RespoR_Normalized_Full %>%
   #filter(site=="Varari") %>% 
   group_by(SGD_number, date) 
 
-RatesPlot_NP_pH <- pH_combined %>%
-  filter(P_R == "NP") %>% ## trying it with NP here because GP doesn't have assigned date to it -- could try with day block but would need to reconfigure the grouping 
+RatesPlot_GP_pH <- pH_combined %>%
+  filter(P_R == "GP") %>% 
    ggplot(aes(x=new_pH, 
              y=umol.cm2.hr, 
              color=new_colonynumber)) +
   scale_x_continuous(trans="log10") +
-  facet_wrap(~site, scale = "free") +
+  facet_wrap(site~new_colonynumber, scale = "free") +
   geom_smooth(method = "lm") +
   geom_point()+ 
-  labs(title="NP by pH")
-ggsave(here("Outputs", "PrelimOutputs","NP_pH.jpg"), 
+  labs(title="GP by pH")
+ggsave(here("Outputs", "PrelimOutputs","GP_pH.jpg"), 
        width = 10, height = 10)
 
-RatesPlot_NP_pH
+RatesPlot_GP_pH
 
 RatesPlot_R_pH <- pH_combined %>%
   filter(P_R == "R") %>%
@@ -445,7 +371,7 @@ RatesPlot_R_pH <- pH_combined %>%
              y=umol.cm2.hr, 
              color=new_colonynumber)) +
   scale_x_continuous(trans="log10") +
-  facet_wrap(~site, scale = "free") +
+  facet_wrap(site~new_colonynumber, scale = "free") +
   geom_smooth(method = "lm")+
   geom_point() +
   labs(title="Respiration by pH")
@@ -455,26 +381,25 @@ ggsave(here("Outputs", "PrelimOutputs","R_pH.jpg"),
 RatesPlot_R_pH
 
 ######## now try with salinity and pH plotted against each other #######
-RatesPlot_R_EnvParameters <- RespoR_Normalized_Full %>%
+RatesPlot_R_SalpH <- RespoR_Normalized_Full %>%
   #filter(P_R == "R") %>%
   ggplot(aes(x=new_pH, 
              y=salinity, 
              color=new_colonynumber)) +
   scale_x_continuous(trans="log10") +
-  facet_wrap(~site, scale = "free") +
+  facet_wrap(site~new_colonynumber, scale = "free") +
   geom_smooth(method = "lm")+
   geom_point() +
   labs(title="Salinity by pH")
 ggsave(here("Outputs", "PrelimOutputs", "Salinity_pH.jpg"), 
        width = 10, height = 10)
 
-RatesPlot_R_EnvParameters
+RatesPlot_R_SalpH
+
+## how are pH and salinity correlated ? is pH affecting salinity? 
 
 ```
-
-
-#### Now figure out how to do GP:R ratios 
--  having some trouble with this formatting 
+#### Calculate GP:R ratios 
 
 ```{r}
 
@@ -483,19 +408,13 @@ wide_RespoRNormalizedFull <- RespoR_Normalized_Full %>%
   pivot_wider(id_cols = c(site, new_colonynumber, SGD_number),names_from=P_R, values_from=umol.cm2.hr) %>% 
   mutate(GP_R_Ratio=R/GP)
 
-
-### how do I set this up because the values are all in different columns not side by side from one another 
-
-#View(RespoR_Normalized_Full)
-#View(wide_RespoRNormalizedFull)
-
 ########## now plot the GP:R ratio ######## 
 RatesPlot_GPR <- wide_RespoRNormalizedFull %>%
   ggplot(aes(x=SGD_number, 
              y=GP_R_Ratio, 
              color=new_colonynumber)) +
   scale_x_continuous(trans="log10") +
-  facet_wrap(~new_colonynumber, scale = "free") +
+  facet_wrap(site~new_colonynumber, scale = "free") +
   geom_smooth(method = "lm")+
   geom_point() +
   labs(title="GP:R")
@@ -506,177 +425,227 @@ RatesPlot_GPR
 
 ```
 
+### Show stats via models - R and GP:R first 
 
-### What are the stats?? 
 ```{r}
-library(agricolae) # HSD.test()
-
-# quick modeling
-# check assumptions for all (referencing Biometry notes below)
-
-
-#### USE AIC values to check poly vs linear models 
-
-
-
-# models
-GPData <- RespoR_Normalized_Full %>% filter(P_R == "GP")
-model1 <- lm(data = GPData, umol.cm2.hr ~ salinity)
-anova(model1)
-#HSD.test(model1, "salinity", console=TRUE)
-
-NPData <- RespoR_Normalized_Full %>% filter(P_R == "NP")
-model2 <- lm(data = NPData, umol.cm2.hr ~ salinity)
-anova(model2)
-#HSD.test(model2, "salinity", console=TRUE)
-
-RData <- RespoR_Normalized_Full %>% filter(P_R == "R")
-model3 <- lm(data = RData, umol.cm2.hr ~ salinity)
-anova(model3)
-#HSD.test(model3, "salinity", console=TRUE)
-
-# check parameters with pH 
-RData <- RespoR_Normalized_Full %>% filter(P_R == "R")
-model3 <- lm(data = RData, new_pH ~ umol.cm2.hr) ### testing it with vars switched both ways to make sure the P value stays the same 
-anova(model3)
-#HSD.test(model3, "pH", console=TRUE)
-
-GPData <- RespoR_Normalized_Full %>% filter(P_R == "NP")
-model1 <- lm(data = GPData, umol.cm2.hr ~ new_pH) ### testing it with vars switched both ways to make sure the P value stays the same 
-anova(model1)
-#HSD.test(model1, "pH", console=TRUE) ## significant 
-
-
-### check for SGD dilutions 
-RData <- RespoR_Normalized_Full %>% filter(P_R == "R")
-model3 <- lm(data = RData, umol.cm2.hr ~ SGD_number)
-anova(model3)
-#HSD.test(model3, "SGD_number", console=TRUE)
-
-GPData <- RespoR_Normalized_Full %>% filter(P_R == "GP")
-model1 <- lm(data = GPData, umol.cm2.hr ~ SGD_number)
-anova(model1)
-#HSD.test(model1, "SGD_number", console=TRUE)
-
-
-###############################
-### NEW and IMPROVED (sort of) STATS TEST 
-###############################
-testRData <- wide_RespoRNormalizedFull %>% 
-  filter(site=="Cabral") %>% 
-  mutate(new_colonynumber= as.factor(new_colonynumber)) 
-         #date=as.factor(date))
-
+#### GP:R ratio 
+#testRData <- wide_RespoRNormalizedFull %>% 
+ # filter(site=="Cabral") %>% 
+ # drop_na() %>% 
+  #mutate(new_colonynumber= as.factor(new_colonynumber))
+          #date=as.factor(date))
 #View(wide_RespoRNormalizedFull)
 
-model3.5 <- lmer(data = testRData, 
-             GP_R_Ratio ~ SGD_number + (1|new_colonynumber))
+#model_GPbyR <- lmer(data = testRData, 
+             #GP_R_Ratio ~ SGD_number + (1|new_colonynumber))
 
+#anova(model_GPbyR) 
+#summary(model_GPbyR)
 
-anova(model3.5) ## the models all look exactly the same?? 
-summary(model3.5)
-
-
-RData <- RespoR_Normalized_Full %>% 
+##### Respiration by site ###########
+## Cabral first 
+RData_C <- RespoR_Normalized_Full %>% 
   filter(P_R == "R") %>% 
   filter(site=="Cabral") %>% 
   mutate(new_colonynumber= as.factor(new_colonynumber), 
          date=as.factor(date))
 
-model3 <- lmer(data = RData, 
+## date as an interaction 
+model_SGDbyR <- lmer(data = RData_C, 
              umol.cm2.hr ~ SGD_number*date + (1|new_colonynumber))
 
-model3.5 <- lmer(data = RData, 
-             umol.cm2.hr ~ SGD_number + (1|new_colonynumber))
+anova(model_SGDbyR) 
+summary(model_SGDbyR)
+#ranef(model_SGDbyR)
 
+## without date 
+model2_SGDbyR <- lmer(data = RData_C, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+anova(model2_SGDbyR) 
+summary(model2_SGDbyR)
+#ranef(model2_SGDbyR)
 
-model4 <- lm(data = RData, 
-             umol.cm2.hr ~ salinity + 1|new_colonynumber/date)
+### R by salinity 
+model_RbySalinity <- lmer(data = RData, 
+             umol.cm2.hr ~ salinity + (1|new_colonynumber/date))
 
-model5 <- lm(data = RData, 
-             umol.cm2.hr ~ new_pH + 1|new_colonynumber/date)
+anova(model_RbySalinity) 
+summary(model_RbySalinity)
+ranef(model_RbySalinity)
+
+### R by pH 
+model_RbypH <- lmer(data = RData, 
+             umol.cm2.hr ~ new_pH + (1|new_colonynumber/date))
              
-anova(model3.5) ## the models all look exactly the same?? 
-summary(model3.5)
-ranef(model3.5)
+anova(model_RbypH) 
+summary(model_RbypH)
+ranef(model_RbypH)
 
+########### then Varari ################ 
+RData_V <- RespoR_Normalized_Full %>% 
+  filter(P_R == "R") %>% 
+  filter(site=="Varari") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date))
 
-anova(model4)
-anova(model5)
-#HSD.test(model1, "SGD_number", console=TRUE)
+## date as an interaction 
+model_SGDbyR_V <- lmer(data = RData_V, 
+             umol.cm2.hr ~ SGD_number*date + (1|new_colonynumber))
+
+anova(model_SGDbyR_V) 
+summary(model_SGDbyR_V)
+#ranef(model_SGDbyR)
+
+## without date 
+model2_SGDbyR_V <- lmer(data = RData_V, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+anova(model2_SGDbyR_V) 
+summary(model2_SGDbyR_V)
+#ranef(model2_SGDbyR)
+
+### R by salinity 
+model_RbySalinity_V <- lmer(data = RData_V, 
+             umol.cm2.hr ~ salinity + (1|new_colonynumber/date))
+
+anova(model_RbySalinity_V) 
+summary(model_RbySalinity_V)
+ranef(model_RbySalinity_V)
+
+### R by pH 
+model_RbypH_V <- lmer(data = RData, 
+             umol.cm2.hr ~ new_pH + (1|new_colonynumber/date))
+             
+anova(model_RbypH_V) 
+summary(model_RbypH_V)
+ranef(model_RbypH_V)
 
 ```
 
+## AIC for R models 
 
-#### Some notes: 
-- oxygen = *produced* during photosynthesis 
-- oxygen = *consumed* during respiration 
-- NP = GP-R
-- Muscatine et al. 1981 uses mg C rather than mmol 
-
-
-#### pH-TA technique
--  used to calculate the difference between the downstream and upstream concentrations of DIC
-- use standard equations that describe the seawater inorganic carbon system 
-- forward TA reaction is based on Redfield ration of C:N:P
-- See Gattuso et al 1999 for equation 
-
-#### QUESTIONS/COMMENTS 
-
-##### Checking assumptions and mkaking polynomial regression 
 ```{r}
-model10 <- lm(data = RData, 
-             umol.cm2.hr ~ poly(SGD_number, degree=2) + 1|new_colonynumber/date)
+AIC(model_RbypH_V)
+AIC(model_RbypH)
+
+AIC(model2_SGDbyR_V)
+AIC(model_SGDbyR_V) 
+AIC(model_SGDbyR) ## this is lowest AIC value, 693 
+AIC(model2_SGDbyR)
+
+AIC(model_RbySalinity_V)
+AIC(model_RbySalinity)
 ```
 
-#### Making models to test different interactions and parameters 
+
+### next GP models 
+
+```{r}
+##### Gross Photosynthesis by site ###########
+## Cabral first 
+GPData_C <- RespoR_Normalized_Full %>% 
+  filter(P_R == "GP") %>% 
+  filter(site=="Cabral") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date))
+
+## date as an interaction 
+model_SGDbyGP <- lmer(data = GPData_C, 
+             umol.cm2.hr ~ SGD_number*date + (1|new_colonynumber))
+
+anova(model_SGDbyGP) 
+summary(model_SGDbyGP)
+#ranef(model_SGDbyR)
+
+## without date 
+model2_SGDbyGP <- lmer(data = GPData_C, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+anova(model2_SGDbyGP) 
+summary(model2_SGDbyGP)
+#ranef(model2_SGDbyGP)
+
+### GP by salinity 
+model_GPbySalinity <- lmer(data = GPData_C, 
+             umol.cm2.hr ~ salinity + (1|new_colonynumber/date))
+
+anova(model_GPbySalinity) 
+summary(model_GPbySalinity)
+ranef(model_GPbySalinity)
+
+### GP by pH 
+model_GPbypH <- lmer(data = GPData_C, 
+             umol.cm2.hr ~ new_pH + (1|new_colonynumber/date))
+             
+anova(model_GPbypH) 
+summary(model_GPbypH)
+ranef(model_GPbypH)
+
+########### then Varari ################ 
+GPData_V <- RespoR_Normalized_Full %>% 
+  filter(P_R == "GP") %>% 
+  filter(site=="Varari") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date))
+
+## date as an interaction 
+model_SGDbyGP_V <- lmer(data = GPData_V, 
+             umol.cm2.hr ~ SGD_number*date + (1|new_colonynumber))
+
+anova(model_SGDbyGP_V) 
+summary(model_SGDbyGP_V)
+#ranef(model_SGDbyGP_V)
+
+## without date 
+model2_SGDbyGP_V <- lmer(data = GPData_V, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+
+anova(model2_SGDbyGP_V) 
+summary(model2_SGDbyGP_V)
+#ranef(model2_SGDbyGP_V)
+
+### GP by salinity 
+model_GPbySalinity_V <- lmer(data = GPData_V, 
+             umol.cm2.hr ~ salinity + (1|new_colonynumber/date))
+
+anova(model_GPbySalinity_V) 
+summary(model_GPbySalinity_V)
+ranef(model_GPbySalinity_V)
+#check_model(model_GPbySalinity_V)
+
+### GP by pH 
+model_GPbypH_V <- lmer(data = GPData_V, 
+             umol.cm2.hr ~ new_pH + (1|new_colonynumber/date))
+             
+anova(model_GPbypH_V) 
+summary(model_GPbypH_V)
+ranef(model_GPbypH_V)
+#check_model(model_GPbypH_V)
+```
+
+## Comparing AIC values for GP models 
+
+```{r}
+## AIC for GP models 
+
+AIC(model_GPbySalinity_V)
+AIC(model_GPbySalinity)
+
+AIC(model2_SGDbyGP_V)
+AIC(model_SGDbyGP_V) ##lowest AIC (only one in the 500s)
+AIC(model2_SGDbyGP)
+AIC(model_SGDbyGP)
+
+AIC(model_GPbypH)
+AIC(model_GPbypH_V)
+
+# all significantly different between sites and between treatments 
+
+
+```
+#### Making models to test different interactions with salinity and pH and eventually other parameters 
 
 ```{r}
 ##################################
-## linear regression #### 
-################################
-
-####### Models for R ##### 
-RespData <- RespoR_Normalized_Full %>% 
-  filter(P_R == "R") %>% 
-  filter(site=="Cabral") %>% 
-  mutate(new_colonynumber= as.factor(new_colonynumber), 
-         date=as.factor(date))
-
-Resp_model <- lmer(data = RespData, 
-             umol.cm2.hr ~ SGD_number*date + (1|new_colonynumber))
-
-Resp_model2 <- lmer(data = RespData, 
-             umol.cm2.hr ~ SGD_number + (1|new_colonynumber))
-
-anova(Resp_model) 
-summary(Resp_model)
-
-anova(Resp_model2) 
-summary(Resp_model2)
-
-model4 <- lm(data = RData, 
-             umol.cm2.hr ~ salinity + 1|new_colonynumber/date)
-
-###### Model for NP ########
-NPData <- RespoR_Normalized_Full %>% 
-  filter(P_R == "NP") %>% 
-  filter(site=="Cabral") %>% 
-  mutate(new_colonynumber= as.factor(new_colonynumber), 
-         date=as.factor(date))
-
-NP_model <- lmer(data = NPData, 
-             umol.cm2.hr ~ SGD_number*date + (1|new_colonynumber))
-
-NP_model2 <- lmer(data = NPData, 
-             umol.cm2.hr ~ SGD_number + (1|new_colonynumber))
-
-anova(NP_model) 
-summary(NP_model)
-
-anova(NP_model2) 
-summary(NP_model2)
-
+## linear regression with env params #### 
 ###### Models for GP_R ratio #######
 GPR_Ratio <- wide_RespoRNormalizedFull %>% 
   filter(site=="Cabral") %>% 
@@ -689,36 +658,164 @@ GP_R_model <- lmer(data = GPR_Ratio,
 anova(GP_R_model) 
 summary(GP_R_model)
 
-
-######### check models ###########
 check_model(GP_R_model)
 
+## salinity and pH as random effects 
+RData_V_envparam <- RespoR_Normalized_Full %>% 
+  filter(P_R == "R") %>% 
+  filter(site=="Varari") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date))
+
+model_RData_V_envparam <- lmer(data = RData_V_envparam, 
+             umol.cm2.hr ~ salinity + new_pH + (1|new_colonynumber/date))
+
+anova(model_RData_V_envparam)
+summary(model_RData_V_envparam)
+ranef(model_RData_V_envparam)
+
 ######### tidying model results ########
-tidymodels <- tidy(model4)
-tidymodels
+#tidymodels <- tidy(model4)
+#tidymodels
 
-results <- glance(model4)
-results
-
-
-####### many model summaries #######
-
-#models <- RespoR_Normalized_Full %>% 
-#  nest(P_R) %>% 
-#  mutate(fit = map(RespoR_Normalized_Full, ~lm(umol.cm2.hr~SGD_number, data = RespoR_Normalized_Full)))
-
-
-
-####### Models for env parameters #######
-
-
-
-
-
+#results <- glance(model4)
+#results
 
 
 
 
 
 ```
+
+##### Making polynomial regression models
+
+```{r}
+polymodel_SGDbyR <- lmer(data = RData, 
+             umol.cm2.hr ~ poly(SGD_number, degree=2) + 1|new_colonynumber/date)
+
+anova(polymodel_SGDbyR) 
+summary(polymodel_SGDbyR)
+#check_model(polymodel_SGDbyR)
+```
+
+### Just using SGD number and salintiy in models, try to figure out how to plot for digestable results 
+```{r}
+model_RbySalinity <- lmer(data = RData_C, 
+             umol.cm2.hr ~ salinity + (1|new_colonynumber/date))
+
+anova(model_RbySalinity) 
+summary(model_RbySalinity)
+ranef(model_RbySalinity)
+
+model2_SGDbyR <- lmer(data = RData_C, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+anova(model2_SGDbyR) 
+
+### WHEN RUNNING DATE AS AN INTERACTION: THERE IS SIGNFICANT EFFECT OF DATE 
+
+model_SGDbyR_V <- lmer(data = RData_V, 
+             umol.cm2.hr ~ SGD_number*date + (1|new_colonynumber))
+
+anova(model_SGDbyR_V) 
+summary(model_SGDbyR_V)
+
+### no significance of SGD with date as rnadom effect 
+model2_SGDbyR_V <- lmer(data = RData_V, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+anova(model2_SGDbyR_V) 
+summary(model2_SGDbyR_V)
+
+##nor by pH 
+model_RbySalinity_V <- lmer(data = RData_V, 
+             umol.cm2.hr ~ salinity + (1|new_colonynumber/date))
+
+anova(model_RbySalinity_V) 
+summary(model_RbySalinity_V)
+
+
+############ FOR GP #############
+## almost significant effect og SGD on GP rates, just barely over 
+model2_SGDbyGP <- lmer(data = GPData_C, 
+             umol.cm2.hr ~ SGD_number + (1|new_colonynumber/date))
+anova(model2_SGDbyGP) 
+plot(model2_SGDbyGP)
+#qqp(model2_SGDbyGP)
+
+
+## no significant effect of salinity at Cabral or Varari 
+
+## BUT THERE IS A SIGNIFICANT EFFECT OF PH ON GP AT VARARI 
+
+#### plot models for presentation style ######
+plot <- ggpredict(model2_SGDbyGP, terms = c("SGD_number", "umol.cm2.hr", "new_colonynumber", "date"),
+                  type="re") %>% 
+  plot() + 
+  labs(x="Test", 
+       y="Testing") + 
+  scale_fill_viridis()
+library(tidyverse)
+
+```
+
+### Trying new plots #### 
+```{r}
+# plot GP, NP and R
+my_pal <- pnw_palette(name="Starfish")
+
+AllRatesPlot_SGD <- RespoR_Normalized_Full %>%
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr,
+             color = SGD_number))+
+  #scale_x_continuous(trans="log10") + 
+  #geom_boxplot(aes(color = SGD_number),
+              # outlier.shape = NA)+ 
+  geom_jitter(aes(color = SGD_number), position = position_jitterdodge()) + 
+  theme_bw()+
+  #geom_text_repel(aes(label = SampleID), size = 2.5, max.overlaps = 15) +
+  theme(strip.background = element_rect(fill = "white"))+
+  labs(x = "Environmental Treatment (SGD Level)",
+       color = "SGD_number",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Rate of O2 production or consumption") +
+  #scale_color_manual(values=my_pal) +
+  facet_wrap(~ P_R, scales = "fixed")
+AllRatesPlot_SGD
+
+ggsave(here("Outputs", "RespoOutput","AllRatesPlot_SGD.png"), AllRatesPlot_SGD, device = "png", width = 6, height = 6)
+#ggsave(here("Outputs", "RespoOutput","AllRates.pdf"), RatesPlot, device = "pdf", width = 6, height = 6)
+
+
+AllRatesPlot_Salinity <- RespoR_Normalized_Full %>%
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr,
+             color = salinity))+
+  #scale_x_continuous(trans="log10") + 
+  #geom_boxplot(aes(color = SGD_number),
+              # outlier.shape = NA)+ 
+  geom_jitter(aes(color = salinity), position = position_jitterdodge()) + 
+  theme_bw()+
+  #geom_text_repel(aes(label = SampleID), size = 2.5, max.overlaps = 15) +
+  theme(strip.background = element_rect(fill = "white"))+
+  labs(x = "Environmental Treatment (SGD Level)",
+       color = "Salinity (ppt)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Rate of O2 production or consumption") +
+  #scale_color_manual(values=my_pal) +
+  facet_wrap(~ P_R, scales = "fixed")
+AllRatesPlot_Salinity
+
+ggsave(here("Outputs", "RespoOutput","AllRatesPlot_Salinity"), AllRatesPlot_Salinity, device = "png", width = 6, height = 6)
+
+##############################################
+
+```
+
+
+
+### testing assumptions of final models 
+```{r}
+
+
+```
+
 

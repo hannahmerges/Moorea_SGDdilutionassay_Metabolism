@@ -1,0 +1,222 @@
+---
+title: "TA_calc"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning=FALSE, 
+                      message=FALSE)
+```
+
+## Loading libraries 
+```{r}
+library(broom)
+library(purrr)
+library(lubridate)
+library(tidyverse)
+library(nlstools)
+library(here)
+library(stringr)
+
+```
+
+## Load datasets 
+
+```{r}
+RespoMeta <- read_csv(here("Data","RespoFiles","Respo_Metadata_SGDDilutions_Cabral_Varari.csv"))
+BioData <- read_csv(here("Data","RespoFiles","Fragment_MeasurementSampling_Cabral_Varari.csv"))
+Sample_Info <- left_join(RespoMeta, BioData)
+```
+
+### Calculating calcification based on TA 
+
+```{r}
+calc.data <- read_csv(here("Data", "Titrations", "Calc_TArates.csv"))
+
+#### filter out for Varari right now ########
+#calc.data<-calc.data %>% 
+ # filter(site=="Varari")
+
+#create new data frame of just the initial data, pull out initial data from sample.type
+
+rows.initial <- which(calc.data$Sample_Type == "Initial") #tells you all the rows that you have with initial
+
+initial <- calc.data[rows.initial,]
+
+calc.data <- calc.data[-rows.initial,] #to remove the rows with initial data
+
+#remove and create new data frame with just blanks
+
+rows.blanks <- which(calc.data$Sample_Type == "Blank") #tells you all the rows that you have with blanks
+
+blanks <-calc.data[rows.blanks,]
+
+calc.data <- calc.data[-rows.blanks,] #to remove the rows with blank data
+
+#need to join sample data frame, join initial with your calc.data, only by temperature, pull out the columns we need
+
+initial <- initial[, c("date","temp_C", "salinity_insitu", "salinity_inlab", "TA")] ##if need to use pH then can re-add here but do I need this ?? for TA calc 
+
+names(initial)[3:6] <- paste0(names(initial)[3:6], "_initial") #use this to rename all of our columns
+
+#join blanks and carb chem data frame
+
+calc.data <- left_join(calc.data, initial) #joing the initials to my data frame for carb chem
+blanks <- left_join(blanks,initial)
+
+#figure out delta TA, initial-final
+
+blanks$delta.TA.blank <- blanks$TA_initial - blanks$TA
+
+#getting the averages of blanks for each date and colony/treatment 
+mean.blanks <- blanks %>% 
+  group_by(date, temp_C) %>% #### SAMPLE ID IS CAUSING PROBLEMS WHEN TRYING TO JOIN TO JOIN BY TEMP WHICH IS ALSO UNIQUE 
+  summarise(mean.blanks=mean(delta.TA.blank)) 
+
+calc.data <- left_join(calc.data, mean.blanks) #bring in mean blanks to calc.data
+
+#need to join in SA,volume data and time data by fragment ID, before calculating NEC
+
+sample.data <- read_csv(here("Data", "RespoFiles", "Fragment_MeasurementSampling_Cabral_Varari.csv")) #bring in SA and volume data sheet
+
+SA <- sample.data[, c("sample_ID", "SA_cm2", "volume_mL")] #pull out the necessary columns and treatment 
+
+SA2 <- SA %>%
+ dplyr::mutate(light_dark = str_extract(sample_ID, "[^_]+$")) #split the sample_ID at the underscore to delete the Dark values
+
+#steps to organize and delete D values
+rows.Dark <- which(SA2$light_dark == "Dark") #tells you all the rows that you have with blanks
+Dark <-SA2[rows.Dark,] 
+SA <- SA2[-rows.Dark,] #to remove the rows with dark data, now have data sheet with only light, SA and volume values
+SA[,4] = NULL #had to delete the light-dark column to allow to just join by fragment.ID
+
+calc.data2 <- left_join(calc.data, SA)
+
+#bring in the time data from resp.data sheet
+resp.data <- read_csv(here("Data", "RespoFiles", "Respo_Metadata_SGDDilutions_Cabral_Varari.csv"))
+
+#need to organize and first delete the dark information
+rows.dark2 <- which(resp.data$light_dark == "DARK") #tells you all the rows that you have with blanks
+dark2 <-resp.data[rows.dark2 ,] 
+resp.data <- resp.data[-rows.dark2,]
+
+#pull out columns that we want to use for our bind to the calc.data2 sheet
+
+time.data <- resp.data[, c("sample_ID","SGD_dil", "start_time", "stop_time")] 
+
+full.calc.data <- left_join(calc.data2, time.data)
+
+###### NOT SURE WHAT TO ADJUST BELOW??? ########
+
+#adjust the time information and format
+#full.calc.data$start.time <- hms(full.calc.data$start.time)#convert time from character to time
+#full.calc.data$start_time <- strptime(as.character(full.calc.data$start_time), "%I:%M:%S %p")
+#full.calc.data$stop.time <- hms(full.calc.data$stop.time) #convert time from character to time
+#full.calc.data$stop_time <- strptime(as.character(full.calc.data$stop_time), "%I:%M:%S %p")
+
+#calculate the NEC rate
+
+full.calc.data$deltaTA<- (full.calc.data$TA_initial - full.calc.data$TA) - full.calc.data$mean.blanks
+full.calc.data$timediff <- as.numeric((full.calc.data$stop_time - full.calc.data$start_time)) 
+
+#make a row that has rate.type for "C" assigned to light 
+
+full.calc.data$rate.type <-ifelse(full.calc.data$light_dark=='LIGHT', "C")
+#view(full.calc.data)
+
+#convert volume from cm3 to m3
+#full.calc.data$volume <- full.calc.data$volume * 0.000001
+
+#equation to calculate NEC rates 
+
+full.calc.data$umol.cm2.hr <- (full.calc.data$deltaTA/2)*(1.023)*(full.calc.data$volume_mL/full.calc.data$SA_cm2)*(1/full.calc.data$timediff)*(1/1000)
+
+
+################ BELOW IS OLD CODE FROM DANI B WORK #####################
+###################################################################
+#reformat calc data sheet here to match the exact format for my TPC photo.T data sheet
+#use split function to create new column that lists frag.ID without the "_L"
+
+#full.calc.data$sample_ID_edit <- strsplit(full.calc.data$sample_ID_edit, '_L') ##### CHECK THIS PART -- STOPPED HERE 
+
+#need to bring in the Temp.C linked to NP for calcification, edit data frame by removing all GP and R data so I can use the NP Temp.C values in my new data frame
+
+#adjust.calc.data <- read.csv("TPC_curves/Data/Photo.T.csv") #bring in photo.T sheet with Temp.C values
+#rows.GP <- which(adjust.calc.data$rate.type == "GP") #tells you all the rows that you have wwith GP
+#GP <- adjust.calc.data[-rows.GP,] #to remove the rows with GP data
+
+#rows.R <- which(GP$rate.type == "R") #tells you all the rows that you have wwith R
+#NP.only.data <- GP[-rows.R,] #to remove the rows with R data
+
+
+#pull out only columns I need to link Temp.C values with fragment ID
+#Temp.C.data <- NP.only.data[, c("fragment.ID", "temp.Cat", "Temp.C")] #pull out the necessary columns and treatment 
+#full.calc.data2 <- full.calc.data[, c("individual.ID", "temp.Cat", "treatment", "umol.cm2.hr", "rate.type", "light_dark", "fragment.ID")] #pull out the necessary columns and treatment 
+#calc.temp.c <- left_join(Temp.C.data, full.calc.data2)
+
+#remove fragments that where not used for calcicifation
+
+##########################################################################################################
+##########################################################################################################
+
+full.calc.data.combined <- left_join(full.calc.data, BioData)
+
+calcification <- full.calc.data.combined[, c("sample_ID", "SGD_number", "temp_C", "umol.cm2.hr", "rate.type", "light_dark")] #pull out the necessary columns and treatment 
+
+#replace the _L with and _C for all fragment IDs
+
+#calcification$fragment.ID <- str_replace_all(calcification$fragment.ID, fixed("_L"), "_C")
+calcification$sample_ID <- as.character(calcification$sample_ID)
+
+##### WHAT IS THIS LAST PART CALCULATING ##########
+
+#anything that it <0 make it zero
+calcification$umol.cm2.hr[calcification$umol.cm2.hr<0]<-0
+
+#log x+ 1 you will have to log x + whatever the difference is here, a line for dissolution and calcification
+calcification$umol.cm2.hr <- log(calcification$umol.cm2.hr+1) 
+
+#write.csv(calcification, 'TPC_curves/Data/calcification1.csv') 
+```
+
+## Writing own code for calcification rates 
+- need to have final units in umol/cm2/hr
+- (TAinitial - TAfinal)/2
+- calculate density with temp and salinity (using package OCE) 
+- umol/kg x 1.025kg/1L x .650L/1 x 1/SAcoral x 1/hr 
+
+```{r}
+
+calc_rates <- left_join(Sample_Info, calcification)
+calc_rates <- calc_rates %>% 
+  mutate(incubation_time=(stop_time-start_time)) %>% 
+  mutate(chamber_vol=(650-volume_mL)) %>% ###chamber volume - displacements 
+  mutate(chamber_vol=chamber_vol/1000) ## convert mL to L 
+
+##somehow need to create a delta TA column 
+
+calc_rates <- calc_rates %>% 
+  mutate(deltaTA=(TAfinal-TAinitial)) ### move individual results into new columns for eother TAinitial or TAfinal 
+
+calc_rates_edit <- calc_rates %>% 
+  select(SA_cm2, incubation_time, chamber_vol, umol.cm2.hr)
+  
+
+NECrates <- (((deltaTA/2)*(1.025)*(chamber_vol))/(SA_cm2)*(incubation_time))
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
