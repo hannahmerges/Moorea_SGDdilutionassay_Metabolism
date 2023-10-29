@@ -106,9 +106,14 @@ RespoR2 <- RespoR %>%
 RespoR_Normalized_AvgBlanks_blankonly <- RespoR2 %>% 
   group_by(SGD_number, light_dark, date_block, new_colonynumber, site) %>% 
   filter(new_colonynumber== "BLANK") %>%
-  summarise(umol.sec = mean(umol.sec, na.rm=TRUE)) %>% # get mean value of blanks per each dilution across all days?
+  summarise(umol.sec = mean(umol.sec, na.rm=TRUE)) %>% 
 ## so should have one value for each dilution 
   dplyr::select(blank.rate = umol.sec, site)
+
+## two options: 1) summarise across all 4 days 2) direct comparison day to day 
+## look at individual blank values to see if any of the days are particularly off - if everything looks consistent, can stick with individual days 
+# take out date_block in group by and then change summarise function - to average all blanks by all dilutions 
+# go back and check for blank volume to make sure full chamber vol 
 
 ### plot colonies against blanks ######
 plot_Blank_Rates <- RespoR_Normalized_AvgBlanks_blankonly %>% 
@@ -259,7 +264,7 @@ RatesPlot_GP_SGD <- RespoR_Normalized_Full %>%
   ggplot(aes(x=SGD_number, 
              y=umol.cm2.hr, 
              color=new_colonynumber)) +
-  facet_wrap(site~new_colonynumber, scales = "free_y") +
+  facet_wrap(~site, scales = "free_y") +
   geom_point() +
   geom_smooth(method = "lm") +
   scale_x_continuous(trans="log10") +
@@ -277,10 +282,11 @@ RatesPlot_GP_salinity <- RespoR_Normalized_Full %>%
   filter(P_R == "GP") %>%
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=new_colonynumber)) +
-  facet_wrap(site~new_colonynumber, scales = "free") +
+             color=new_colonynumber, 
+             group=new_colonynumber)) +
+  facet_wrap(~site, scales = "free") +
   geom_point() +
-  geom_smooth(method = "lm")+
+  geom_smooth(method = "lm", formula = "y~poly(x,2)", se = FALSE) + ##remove standard error and see the non-linear relationship 
   labs(title="GP by Salinity")
 ggsave(here("Outputs", "PrelimOutputs","GPRates_Salinity.jpg"), 
        width = 10, height = 10)
@@ -293,10 +299,10 @@ RatesPlot_R_salinity <- RespoR_Normalized_Full %>%
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
              color=new_colonynumber)) +
-  geom_smooth(method = "lm") +
+  #geom_smooth(method = "lm") +
   facet_wrap(site~new_colonynumber, scales = "free") +
   geom_point() +
-  geom_smooth(method = "lm") +
+  #geom_smooth(method = "lm") +
   labs(title="Respiration by Salinity")
 ggsave(here("Outputs", "PrelimOutputs","RRates_Salinity.jpg"), 
        width = 10, height = 10)
@@ -330,7 +336,8 @@ RatesPlot_GP_GroupedSalinity <- salinity_combined %>%
   filter(P_R == "GP") %>%
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=new_colonynumber)) +
+             color=new_colonynumber,
+             group=new_colonynumber)) +
   facet_wrap(~site, scales = "free") +
   geom_point() +
   geom_smooth(method = "lm")+
@@ -804,7 +811,7 @@ AllRatesPlot_Salinity <- RespoR_Normalized_Full %>%
   facet_wrap(~ P_R, scales = "fixed")
 AllRatesPlot_Salinity
 
-ggsave(here("Outputs", "RespoOutput","AllRatesPlot_Salinity"), AllRatesPlot_Salinity, device = "png", width = 6, height = 6)
+ggsave(here("Outputs", "RespoOutput","AllRatesPlot_Salinity.png"), AllRatesPlot_Salinity, device = "png", width = 6, height = 6)
 
 ##############################################
 
@@ -976,6 +983,57 @@ AllRatesPlot_Salinity <- RespoR_Normalized_Full %>%
 AllRatesPlot_Salinity
 
 ggsave(here("Outputs", "RespoOutput","AllRatesPlot_Salinity"), AllRatesPlot_Salinity, device = "png", width = 6, height = 6)
+
+```
+
+## extra 
+```{r}
+PhysioRatesSGD_plotted <- RespoR_Normalized_Full %>%
+  filter(site=="Varari") %>% 
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr,
+             color=new_colonynumber))+
+  #scale_x_continuous(trans="log10") + 
+  #geom_boxplot(aes(color = SGD_number)) + # outlier.shape = NA)+ 
+  geom_jitter(aes(color = new_colonynumber), position = position_jitterdodge()) + 
+  theme_bw()+
+  #geom_text_repel(aes(label = SampleID), size = 2.5, max.overlaps = 15) +
+  theme(strip.background = element_rect(fill = "white"))+
+ # geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Environmental Treatment (SGD Level)",
+       color = "Colony Number",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Rate of O2 production or consumption") +
+  #scale_color_manual(values=my_pal) +
+  facet_wrap(~P_R, scales = "fixed")
+
+PhysioRatesSGD_plotted
+
+ggsave(here("Outputs", "RespoOutput","PhysioRatesSGD_plotted.png"), PhysioRatesSGD_plotted, device = "png", width = 6, height = 6)
+
+PhysioRatesSalinity_plotted <- RespoR_Normalized_Full %>%
+  filter(site=="Varari") %>% 
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr,
+             color = salinity))+
+  #scale_x_continuous(trans="log10") + 
+  #geom_boxplot(aes(color = SGD_number),
+              # outlier.shape = NA)+ 
+  geom_jitter(aes(color = salinity), position = position_jitterdodge()) + 
+  theme_bw()+
+  #geom_text_repel(aes(label = SampleID), size = 2.5, max.overlaps = 15) +
+  theme(strip.background = element_rect(fill = "white"))+
+  scale_x_reverse() +
+  labs(x = "Environmental Treatment (Salinity (ppt))",
+       color = "Salinity (ppt)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Rate of O2 production or consumption") +
+  #scale_color_manual(values=my_pal) +
+  facet_wrap(~ P_R, scales = "fixed")
+
+PhysioRatesSalinity_plotted
+
+ggsave(here("Outputs", "RespoOutput","PhysioRatesSalinity_plotted.png"), PhysioRatesSalinity_plotted, device = "png", width = 6, height = 6)
 
 ```
 

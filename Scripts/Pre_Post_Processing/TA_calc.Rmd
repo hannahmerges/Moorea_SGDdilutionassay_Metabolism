@@ -132,7 +132,34 @@ full.calc.data$rate.type <-ifelse(full.calc.data$light_dark=='LIGHT', "C")
 
 #equation to calculate NEC rates 
 
-full.calc.data$umol.cm2.hr <- (full.calc.data$deltaTA/2)*(1.023)*(full.calc.data$volume_mL/full.calc.data$SA_cm2)*(1/full.calc.data$timediff)*(1/1000)
+full.calc.data$umol.cm2.hr<-((full.calc.data$deltaTA/2)*(1.023)*(full.calc.data$volume_mL))/((full.calc.data$SA_cm2)*(full.calc.data$timediff))
+
+
+
+## try plotting 
+NEC_plotted <- full.calc.data %>%
+  #filter(site=="Varari") %>% 
+  ggplot(aes(x=salinity_insitu, 
+             y=umol.cm2.hr,
+             color=new_colonynumber))+
+  scale_x_reverse() + 
+  #geom_boxplot(aes(color = SGD_number)) + # outlier.shape = NA)+ 
+  geom_jitter(aes(color = new_colonynumber), position = position_jitterdodge()) + 
+  theme_bw()+
+  theme(strip.background = element_rect(fill = "white"))+
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_hline(yintercept = 0)+
+  labs(x = "Environmental Treatment (Salinity Level)",
+       color = "Colony Number",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Rate of Calcification") +
+  facet_wrap(~site, scales = "fixed")
+
+#anything that it <0 make it zero
+full.calc.data$umol.cm2.hr[full.calc.data$umol.cm2.hr<0]<-0
+
+#log x+ 1 you will have to log x + whatever the difference is here, a line for dissolution and calcification
+full.calc.data$umol.cm2.hr <- log(full.calc.data$umol.cm2.hr+1) 
 
 
 ################ BELOW IS OLD CODE FROM DANI B WORK #####################
@@ -196,6 +223,7 @@ calc_rates <- calc_rates %>%
   mutate(chamber_vol=(650-volume_mL)) %>% ###chamber volume - displacements 
   mutate(chamber_vol=chamber_vol/1000) ## convert mL to L 
 
+View(calc_rates)
 ##somehow need to create a delta TA column 
 
 calc_rates <- calc_rates %>% 

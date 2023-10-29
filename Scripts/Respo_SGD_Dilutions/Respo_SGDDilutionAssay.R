@@ -59,7 +59,7 @@ file.names<-basename(list.files(path = path.p, pattern = "csv$", recursive = TRU
 file.names.full<-list.files(path = path.p, pattern = "csv$", recursive = TRUE) 
 
 #empty chamber volume
-ch.vol <- 600 #mL #of small chambers 
+ch.vol <- 650 #mL #of small chambers 
 
 ######### Load and tidy files ###############
 ############################################
@@ -204,7 +204,7 @@ RespoR2 <- RespoR %>%
   #drop_na(FileID_csv) %>% # drop NAs
   left_join(Sample_Info) %>% # Join the raw respo calculations with the metadata
   #mutate(Ch.Volume.ml = ifelse(is.na(volume_ml),ch.vol,ch.vol-volume_ml)) %>% # add 6 L for volume of all blanks and subtract org volume from chamber vol for all else
-  mutate(Ch.Volume.mL = 600-volume_mL) %>% # hannah changed all this volume stuff to match my project
+  mutate(Ch.Volume.mL = 650-volume_mL) %>% # hannah changed all this volume stuff to match my project
   mutate(Ch.Volume.L = Ch.Volume.mL * 0.001) %>% # mL to L conversion
   mutate(umol.sec = umol.L.sec*Ch.Volume.L) %>% #Account for chamber volume to convert from umol L-1 s-1 to umol s-1. This standardizes across water volumes (different because of coral size) and removes per Liter
   mutate_if(sapply(., is.character), as.factor) %>% #convert character columns to factors
