@@ -67,13 +67,15 @@ RespoR <- read_csv(here("Data","RespoFiles","Respo_R.csv"))
 ### pH data #########
 ######################
 pHcalib<-read_csv(here("Data","TrisCal_20230614.csv")) #%>% ## tris cal date is listed as a character here - make sure change in Excel file before reading in so it is a date 
+pHcalib$TrisCalDate <- mdy(pHcalib$TrisCalDate)
 pHcalib <- pHcalib[-c(13,14), ]
 
 #View(pHcalib)
 
 pHData <- read_csv(here("Data", "RespoFiles", "Fragment_MeasurementSampling_Cabral_Varari.csv")) 
+pHData$TrisCalDate <- mdy(pHData$TrisCalDate)
 pHData <- pHData[-c(294,303,435),]
-pHData <- pHData[,-(14:17)]
+#pHData <- pHData[,-(14:17)]
 
 #View(pHData) ### if re-running after a bit, either add in code for converting TrisCalDate to a date OR make sure it is a date in the file 
 
@@ -85,8 +87,10 @@ pHSlope<-pHcalib %>%
   select(TrisCalDate, term, estimate) %>%
   pivot_wider(names_from = term, values_from = estimate) %>% # put slope and intercept in their own column
   right_join(.,pHData) %>% # join with the pH sample data
-  mutate(mVTRis = temp_C*Ttris + `(Intercept)`) %>% 
-  mutate(new_pH = pH(Ex=mV,Etris=mVTRis,S=salinity,T=temp_C)) # calculate pH of the samples using the pH seacarb function
+  mutate(mVTRis = temp_C*Ttris + `(Intercept)`) #%>% 
+ # mutate(new_pH = pH(Ex=mV,Etris=mVTRis,S=salinity,T=temp_C)) # calculate pH of the samples using the pH seacarb function - GETTING AN ERRROR ON THIS LAST LINE ######
+
+#### COME BACK AND CHECK LATER ##### ## seems fine as of Jan27th, 2024 
 
 #View(pHSlope)
 ######### Respo table #############
@@ -129,7 +133,35 @@ plot_Blank_Rates <- RespoR_Normalized_blankperday %>%
              y=blank.rate)) +
   scale_x_continuous(trans="log10") +
   geom_point() + 
+  facet_wrap(site~date_block, scales="free_y")
+
+plot_Blank_Rates2 <- RespoR_Normalized_blankperday %>% 
+  #filter(date_block!="6/13/23") %>% 
+  ggplot(aes(x=SGD_number, 
+             y=blank.rate)) +
+  scale_x_continuous(trans="log10") +
+  geom_point() + 
   facet_wrap(site~light_dark, scales="free_y")
+
+plot_Blank_Rates2.5 <- RespoR_Normalized_blankperday %>% 
+  filter(date_block!="6/13/23") %>% 
+  ggplot(aes(x=SGD_number, 
+             y=blank.rate)) +
+  scale_x_continuous(trans="log10") +
+  geom_point() + 
+  facet_wrap(site~light_dark, scales="free_y")
+
+plot_Blank_Rates3 <- RespoR_Normalized_blankperday %>% 
+  ggplot(aes(x=SGD_number, 
+             y=blank.rate)) +
+  scale_x_continuous(trans="log10") +
+  geom_point() + 
+  facet_wrap(date_block~light_dark, scales="free_y")
+
+
+##### DELETE 6/13 FROM BLANK DATA FOR CABRAL 
+RespoR_Normalized_blankperdaynoCabral <- RespoR_Normalized_blankperday %>% 
+  filter(date_block!="6/13/23")
 
 ```
 
@@ -155,10 +187,8 @@ plot_Blank_Rates_Averaged <- RespoR_Normalized_avgblanks %>%
 
 ## Now combine into two dfs - one based on per day blank rates and the other based on averaged blank rates 
 ```{r}
-
 #joining with per day blanks 
-
-RespoR_Normalized_blankperday_joined <- RespoR_Normalized_blankperday %>% 
+RespoR_Normalized_blankperday_joined <- RespoR_Normalized_blankperdaynoCabral %>% 
   ungroup() %>% 
   dplyr::select(SGD_number, light_dark, blank.rate, date_block, site) %>%
   right_join(RespoR2) %>% # join with the respo data
@@ -167,13 +197,11 @@ RespoR_Normalized_blankperday_joined <- RespoR_Normalized_blankperday %>%
          umol.cm2.hr_uncorr = (umol.sec*3600)/SA_cm2) %>% 
   filter(new_colonynumber!="BLANK") %>% # remove the Blank data
   #ungroup() %>%
-  dplyr::select(date, sample_ID, light_dark, SA_cm2, umol.cm2.hr, umol.sec, blank.rate, Temp.C, new_colonynumber, salinity, pH, site, SGD_number, umol.sec.corr, umol.cm2.hr_uncorr)
+  dplyr::select(date, sample_ID, light_dark, SA_cm2, umol.cm2.hr, umol.sec, blank.rate, Temp.C, new_colonynumber, salinity, pH, site, SGD_number, umol.sec.corr, umol.cm2.hr_uncorr, phosphate_umolL, silicate_umolL, NN_umolL, ammonia_umolL)
 
 #join with Tris pH data 
 TrispH_RespoRNormalized_perdayBlanks <- RespoR_Normalized_blankperday_joined %>% 
   left_join(pHSlope)
-
-
 
 ```
 
@@ -189,25 +217,27 @@ RespoR_Normalized_dark <- TrispH_RespoRNormalized_perdayBlanks %>%
          umol.cm2.hr_uncorr = umol.cm2.hr_uncorr*-1) %>% 
   mutate(umol.cm2.hr = ifelse(umol.cm2.hr < 0, 0, umol.cm2.hr),  # for any values below 0, make 0
          umol.cm2.hr_uncorr = ifelse(umol.cm2.hr_uncorr < 0, 0, umol.cm2.hr_uncorr)) %>% 
-  mutate(P_R = "R") # all dark run rates get R for respiration
+  mutate(P_R = "R") %>% # all dark run rates get R for respiration
+  mutate(umol.cm2.hr = ifelse(umol.cm2.hr ==0, NA, umol.cm2.hr)) ####### DELETE THIS ONCE FIGURE OUT WHAT CABRAL 11/12 
 
 # all light run rates get NP for net photosynthesis
 RespoR_Normalized_light <- TrispH_RespoRNormalized_perdayBlanks %>% 
   filter(light_dark == "LIGHT") %>% 
   mutate(umol.cm2.hr = ifelse(umol.cm2.hr < 0, 0, umol.cm2.hr),  # for any values below 0, make 0
         umol.cm2.hr_uncorr = ifelse(umol.cm2.hr_uncorr < 0, 0, umol.cm2.hr_uncorr)) %>% 
-  mutate(P_R = "NP")
+  mutate(P_R = "NP") %>% 
+  mutate(umol.cm2.hr = ifelse(umol.cm2.hr ==0, NA, umol.cm2.hr)) ####### DELETE THIS ONCE FIGURE OUT WHAT CABRAL 11/12 
 
 # rejoin data into single df
-RespoR_Normalized2 <- full_join(RespoR_Normalized_light, RespoR_Normalized_dark) #%>% 
-#drop_na(mmol.gram.hr) # removes anticipated sampleID's that were not actually run
+RespoR_Normalized2 <- bind_rows(RespoR_Normalized_light, RespoR_Normalized_dark) %>% 
+  drop_na(umol.cm2.hr) # removes C20 and C19 that were weird 
 
 
 #make column for GP and group by fragment ID and salinity to keep R and NP together
 RespoR_NormalizedGP <- RespoR_Normalized2 %>% 
-  group_by(new_colonynumber, SGD_number, site, date, salinity, new_pH) %>% 
-  summarize(umol.cm2.hr = sum(umol.cm2.hr), 
-            umol.cm2.hr_uncorr = sum(umol.cm2.hr_uncorr)) %>% # NP + R = GP
+  group_by(new_colonynumber, SGD_number, site, date, salinity, pH) %>% ## EDITED FROM new_pH
+  summarize(umol.cm2.hr = sum(umol.cm2.hr, na.rm=TRUE), 
+            umol.cm2.hr_uncorr = sum(umol.cm2.hr_uncorr, na.rm=TRUE)) %>% # NP + R = GP
             #Temp.C = mean(Temp.C)) %>% 
   mutate(P_R="GP") %>% # Label for Gross Photosynthesis
   mutate(light_dark = "LIGHT") %>% 
@@ -216,25 +246,123 @@ RespoR_NormalizedGP <- RespoR_Normalized2 %>%
 
 # rejoin for full df with NP, R, and GP rates
 RespoR_Normalized_Full <- RespoR_Normalized2 %>% 
-  dplyr::select(new_colonynumber, new_pH, SGD_number, site, salinity, date, light_dark, P_R, umol.cm2.hr, umol.cm2.hr_uncorr) %>% 
-  full_join(RespoR_NormalizedGP) %>% 
-  filter(new_colonynumber!=20)
+  dplyr::select(new_colonynumber, pH, SGD_number, site, salinity, date, light_dark, P_R, umol.cm2.hr, umol.cm2.hr_uncorr, phosphate_umolL, silicate_umolL, NN_umolL, ammonia_umolL) %>%
+  bind_rows(RespoR_NormalizedGP) %>% ## EDITED FROM NEW PH 
+  mutate(umol.cm2.hr = ifelse(umol.cm2.hr ==0, NA, umol.cm2.hr))
+ # filter(new_colonynumber!=20)
 
 
 ## what is wrong with Cabral 20? 
-Cabral20 <- RespoR_Normalized_Full %>%
- filter(site=="Cabral") %>%
-  ggplot(aes(x=SGD_number, 
-             y=umol.cm2.hr)) + 
-  facet_wrap(~new_colonynumber, scales = "free_y") +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  scale_x_continuous(trans="log10") 
+#Cabral20 <- RespoR_Normalized_Full %>%
+ #filter(site=="Cabral") %>%
+ # ggplot(aes(x=SGD_number, 
+ #            y=umol.cm2.hr)) + 
+ # facet_wrap(~new_colonynumber, scales = "free_y") +
+#  geom_point() +
+ # geom_smooth(method = "lm", se = FALSE) +
+ # scale_x_continuous(trans="log10") 
   #labs(title="Respiration Normalized to Blanks for SGD Dils per colony")
 
-
-
 write_csv(RespoR_Normalized_Full , here("Data","RespoFiles","Respo_RNormalized_AllRates.csv"))  
+
+```
+
+
+## testing plots for ph before and after corals were added 
+- only have this data for Varari 
+
+```{r}
+##plot daytime pH 
+ph_day <- TrispH_RespoRNormalized_perdayBlanks %>% 
+  filter(site=="Varari") %>% 
+  ggplot(aes(x=salinity, 
+             y=new_pH))+
+  geom_point(size=2) +
+  #scale_color_manual(values=rev(pnw_palette("Sunset", n=14)) ,
+                    # guide="none") +
+  theme_bw() + 
+  scale_x_reverse() +
+  facet_wrap(~date) +
+  #geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  labs(title = "daytime pH Varari") +
+ theme(axis.text.x=element_text(size=15), 
+        axis.text.y=element_text(size=15), 
+        axis.title.x=element_text(size=15),
+        axis.title.y=element_text(size=15), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=18)) 
+ph_day
+
+ph_night <- TrispH_RespoRNormalized_perdayBlanks %>% 
+  filter(site=="Varari")%>% 
+  drop_na() %>% 
+  ggplot(aes(x=salinity, 
+             y=pH_night))+
+  geom_point(size=2) +
+  #scale_color_manual(values=rev(pnw_palette("Sunset", n=14)) ,
+                    # guide="none") +
+  theme_bw() + 
+  scale_x_reverse() +
+  facet_wrap(~date) +
+  #geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  labs(title = "night pH Varari") +
+ theme(axis.text.x=element_text(size=15), 
+        axis.text.y=element_text(size=15), 
+        axis.title.x=element_text(size=15),
+        axis.title.y=element_text(size=15), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=18)) 
+ph_night
+
+
+ph_day+ph_night
+
+
+## for oen day of Cabral 
+ph_day_C <- TrispH_RespoRNormalized_perdayBlanks %>% 
+  filter(site=="Cabral") %>% 
+  drop_na() %>% 
+  ggplot(aes(x=salinity, 
+             y=new_pH))+
+  geom_point(size=2) +
+  #scale_color_manual(values=rev(pnw_palette("Sunset", n=14)) ,
+                    # guide="none") +
+  theme_bw() + 
+  scale_x_reverse() +
+  #geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  labs(title = "daytime pH Cabral") +
+ theme(axis.text.x=element_text(size=15), 
+        axis.text.y=element_text(size=15), 
+        axis.title.x=element_text(size=15),
+        axis.title.y=element_text(size=15), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=18)) 
+ph_day_C
+
+## for one night of Cabral 
+
+ph_night_Cabral <- TrispH_RespoRNormalized_perdayBlanks %>% 
+  filter(site=="Cabral") %>% 
+  drop_na() %>% 
+  ggplot(aes(x=salinity, 
+             y=pH_night))+
+  geom_point(size=2) +
+  #scale_color_manual(values=rev(pnw_palette("Sunset", n=14)) ,
+                    # guide="none") +
+  theme_bw() + 
+  scale_x_reverse() +
+  #geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  labs(title = "Cabral night pH") +
+ theme(axis.text.x=element_text(size=15), 
+        axis.text.y=element_text(size=15), 
+        axis.title.x=element_text(size=15),
+        axis.title.y=element_text(size=15), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=18)) 
+ph_night_Cabral
+
+ph_night_Cabral+ph_day_C
+
 
 ```
 
@@ -257,22 +385,40 @@ write_csv(RespoR_Normalized_Full , here("Data","RespoFiles","Respo_RNormalized_A
 RData_C <- RespoR_Normalized_Full %>% 
   filter(P_R == "R") %>% 
   filter(site=="Cabral") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
   mutate(new_colonynumber= as.factor(new_colonynumber), 
-         date=as.factor(date), 
-         SGD_number=as.factor(SGD_number), 
-         salinity=as.factor(salinity))
+         date=as.factor(date))
+
+### HYPOTHESIS STATES NON LINEAR RELATIONSHIP 
+polymodel_CabralResp <- lmer(data = RData_C, 
+             umol.cm2.hr ~ poly(SGD_number, degree=2) + (1|date/new_colonynumber))
+
+anova(polymodel_CabralResp) 
+summary(polymodel_CabralResp)
+check_model(polymodel_CabralResp)
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "CabralRespirationpoly.jpg"), 
+       width = 7, height = 10)
+
+#### USE PERFORMANCE PACKAGE 
+check_model(modelC_SGDbyR) ## does everything at once so you dont need qqp 
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "CabralRespiration.jpg"), 
+       width = 7, height = 10)
+
+anova(modelC_SGDbyR) 
+summary(modelC_SGDbyR)
+ranef(modelC_SGDbyR)
 
 
-## date nested within random effect of colony number 
-model2_SGDbyR <- lmer(data = RData_C, 
-             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber))
-anova(model2_SGDbyR) 
-summary(model2_SGDbyR)
-ranef(model2_SGDbyR)
-plot(model2_SGDbyR)
+
+## this new package gives R-squared value for mixed models 
+MuMIn::r.squaredGLMM(lme4::lmer(data = RData_C, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))
+summary(lm(data = RData_C, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))$r.squared
+
 
 ###### trying to figure out error bars ###### 
-graphdata <- as.data.frame(emmeans(model2_SGDbyR, "SGD_number"))
+## graphdata <- as.data.frame(emmeans(model2_SGDbyR, "SGD_number")) --> update: I don't think I need error bars on points, just general regression line ? 
 
 ###### example variance calculations #######
 # for total variance  
@@ -281,6 +427,7 @@ graphdata <- as.data.frame(emmeans(model2_SGDbyR, "SGD_number"))
 0.000002573/0.00000310586 # equals 82% of variation 
 #for newcolonynumber:date
 0.00000002166/0.00000310586 ##explains 0.6% of the variation 
+
 
 ##### now plot ######
 ## Cabral respiration - original 
@@ -291,69 +438,167 @@ Respiration_SGD_C <- RespoR_Normalized_Full %>%
   ggplot(aes(x=SGD_number, 
              y=umol.cm2.hr, 
              color=salinity)) + 
-  geom_point(size=3, 
+  geom_point(size=4, 
              position = position_jitterdodge()) +
-  scale_color_manual(values=rev(pnw_palette("Sunset", n=14)) ,
+  scale_color_manual(values=rev(pnw_palette("Sunset2", n=14)) ,
                      guide="none") +
-  theme_bw() + 
-  geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  theme_classic() + 
+  #geom_smooth(method = "lm", se=TRUE, color="lightpink") + #### REMOVE GEOM SMOOTH BC INSIGNIFICANT 
   labs(x = "SGD Dilutions (% by volume)",
        color = "Salinity (ppt)",
        y = "Rate (umol O2 cm2 hr-1)",
        title = "Respiration Rates at Cabral") +
- theme(axis.text.x=element_text(size=15), 
-        axis.text.y=element_text(size=15), 
-        axis.title.x=element_text(size=15),
-        axis.title.y=element_text(size=15), 
+ theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
         plot.title=element_text(hjust=0.5, ## centers title 
-                                size=18)) 
-
+                                size=20)) 
 ggsave(here("Outputs", "WSNOutputs","Cabral_Resp.jpg"), 
-       width = 8, height = 10)
+       width = 10, height = 10)
 Respiration_SGD_C
 
+
+
 ###### Cabral respiration  - now with emmeans #######
-Respiration_SGD_C2 <- graphdata %>% 
+#Respiration_SGD_C2 <- graphdata %>% 
   #filter(site=="Cabral") %>% 
  # filter(P_R=="R") %>% 
-  ggplot(aes(x=SGD_number, 
-             y=emmeans)) + 
-  geom_jitter(aes(color=SGD_number), position = position_jitterdodge()) + 
-  geom_errorbar(aes(ymax=emmean+SE, ymin=emmean-SE), color="black", stat="identity", position=position_dodge(width=0.9), width=0.1) +
-  theme_bw() + 
-  geom_smooth(method = "lm", se=FALSE, color="lightpink") +
-  labs(x = "SGD Dilutions (% by volume)",
-       color = "Salinity (ppt)",
-       y = "Rate (umol O2 cm2 hr-1)",
-       title = "Respiration for Cabral") 
+  #ggplot(aes(x=SGD_number, 
+          #   y=emmeans)) + 
+  #geom_jitter(aes(color=SGD_number), position = position_jitterdodge()) + 
+  #geom_errorbar(aes(ymax=emmean+SE, ymin=emmean-SE), color="black", stat="identity", position=position_dodge(width=0.9), width=0.1) +
+  #theme_bw() + 
+  #geom_smooth(method = "lm", se=FALSE, color="lightpink") +
+  #labs(x = "SGD Dilutions (% by volume)",
+       #color = "Salinity (ppt)",
+       #y = "Rate (umol O2 cm2 hr-1)",
+       #title = "Respiration for Cabral") 
 
-Respiration_SGD_C2
+#Respiration_SGD_C2
 
+pnw_palette(name="Sunset2",n=14)
 
+```
+
+## Respiration Model and Plot for Varari 
+
+```{r}
 #######################
 #### for Varari 
 RData_V <- RespoR_Normalized_Full %>% 
   filter(P_R == "R") %>% 
   filter(site=="Varari") %>% 
   mutate(new_colonynumber= as.factor(new_colonynumber), 
-         date=as.factor(date), 
-         SGD_number=as.factor(SGD_number), 
-         salinity=as.factor(salinity))
+         date=as.factor(date)) %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+#### HYPOTHESIS ARE NON LINEAR MODELS 
+polymodel_VarariResp <- lmer(data = RData_V, 
+             umol.cm2.hr ~ poly(SGD_number, degree=2) + (1|date/new_colonynumber))
+
+anova(polymodel_VarariResp) 
+summary(polymodel_VarariResp)
+check_model(polymodel_VarariResp)
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "VarariRespirationpoly.jpg"), 
+       width = 7, height = 10)
+
 
 ## date nested within random effect 
-model2_SGDbyR_V <- lmer(data = RData_V, 
+modelV_SGDbyR <- lmer(data = RData_V, 
              umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber))
 
-anova(model2_SGDbyR_V) 
-summary(model2_SGDbyR_V)
-ranef(model2_SGDbyR)
-AIC(model2_SGDbyR_V)
+check_model(modelV_SGDbyR)
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "VarariRespiration.jpg"), 
+       width = 7, height = 10)
+
+anova(modelV_SGDbyR) 
+summary(modelV_SGDbyR)
+#ranef(modelV_SGDbyR)
+#AIC(model2_SGDbyR_V)
+
+MuMIn::r.squaredGLMM(lme4::lmer(data = RData_V, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))
+summary(lm(data = RData_V, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))$r.squared
 
 
 #### now plot ######
 Respiration_SGD_V <- RespoR_Normalized_Full %>% 
   filter(site=="Varari") %>% 
   filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  mutate(salinity=as.factor(salinity)) %>% 
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr, 
+             color=salinity)) + 
+  geom_point(size=4, 
+             position = position_jitterdodge()) +
+  scale_color_manual(values=rev(pnw_palette("Sunset2", 16))) +
+  theme_classic() + 
+  labs(x = "SGD Dilutions (% by volume)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Respiration for Varari") +
+  #scale_x_continuous(limits=c(7.9,8.1)) +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20)) 
+ggsave(here("Outputs", "WSNOutputs","Varari_Resp.jpg"), 
+       width = 10, height = 10)
+Respiration_SGD_V
+
+```
+
+### Models for GP data - Cabral 
+
+```{r}
+####################################
+#### Gross Production for SGD 
+###################################
+
+### for Cabral 
+GPData_C <- RespoR_Normalized_Full %>% 
+  filter(P_R == "GP") %>% 
+  filter(site=="Cabral") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+### 
+polymodel_CabralGP <- lmer(data = GPData_C, 
+             umol.cm2.hr ~ poly(SGD_number, degree=2) + (1|date/new_colonynumber))
+
+anova(polymodel_CabralGP) 
+summary(polymodel_CabralGP)
+check_model(polymodel_CabralGP)
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "CabralGPpoly.jpg"), 
+       width = 7, height = 10)
+
+
+## date nested within random effect of colony number 
+modelC_SGDbyGP <- lmer(data = GPData_C, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber))
+
+check_model(modelC_SGDbyGP)
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "CabralGP.jpg"), 
+       width = 7, height = 10)
+
+anova(modelC_SGDbyGP) 
+summary(modelC_SGDbyGP)
+#ranef(modelC_SGDbyGP)
+
+MuMIn::r.squaredGLMM(lme4::lmer(data = GPData_C, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))
+summary(lm(data = GPData_C, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))$r.squared
+
+## Cabral GP plot  
+GP_SGD_C <- RespoR_Normalized_Full %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="GP") %>% 
   mutate(salinity=as.factor(salinity)) %>% 
   ggplot(aes(x=SGD_number, 
              y=umol.cm2.hr, 
@@ -363,115 +608,70 @@ Respiration_SGD_V <- RespoR_Normalized_Full %>%
   scale_color_manual(values=rev(pnw_palette("Sunset", n=16)), 
                      guide="none") +
   theme_bw() + 
-  geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  #geom_smooth(method = "lm", se=TRUE, color="lightpink") +
   labs(x = "SGD Dilutions (% by volume)",
        color = "Salinity (ppt)",
        y = "Rate (umol O2 cm2 hr-1)",
-       title = "Respiration for Varari") +
-   theme(axis.text.x=element_text(size=15), 
-        axis.text.y=element_text(size=15), 
-        axis.title.x=element_text(size=15),
-        axis.title.y=element_text(size=15), 
+       title = "GP for Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
         plot.title=element_text(hjust=0.5, ## centers title 
-                                size=18)) 
+                                size=20)) 
+ggsave(here("Outputs", "WSNOutputs","Cabral_GP.jpg"), 
+       width = 10, height = 10)
 
-ggsave(here("Outputs", "WSNOutputs","Varari_Resp.jpg"), 
-       width = 8, height = 10)
-Respiration_SGD_V
+GP_SGD_C
+
 
 ```
 
-### Models for GP data 
-
+## GP for Varari 
 ```{r}
-####################################
-#### Gross Production for SGD 
-###################################
-
 #######################
 #### for Varari 
 GPData_V <- RespoR_Normalized_Full %>% 
   filter(P_R == "GP") %>% 
   filter(site=="Varari") %>% 
   mutate(new_colonynumber= as.factor(new_colonynumber), 
-         date=as.factor(date), 
-         SGD_number=as.factor(SGD_number), 
-         salinity=as.factor(salinity)) %>% 
-  select(,1,3:10) %>% 
-  drop_na()
+         date=as.factor(date)) %>% 
+  filter(!is.infinite(umol.cm2.hr))
+ # select(1,3:10) %>% 
+  #drop_na()
+
+#### HYP IS NON LINEAR 
+
+polymodel_VarariGP <- lmer(data = GPData_V, 
+             umol.cm2.hr ~ poly(SGD_number, degree=2) + (1|date/new_colonynumber))
+
+anova(polymodel_VarariGP) 
+summary(polymodel_VarariGP)
+check_model(polymodel_VarariGP)
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "VarariGPpoly.jpg"), 
+       width = 7, height = 10)
+
+
 
 ## date nested within random effect 
-model_SGDbyGP_V <- lmer(data = GPData_V, 
+modelV_SGDbyGP <- lmer(data = GPData_V, 
              umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber))
 
-anova(model_SGDbyGP_V) 
-summary(model_SGDbyGP_V)
-ranef(model_SGDbyGP_V)
-AIC(model_SGDbyGP_V)
+check_model(modelV_SGDbyGP)
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "VarariGP.jpg"), 
+       width = 7, height = 10)
 
-### for Cabral 
-GPData_C <- RespoR_Normalized_Full %>% 
-  filter(P_R == "GP") %>% 
-  filter(site=="Cabral") %>% 
-  mutate(new_colonynumber= as.factor(new_colonynumber), 
-         date=as.factor(date), 
-         SGD_number=as.factor(SGD_number), 
-         salinity=as.factor(salinity))
+anova(modelV_SGDbyGP) 
+summary(modelV_SGDbyGP)
+#ranef(modelV_SGDbyGP)
+#AIC(modelV_SGDbyGP)
 
-## date nested within random effect of colony number 
-model2_SGDbyGP_C <- lmer(data = GPData_C, 
-             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber))
-anova(model2_SGDbyGP_C) 
-summary(model2_SGDbyGP_C)
-ranef(model2_SGDbyGP_C)
+MuMIn::r.squaredGLMM(lme4::lmer(data = GPData_V, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))
+summary(lm(data = GPData_V, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))$r.squared
 
-```
-
-
-### Plotting results from models 
-```{r}
 # plot GP and R separetly and then use patchwork to bring them together so that can include free scale y axes and linear regression lines  
-
-### Varari Respiration ####
-Respiration_SGD_V <- RespoR_Normalized_Full %>% 
-  filter(site=="Varari") %>% 
-  filter(P_R=="R") %>% 
-  ggplot(aes(x=SGD_number, 
-             y=umol.cm2.hr)) + 
-  geom_jitter(aes(color=salinity), position = position_jitterdodge()) + 
-  theme_bw() + 
-  geom_smooth(method = "lm", se=TRUE, color="lightpink") +
-  labs(x = "SGD Dilutions (% by volume)",
-       color = "Salinity (ppt)",
-       y = "Rate (umol O2 cm2 hr-1)",
-       title = "Respiration for Varari") +
-   theme(axis.text.x=element_text(size=15), 
-        axis.text.y=element_text(size=15), 
-        axis.title.x=element_text(size=15),
-        axis.title.y=element_text(size=15), 
-        plot.title=element_text(hjust=0.5, ## centers title 
-                                size=18)) 
-
-Respiration_SGD_V
-
-#### Cabral respiration ####
-Respiration_SGD_C <- RespoR_Normalized_Full %>% 
-  filter(site=="Cabral") %>% 
-  filter(P_R=="R") %>% 
-  ggplot(aes(x=SGD_number, 
-             y=umol.cm2.hr)) + 
-  geom_jitter(aes(color=salinity), position = position_jitterdodge()) + 
-  theme_bw() + 
-  geom_smooth(method = "lm", se=FALSE, color="lightpink") +
-  labs(x = "SGD Dilutions (% by volume)",
-       color = "Salinity (ppt)",
-       y = "Rate (umol O2 cm2 hr-1)",
-       title = "Respiration for Cabral") 
-
-Respiration_SGD_C
-
-
-##############################################
 
 ## Varari Gross Production 
 GP_SGD_V <- RespoR_Normalized_Full %>% 
@@ -486,65 +686,28 @@ GP_SGD_V <- RespoR_Normalized_Full %>%
   scale_color_manual(values=rev(pnw_palette("Sunset", n=16)), 
                      guide="none") +
   theme_bw() + 
-  geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+ # geom_smooth(method = "lm", se=TRUE, color="lightpink") +
   labs(x = "SGD Dilutions (% by volume)",
        color = "Salinity (ppt)",
        y = "Rate (umol O2 cm2 hr-1)",
        title = "GP for Varari") +
-   theme(axis.text.x=element_text(size=15), 
-        axis.text.y=element_text(size=15), 
-        axis.title.x=element_text(size=15),
-        axis.title.y=element_text(size=15), 
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
         plot.title=element_text(hjust=0.5, ## centers title 
-                                size=18)) 
+                                size=20)) 
 ggsave(here("Outputs", "WSNOutputs","Varari_GP.jpg"), 
-       width = 8, height = 10)
+       width = 10, height = 10)
 
 GP_SGD_V
 
-## Cabral GP 
 
-GP_SGD_C <- RespoR_Normalized_Full %>% 
-  filter(site=="Cabral") %>% 
-  filter(P_R=="GP") %>% 
-  mutate(salinity=as.factor(salinity)) %>% 
-  ggplot(aes(x=SGD_number, 
-             y=umol.cm2.hr, 
-             color=salinity)) + 
-  geom_point(size=3, 
-             position = position_jitterdodge()) +
-  scale_color_manual(values=rev(pnw_palette("Sunset", n=16)), 
-                     guide="none") +
-  theme_bw() + 
-  geom_smooth(method = "lm", se=TRUE, color="lightpink") +
-  labs(x = "SGD Dilutions (% by volume)",
-       color = "Salinity (ppt)",
-       y = "Rate (umol O2 cm2 hr-1)",
-       title = "GP for Cabral") +
-   theme(axis.text.x=element_text(size=15), 
-        axis.text.y=element_text(size=15), 
-        axis.title.x=element_text(size=15),
-        axis.title.y=element_text(size=15), 
-        plot.title=element_text(hjust=0.5, ## centers title 
-                                size=18)) 
-ggsave(here("Outputs", "WSNOutputs","Cabral_GP.jpg"), 
-       width = 8, height = 10)
-
-GP_SGD_C
-
-#################################################
-
-## bring in NEC data 
+```
 
 
-##############################################
-
-#time to patch together for Varari 
-#GP_SGD_V + Respiration_SGD_V
-
-
-
-
+### Plotting results from models 
+```{r}
 
 
 
@@ -553,18 +716,17 @@ GP_SGD_C
 ```{r}
 calc.data <- read_csv(here("Data", "Titrations", "Calc_TArates.csv"))
 
-######### create new data frame of just the initial data, pull out initial data from sample.type
-rows.initial <- which(calc.data$Sample_Type == "Initial") #tells you all the rows that you have with initial
-initial <- calc.data[rows.initial,]
-calc.data <- calc.data[-rows.initial,] #to remove the rows with initial data
+######### create new data frame of just the initial data, pull out initial data from sample_type
+initial <- calc.data %>% 
+  filter(Sample_Collection == "Initial") %>% #tells you all the rows that you have with initial
+  select("date","temp_C", "salinity_insitu", "TA") 
 
 ######## remove and create new data frame with just blanks
-rows.blanks <- which(calc.data$Sample_Type == "Blank") #tells you all the rows that you have with blanks
-blanks <-calc.data[rows.blanks,]
-calc.data <- calc.data[-rows.blanks,] #to remove the rows with blank data
+blanks <- calc.data %>% 
+  filter(Sample_Type == "Blank")
 
-######## need to join sample data frame, join initial with your calc.data, only by temperature, pull out the columns we need
-initial <- initial[, c("date","temp_C", "salinity_insitu", "salinity_inlab", "TA")] ##if need to use pH then can re-add here but do I need this ?? for TA calc 
+calc.data <- calc.data %>% 
+  filter(Sample_Collection == "Post")
 
 names(initial)[3:6] <- paste0(names(initial)[3:6], "_initial") #use this to rename all of our columns
 
@@ -573,14 +735,16 @@ calc.data <- left_join(calc.data, initial) #joing the initials to my data frame 
 blanks <- left_join(blanks,initial)
 
 ###### figure out delta TA, initial-final
-blanks$delta.TA.blank <- blanks$TA_initial - blanks$TA
+blanks_deltaTA <- blanks %>% 
+  mutate(delta_TA_blank = TA_initial-TA)
 
 ####### getting the averages of blanks for each date and colony/treatment 
-mean.blanks <- blanks %>% 
-  group_by(date, temp_C) %>% #### SAMPLE ID IS CAUSING PROBLEMS WHEN TRYING TO JOIN TO JOIN BY TEMP WHICH IS ALSO UNIQUE 
-  summarise(mean.blanks=mean(delta.TA.blank)) 
+blanks_deltaTA <- blanks_deltaTA %>% 
+  select(site, date, SGD_number, delta_TA_blank) %>% 
+  group_by(date, site, SGD_number) %>% 
+  summarise(mean.blanks=mean(delta_TA_blank))
 
-calc.data <- left_join(calc.data, mean.blanks) #bring in mean blanks to calc.data
+calc.data <- left_join(calc.data, blanks_deltaTA)#bring in mean blanks to calc.data
 
 ######## need to join in SA,volume data and time data by fragment ID, before calculating NEC
 sample.data <- read_csv(here("Data", "RespoFiles", "Fragment_MeasurementSampling_Cabral_Varari.csv")) #bring in SA and volume data sheet
@@ -611,19 +775,31 @@ time.data <- resp.data[, c("sample_ID","SGD_dil", "start_time", "stop_time")]
 full.calc.data <- left_join(calc.data2, time.data)
 
 ######### NOW calculate the NEC rate
-full.calc.data$deltaTA<- (full.calc.data$TA_initial - full.calc.data$TA) - full.calc.data$mean.blanks
-full.calc.data$timediff <- as.numeric((full.calc.data$stop_time - full.calc.data$start_time)) 
+full.calc.data <- full.calc.data %>% 
+  mutate(deltaTA = (TA_initial - TA) - mean.blanks) %>%  ### subtracted blank data 
+  mutate(timediff = as.numeric(stop_time - start_time))
 
 ########## make a row that has rate.type for "C" assigned to light 
-full.calc.data$rate.type <-ifelse(full.calc.data$light_dark=='LIGHT', "C")
+#full.calc.data$rate.type <-ifelse(full.calc.data$light_dark=='LIGHT', "C")
 #view(full.calc.data)
 
 
 ########## equation to calculate NEC rates 
-full.calc.data$umol.cm2.hr<-((full.calc.data$deltaTA/2)*(1.023)*(full.calc.data$volume_mL))/((full.calc.data$SA_cm2)*(full.calc.data$timediff))
+## time is in seconds 
+
+full.calc.data <- full.calc.data %>% 
+  mutate(deltaTA_2 = deltaTA/2,
+         deltaTA_L = deltaTA_2*1.025, 
+         umol.cm2.s = deltaTA_L*(.650-(volume_mL/1000))/(SA_cm2*timediff), 
+         umol.cm2.hr = umol.cm2.s*3600) %>% 
+  select(!c(deltaTA_2,deltaTA_L,umol.cm2.s))
+
+full.calc.data2 <- full.calc.data %>% 
+  filter(site=="Varari")
+
 ```
 
-### Plot NEC 
+### Plot NEC for V and C 
 ```{r}
 ## now plot NEC by SGD - tried joining dfs 
 #RespoR_Normalized_Full_joinedNEC <- full.calc.data
@@ -632,90 +808,72 @@ full.calc.data$umol.cm2.hr<-((full.calc.data$deltaTA/2)*(1.023)*(full.calc.data$
 ##############
 ## NEC for Cabral 
 
-  ggplot(aes(x=SGD_number, 
-             y=umol.cm2.hr, 
-             color=salinity)) + 
-  geom_point(size=3, 
-             position = position_jitterdodge()) +
-  scale_color_manual(values=rev(pnw_palette("Sunset", n=16)), 
-                     guide="none") +
-  theme_bw() + 
-  geom_smooth(method = "lm", se=FALSE, color="lightpink") +
-  labs(x = "SGD Dilutions (% by volume)",
-       color = "Salinity (ppt)",
-       y = "Rate (umol O2 cm2 hr-1)",
-       title = "GP for Cabral") +
-   theme(axis.text.x=element_text(size=15), 
-        axis.text.y=element_text(size=15), 
-        axis.title.x=element_text(size=15),
-        axis.title.y=element_text(size=15), 
-        plot.title=element_text(hjust=0.5, ## centers title 
-                                size=18)) 
-ggsave(here("Outputs", "WSNOutputs","Cabral_GP.jpg"), 
-       width = 8, height = 10)
-
-GP_SGD_C
-
-  
 NEC_C <- full.calc.data %>%
   filter(site=="Cabral") %>% 
+  filter(new_colonynumber!="20") %>% 
+  filter(new_colonynumber!="BLANK") %>%
   mutate(salinity_insitu=as.factor(salinity_insitu)) %>% 
   ggplot(aes(x=SGD_number, 
              y=umol.cm2.hr, 
              color=salinity_insitu)) + 
-  geom_point(size=3, 
+  geom_point(size=4, 
              position = position_jitterdodge()) +
-  scale_color_manual(values=rev(pnw_palette("Sunset", n=16)), 
+  scale_color_manual(values=rev(pnw_palette("Sunset2", n=16)), 
                      guide="none") +
-  theme_bw() + 
+  theme_classic() + 
+ # facet_wrap(~new_colonynumber)+
   theme(strip.background = element_rect(fill = "white"))+
-  geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  #geom_smooth(method = "lm", se=TRUE, color="lightpink") +
   geom_hline(yintercept = 0)+
   labs(x = "SGD Dilutions (% by volume)",
        color = "Salinity (ppt)",
        y = "Rate (umol O2 cm2 hr-1)",
-       title = "NEC for Cabral") +
-   theme(axis.text.x=element_text(size=15), 
-        axis.text.y=element_text(size=15), 
-        axis.title.x=element_text(size=15),
-        axis.title.y=element_text(size=15), 
+       title = "Net Calcification Rates at Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
         plot.title=element_text(hjust=0.5, ## centers title 
-                                size=18)) 
+                                size=20)) 
 ggsave(here("Outputs", "WSNOutputs","Cabral_NEC.jpg"), 
-       width = 8, height = 10)
+       width = 10, height = 10)
 
 
 NEC_C
+
+full.calc.data2 <- full.calc.data %>% 
+  filter(site=="Varari")
 
 ##############
 ## NEC for Varari 
 
 NEC_V <- full.calc.data %>%
   filter(site=="Varari") %>% 
+  filter(new_colonynumber!="BLANK") %>%
   mutate(salinity_insitu=as.factor(salinity_insitu)) %>% 
   ggplot(aes(x=SGD_number, 
              y=umol.cm2.hr, 
              color=salinity_insitu)) + 
-  geom_point(size=2, 
+  geom_point(size=4, 
              position = position_jitterdodge()) +
-  scale_color_manual(values=rev(pnw_palette("Sunset", n=16)), 
+  scale_color_manual(values=rev(pnw_palette("Sunset2", n=16)), 
                      guide="none") +
-  theme_bw() + 
+  theme_classic() + 
   theme(strip.background = element_rect(fill = "white"))+
   geom_smooth(method = "lm", se=TRUE, color="lightpink") +
   geom_hline(yintercept = 0)+
   labs(x = "SGD Dilutions (% by volume)",
        color = "Salinity (ppt)",
        y = "Rate (umol O2 cm2 hr-1)",
-       title = "NEC for Varari") +
-   theme(axis.text.x=element_text(size=15), 
-        axis.text.y=element_text(size=15), 
-        axis.title.x=element_text(size=15),
-        axis.title.y=element_text(size=15), 
+       title = "Net Calcification Rates at Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
         plot.title=element_text(hjust=0.5, ## centers title 
-                                size=18)) 
+                                size=20)) 
 ggsave(here("Outputs", "WSNOutputs","Varari_NEC.jpg"), 
-       width = 8, height = 10)
+       width = 10, height = 10)
 
 NEC_V
 
@@ -726,56 +884,156 @@ NEC_V
 
 #### NEC for Cabral 
 NECData_C <- full.calc.data %>% 
-  #filter(P_R == "GP") %>% 
   filter(site=="Cabral") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  filter(new_colonynumber!="20") %>% 
   mutate(new_colonynumber= as.factor(new_colonynumber), 
-         date=as.factor(date), 
-         SGD_number=as.factor(SGD_number), 
-         salinity_insitu=as.factor(salinity_insitu))
+         date=as.factor(date)) 
 
 model_SGDbyNEC_C <- lmer(data = NECData_C, 
              umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber))
+
 anova(model_SGDbyNEC_C) 
 summary(model_SGDbyNEC_C)
 ranef(model_SGDbyNEC_C)
 
+check_model(model_SGDbyNEC_C)
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "CabralNEC.jpg"), 
+       width = 7, height = 10)
+
+MuMIn::r.squaredGLMM(lme4::lmer(data = NECData_C, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))
+summary(lm(data = NECData_C, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))$r.squared
 
 ## NEC for Varari 
 NECData_V <- full.calc.data %>% 
-  #filter(P_R == "GP") %>% 
   filter(site=="Varari") %>% 
   mutate(new_colonynumber= as.factor(new_colonynumber), 
-         date=as.factor(date), 
-         SGD_number=as.factor(SGD_number), 
-         salinity_insitu=as.factor(salinity_insitu))
+         date=as.factor(date)) %>% 
+  filter(!is.infinite(umol.cm2.hr))
 
 model_SGDbyNEC_V <- lmer(data = NECData_V, 
              umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber))
 
 anova(model_SGDbyNEC_V) 
 summary(model_SGDbyNEC_V)
-ranef(model_SGDbyNEC_V)
+#ranef(model_SGDbyNEC_V)
 
+check_model(model_SGDbyNEC_V)
+ggsave(here("Outputs", "WSNOutputs","NormalityChecks", "VarariNEC.jpg"), 
+       width = 7, height = 10)
+
+
+MuMIn::r.squaredGLMM(lme4::lmer(data = NECData_V, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))
+summary(lm(data = NECData_V, 
+             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))$r.squared
 
 ```
-
-### using a new R package to calculate R2 values 
 
 ```{r}
+RespoR_Normalized_Full_minV <- RespoR_Normalized_Full %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="NP")
 
-model2_SGDbyR <- lmer(data = RData_C, 
-             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber))
-anova(model2_SGDbyR) 
-summary(model2_SGDbyR)
-ranef(model2_SGDbyR)
-plot(model2_SGDbyR)
 
-data(RData_C)
-MuMIn::r.squaredGLMM(lme4::lmer(data = RData_C, 
-             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))
-    
-summary(lm(data = RData_C, 
-             umol.cm2.hr ~ SGD_number + (1|date/new_colonynumber)))$r.squared
+RespoR_Normalized_Full_minV 
+
 ```
 
+### EXAMPLE NUTRIENT PLOTS WITH SILICATE, AMMONIUM, N+N, PHOS
+```{r}
+NNbyRplot <- RespoR_Normalized_Full %>% 
+# filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  facet_wrap(date~site) +
+  theme_bw() + 
+  labs(x = "N+N (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "N+N for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+
+NNbyRplot
+
+NNbyNPplot <- RespoR_Normalized_Full %>% 
+# filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="NP") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  facet_wrap(date~site) +
+  theme_bw() + 
+  labs(x = "N+N (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "N+N for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+
+NNbyNPplot
+
+
+```
+
+## Phosphates 
+```{r}
+PhosphatesbyRplot <- RespoR_Normalized_Full %>% 
+# filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  facet_wrap(date~site) +
+  theme_bw() + 
+  labs(x ="Phosphates (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Phosphates per site")
+
+PhosphatesbyRplot
+
+PhosphatesbyNPplot <- RespoR_Normalized_Full %>% 
+# filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="NP") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  facet_wrap(date~site) +
+  theme_bw() + 
+  labs(x ="Phosphates (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Phosphates per site")
+
+PhosphatesbyNPplot
+```
+```{r}
+
+```
 

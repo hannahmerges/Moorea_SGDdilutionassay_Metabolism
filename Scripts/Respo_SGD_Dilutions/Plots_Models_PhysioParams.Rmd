@@ -61,14 +61,17 @@ RespoR <- read_csv(here("Data","RespoFiles","Respo_R.csv"))
 ####################
 ### pH data #########
 ######################
-pHcalib<-read_csv(here("Data","TrisCal_20230614.csv")) #%>% ## tris cal date is listed as a character here - make sure change in Excel file before reading in so it is a date 
+pHcalib<-read_csv(here("Data","TrisCal_20230614.csv")) #%>% ## tris cal date is listed as a character here - make sure change in Excel file before reading in so it is a date IF YOU ARE GETTING AN ERROR 
+#library(lubridate)
+pHcalib$TrisCalDate <- mdy(pHcalib$TrisCalDate)
 pHcalib <- pHcalib[-c(13,14), ]
 
 #View(pHcalib)
 
 pHData <- read_csv(here("Data", "RespoFiles", "Fragment_MeasurementSampling_Cabral_Varari.csv")) 
+pHData$TrisCalDate <- mdy(pHData$TrisCalDate)
 pHData <- pHData[-c(294,303,435),]
-pHData <- pHData[,-(14:17)]
+#pHData <- pHData[,-(14:17)]
 
 #View(pHData)
 

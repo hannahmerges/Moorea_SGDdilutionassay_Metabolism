@@ -19,7 +19,7 @@ sa <-  read_csv(here("Data", "Wax_Dipping", "Cabral_Varari_coralsurfacearea.csv"
   #rename(FragmentID = Donor_Colony, CowTagID = PlateID)
   # only need if have Jamie's set up 
 
-hannah_slope <- 0.0002 #slope of Hannah's calibration curve, just take off the excel sheet 
+hannah_slope <- 0.0192 #slope of Hannah's calibration curve, just take off the excel sheet 
 hannah_intercept <- -0.0293 #intercept of Hannah's calibration curve
 #maya_slope <- .0293 #slope of Maya's calibration curve
 #maya_intercept <- -0.0887 #intercept of Maya's calibration curve
