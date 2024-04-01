@@ -88,7 +88,7 @@ pHSlope<-pHcalib %>%
   pivot_wider(names_from = term, values_from = estimate) %>% # put slope and intercept in their own column
   right_join(.,pHData) %>% # join with the pH sample data
   mutate(mVTRis = temp_C*Ttris + `(Intercept)`) #%>% 
- # mutate(new_pH = pH(Ex=mV,Etris=mVTRis,S=salinity,T=temp_C)) # calculate pH of the samples using the pH seacarb function - GETTING AN ERRROR ON THIS LAST LINE ######
+ #mutate(new_pH = pH(Ex=mV,Etris=mVTRis,S=salinity,T=temp_C)) # calculate pH of the samples using the pH seacarb function - GETTING AN ERRROR ON THIS LAST LINE ######
 
 #### COME BACK AND CHECK LATER ##### ## seems fine as of Jan27th, 2024 
 
@@ -942,21 +942,30 @@ RespoR_Normalized_Full_minV
 
 ```
 
-### EXAMPLE NUTRIENT PLOTS WITH SILICATE, AMMONIUM, N+N, PHOS
+
+
+
+
+
+
+
+
+
+
+# NEW SECTION - started March 31st, 2024 
+
+
+### EXAMPLE RESPIRATION PLOTS WITH SILICATE, AMMONIUM, N+N, PHOS + TA + pH 
 ```{r}
-NNbyRplot <- RespoR_Normalized_Full %>% 
-# filter(site=="Varari") %>% 
-  drop_na(NN_umolL) %>% 
-  filter(P_R=="R") %>% 
+NNbyRplot <- Nutrient_Models %>% 
   mutate(new_colonynumber= as.factor(new_colonynumber), 
          date=as.factor(date)) %>% 
  # filter(!is.infinite(umol.cm2.hr)) %>% 
   ggplot(aes(x=NN_umolL, 
              y=umol.cm2.hr)) + 
   geom_point(size=3) +
-  facet_wrap(date~site) +
   theme_bw() + 
-  labs(x = "N+N (umolL)",
+  labs(x = "Respiration Rates with N+N (umolL)",
        y = "Rate (umol O2 cm2 hr-1)",
        title = "N+N for Varari") +
    theme(axis.text.x=element_text(size=18), 
@@ -967,6 +976,89 @@ NNbyRplot <- RespoR_Normalized_Full %>%
                                 size=20))
 
 NNbyRplot
+
+## Ammonium 
+NH4byRplot <- Nutrient_Models %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with NH4 (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NH4 for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+
+NH4byRplot
+
+## Phosphate  
+PhosbyRplot <- Nutrient_Models %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with Phosphate (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Phosphate for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+PhosbyRplot
+
+### resp plots 
+
+PhosbyRplot + NH4byRplot + NNbyRplot
+
+
+
+###############################################
+### try grouping by dilutions and day and plotting mean nutrients 
+###############################################
+Nutrient_Models <- RespoR_Normalized_Full %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+Nutrient_Models<-Nutrient_Models[-c(24),]  
+
+Nutrient_Models_groupedavg <- Nutrient_Models %>% 
+  group_by(date, SGD_number) %>% 
+  summarize(meanN=mean(NN_umolL), 
+            meanR=mean(umol.cm2.hr))
+
+
+Nutrient_plots_groupedavg <- Nutrient_Models_groupedavg %>% 
+  ggplot(aes(x=meanN, 
+         y=meanR)) +
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "mean N+N (umolL)",
+       y = "mean Rate (umol O2 cm2 hr-1)",
+       title = "mean rates for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+
+Nutrient_plots_groupedavg
+
+
+###########################################################
 
 NNbyNPplot <- RespoR_Normalized_Full %>% 
 # filter(site=="Varari") %>% 
@@ -993,9 +1085,11 @@ NNbyNPplot <- RespoR_Normalized_Full %>%
 NNbyNPplot
 
 
+
+
 ```
 
-## Phosphates 
+## GP PLOTS FOR NN, NH4, PO4, SILICATE  
 ```{r}
 PhosphatesbyRplot <- RespoR_Normalized_Full %>% 
 # filter(site=="Varari") %>% 
@@ -1025,7 +1119,7 @@ PhosphatesbyNPplot <- RespoR_Normalized_Full %>%
   ggplot(aes(x=phosphate_umolL, 
              y=umol.cm2.hr)) + 
   geom_point(size=3) +
-  facet_wrap(date~site) +
+  facet_wrap(~site) +
   theme_bw() + 
   labs(x ="Phosphates (umolL)",
        y = "Rate (umol O2 cm2 hr-1)",
@@ -1033,7 +1127,172 @@ PhosphatesbyNPplot <- RespoR_Normalized_Full %>%
 
 PhosphatesbyNPplot
 ```
+
+
+
+# ASSOCIATED MODELS 
+## RUNNING DIFFERENT MODELS WITH NUT DATA for RESPIRATION - only at VARARI!!! 
 ```{r}
 
+#########################
+### NN
+##########################
+
+####
+Nutrient_Models_Varari <- RespoR_Normalized_Full %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+Nutrient_Models_Varari<-Nutrient_Models_Varari[-c(24),]  
+
+
+## normal model with full nesting and random effects 
+Varari_NN_resp <- lmer(data = Nutrient_Models, 
+             umol.cm2.hr ~ poly(NN_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_NN_resp) 
+summary(Varari_NN_resp)
+
+### without random effects 
+Varari_NN_resp2 <- lm(data = Nutrient_Models, 
+             umol.cm2.hr ~ poly(NN_umolL, degree=2))
+
+anova(Varari_NN_resp2) 
+summary(Varari_NN_resp2)
+
+
+## just with colony number as random
+Varari_NN_resp3 <- lmer(data = Nutrient_Models, 
+             umol.cm2.hr ~ poly(NN_umolL, degree=2) + (1|new_colonynumber))
+
+anova(Varari_NN_resp3) 
+summary(Varari_NN_resp3)
+
+
+####################################
+## ammonia 
+####################################
+
+Varari_NH4_resp <- lmer(data = Nutrient_Models, 
+             umol.cm2.hr ~ poly(ammonia_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_NH4_resp) 
+summary(Varari_NH4_resp)
+
+## without random effects 
+Varari_NH4_resp2 <- lm(data = Nutrient_Models, 
+             umol.cm2.hr ~ poly(ammonia_umolL, degree=2))
+
+anova(Varari_NH4_resp2) 
+summary(Varari_NH4_resp2)
+
+
+################################
+### for pH 
+#################################
+
+Varari_pH_resp <- lmer(data = Nutrient_Models, 
+             umol.cm2.hr ~ poly(pH, degree=2) + (1|date/new_colonynumber))
+
+
+
+
+
+
+################################
+### for TA 
+#################################
+
+## need to use calc.data sheet 
+Varari <- full.calc.data %>% 
+  filter(site=="Cabral") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  filter(new_colonynumber!="20") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) 
+
+
+
+
 ```
+
+```{r}
+
+##################################
+#### starting with GP #### 
+#################################
+
+
+
+
+##### plots ############
+
+GP_SGD_V <- RespoR_Normalized_Full %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="NP") %>%
+  mutate(salinity=as.factor(salinity)) %>% 
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr)) + 
+  geom_point(aes(color=salinity, show.legend=FALSE), 
+             size=3, 
+             position = position_jitterdodge()) +
+  scale_color_manual(values=rev(pnw_palette("Sunset", n=16)), 
+                     guide="none") +
+  theme_bw() + 
+ # geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  labs(x = "SGD Dilutions (% by volume)",
+       color = "Salinity (ppt)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20)) 
+
+
+GP_SGD_C <- RespoR_Normalized_Full %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="NP") %>% 
+  filter(NN_umolL==)
+  mutate(salinity=as.factor(salinity)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr, 
+             color=salinity)) + 
+  geom_point(size=3, 
+             position = position_jitterdodge()) +
+  scale_color_manual(values=rev(pnw_palette("Sunset", n=16)), 
+                     guide="none") +
+  theme_bw() + 
+  labs(x = "Nitrates + Nitrites (umol/L)",
+       color = "Salinity (ppt)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP for Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20)) 
+```
+
+
+```{r}
+#################################
+## Calcification ## 
+################################
+
+##### models #######
+NECData_C <- full.calc.data %>% 
+  filter(site=="Cabral") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  filter(new_colonynumber!="20") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) 
+```
+
+
+#### 
 
