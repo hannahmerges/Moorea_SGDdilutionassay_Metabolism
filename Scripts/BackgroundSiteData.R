@@ -128,24 +128,85 @@ NNgraph <- MooreaAugust_addedOffshore %>%
 
 NNgraph
 
+## make a tibble !!!  that says Offhsore Cabral and V and then max data 
+#site=offshore, cabral, varari 
+#pivot_longer so can facet by parameter 
+# can change color by site 
+# sclae_ color_ manual - values=c()
 
+############################## 
+### plots for CSUNposium 
+###############################
+sitecomparison_maxdata <- tribble(~Site, ~Parameter, ~Value, 
+        "Varari", "pH", "7.73", 
+        "Cabral", "pH", "6.89", 
+        "Offshore", "pH", "7.9", 
+        "Varari", "Nitrates (umol/L)", "279.15", 
+        "Cabral", "Nitrates (umol/L)", "18.24", 
+        "Offshore", "Nitrates (umol/L)", "0.58", 
+        "Varari", "TA (umol/kg-1)", "5393.3", 
+        "Cabral", "TA (umol/kg-1)", "1755.18", 
+        "Offshore", "TA (umol/kg-1)", "2386.84") %>% 
+  mutate(Site= as.factor(Site))
 
-pHgraph <- MooreaAugust_addedOffshore %>% 
-  filter(Parameter=="pH") %>% 
-  filter(Plate_Seep=="Spring") %>% 
-  ggplot(aes(x=Parameter, 
-             y= value)) +
-  geom_col() +
-  facet_wrap(~Location) + 
+## nitrates 
+SiteComparisons_Nitrates <- sitecomparison_maxdata %>% 
+  filter(Parameter=="Nitrates (umol/L)") %>% 
+  ggplot(aes(x=Site,
+             y=Value, 
+             fill=Site)) + 
+  geom_col()  + 
+  scale_x_discrete(limits = c("Offshore", "Cabral", "Varari")) + 
+  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+                    limits=c("Offshore", "Cabral", "Varari")) +
   theme_classic() + 
-  labs(x = "pH", 
-       y= "Value", 
-       title = "pH levels at the seeps of both sites") + 
-  theme(axis.text.x=element_text(size=18), 
-        axis.text.y=element_text(size=18), 
-        axis.title.x=element_text(size=18),
-        axis.title.y=element_text(size=18), 
-        plot.title=element_text(hjust=0.5, ## centers title 
-                                size=20))
+  labs(x="Location", 
+       y="Nitrates (umol/L)") + 
+  theme(axis.text.x=element_text(size=25), 
+        axis.text.y=element_text(size=25), 
+        axis.title.x=element_text(size=25), 
+        axis.title.y=element_text(size=25))
 
-pHgraph
+SiteComparisons_Nitrates
+
+
+### for pH 
+SiteComparisons_pH <- sitecomparison_maxdata %>% 
+  filter(Parameter=="pH") %>% 
+  ggplot(aes(x=Site,
+             y=Value, 
+             fill=Site)) + 
+  geom_col()  + 
+  scale_x_discrete(limits = c("Offshore", "Cabral", "Varari")) + 
+  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+                    limits=c("Offshore", "Cabral", "Varari")) +
+  theme_classic() + 
+  labs(x="Location", 
+       y="pH") + 
+  theme(axis.text.x=element_text(size=25), 
+        axis.text.y=element_text(size=25), 
+        axis.title.x=element_text(size=25), 
+        axis.title.y=element_text(size=25))
+
+SiteComparisons_pH
+
+## for TA 
+SiteComparisons_TA <- sitecomparison_maxdata %>% 
+  filter(Parameter=="TA (umol/kg-1)")  %>% 
+  ggplot(aes(x=Site,
+             y=Value, 
+             fill=Site)) + 
+  geom_col()  + 
+  scale_x_discrete(limits = c("Offshore", "Cabral", "Varari")) + 
+  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+                    limits=c("Offshore", "Cabral", "Varari")) +
+  theme_classic() + 
+  labs(x="Location", 
+       y="TA (umol/kg-1)") + 
+  theme(axis.text.x=element_text(size=25), 
+        axis.text.y=element_text(size=25), 
+        axis.title.x=element_text(size=25), 
+        axis.title.y=element_text(size=25))
+
+SiteComparisons_TA
+

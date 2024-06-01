@@ -235,7 +235,7 @@ RespoR_Normalized2 <- bind_rows(RespoR_Normalized_light, RespoR_Normalized_dark)
 
 #make column for GP and group by fragment ID and salinity to keep R and NP together
 RespoR_NormalizedGP <- RespoR_Normalized2 %>% 
-  group_by(new_colonynumber, SGD_number, site, date, salinity, pH) %>% ## EDITED FROM new_pH
+  group_by(new_colonynumber, SGD_number, site, date, salinity, pH, phosphate_umolL, NN_umolL, ammonia_umolL, silicate_umolL) %>% ## EDITED FROM new_pH
   summarize(umol.cm2.hr = sum(umol.cm2.hr, na.rm=TRUE), 
             umol.cm2.hr_uncorr = sum(umol.cm2.hr_uncorr, na.rm=TRUE)) %>% # NP + R = GP
             #Temp.C = mean(Temp.C)) %>% 

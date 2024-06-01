@@ -62,8 +62,6 @@ RespoR_Normalized_Full
 ```
 
 
-
-
 # Original plots for R, GP, and C - for Varari and Cabral 
 ## edit: try without jitter (to see if salinity problem is fixed and if data looks any better?)
 ## note: report marginal and conditional R2 value 
@@ -809,11 +807,3 @@ Cabral_TA_NEC <- lmer(data = NEC_Cabral,
 
 anova(Cabral_TA_NEC) 
 summary(Cabral_TA_NEC)
-
-
-
-```
-
-
-
-
