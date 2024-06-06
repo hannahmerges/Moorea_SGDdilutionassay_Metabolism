@@ -36,22 +36,16 @@ library(MuMIn)
 
 ## Loading Data
 ```{r}
-RespoMeta <- read_csv(here("Data","RespoFiles","Respo_Metadata_SGDDilutions_Cabral_Varari.csv"))
-BioData <- read_csv(here("Data","RespoFiles","Fragment_MeasurementSampling_Cabral_Varari.csv"))
-Sample_Info <- left_join(RespoMeta, BioData)
-RespoR <- read_csv(here("Data","RespoFiles","Respo_R.csv"))
 pHSlope <- read_csv(here("Data", "pHSlope.csv")) ## manually deleted BLANK DATA on MAY 30th 
 calc.data <- read_csv(here("Data", "Titrations", "Calc_TArates.csv"))
 full_calc_data <- read_csv(here("Data", "full_calc_data.csv"))
-RespoR_Normalized_Full_ExcelUpdates <- read_csv(here::here("Data","RespoFiles", "Respo_RNormalized_AllRates.csv"))
-NEC_wnuts <- read_csv(here("Data", "NEC_wnuts_edit.csv"))
-FULL_RespoNEC_allParams <- read_csv(here("Data", "RespoR_Normalized_Full4_withNEC.csv"))
+#RespoR_Normalized_Full_ExcelUpdates <- read_csv(here::here("Data","RespoFiles", "Respo_RNormalized_AllRates.csv"))
+NEC_wnuts <- read_csv(here("Data", "NECnuts_withpH.csv"))
+FULL_RespoNEC_allParams <- read_csv(here("Data", "RespoR_Normalized_Full_withNEC_ExcelUpdates.csv"))
 ```
 
 #Timeline Updates
-at some point: go back to thoroughly check the correct code for rates in the Respo_Normalized_Full csv !!!!!!!
-also fixed NEC rates around May 28th because there was an error in the code 
-RespoR_Normalized_Full_ExcelUpdates = HAS NUTRIENT DATA FOR GP 
+RespoR_Normalized_Full_withNEC_ExcelUpdates.csv = HAS NUTRIENT DATA FOR GP but is a little wonky - should go back and check join issues 
 
 ## Tidy the dataframes and play around with them to explore data
 calculated mean, sd and var --- maybe this is something to come back to as of May 31st?? 
@@ -96,10 +90,6 @@ full.calc.data_meanvar_withnuts <- NEC_wnuts %>%
 
 Note: initial TA was measured AFTER the 12 hours of soaking whereas nutrients were measured at the beginning of the 12 hours right when mixtures were created. pH is also calculated based on measurements taken *WHEN* (before or after 12 hours??)
 - have added new_pH in and re-run models 
-- successfully joined dataframes!! on June 1st --> important note: NEC still included Cabral 19 and 20, but that was previously deleted in Respo data --> 
-- SHOULD GO BACK AT SOME POINT TO DOUBLE CHECK IF THAT IS STILL APPROPRIATE 
-
-- dropping NAs in some of the umol.cm2.hr data -- is that okay? 
 
 # PLOT CENTRAL: series of plots for each physio measurement (R, GP, NP, NEC) per each env param (sal, pH, NN, phos, silicate, ammonia, and TBD on TA)
 Goal: create models to see if specific nutrients have an effect on the O2 rates 
@@ -149,7 +139,7 @@ NNbyRplot <- Nutrient_Models_Varari_R %>%
  # filter(!is.infinite(umol.cm2.hr)) %>% 
   ggplot(aes(x=NN_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") + 
@@ -185,7 +175,7 @@ NH4byRplot <- Nutrient_Models_Varari_R %>%
  # filter(!is.infinite(umol.cm2.hr)) %>% 
   ggplot(aes(x=ammonia_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   labs(x = "NH4 (umolL)",
@@ -224,7 +214,7 @@ PhosbyRplot <- Nutrient_Models_Varari_R %>%
  # filter(!is.infinite(umol.cm2.hr)) %>% 
   ggplot(aes(x=phosphate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   #facet_wrap(~date, scales = "free_x") + 
@@ -258,7 +248,7 @@ SilicatebyRplot <- Nutrient_Models_Varari_R %>%
  # filter(!is.infinite(umol.cm2.hr)) %>% 
   ggplot(aes(x=silicate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
  # facet_wrap(~date, scales = "free_x") +
@@ -290,7 +280,7 @@ pHbyRplot <- Nutrient_Models_Varari_R %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=new_pH, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -322,7 +312,7 @@ salinitybyRplot <- Nutrient_Models_Varari_R %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -355,7 +345,7 @@ TAbyRplot <- Nutrient_Models_Varari_R %>%
  # filter(!is.infinite(umol.cm2.hr)) %>% 
   ggplot(aes(x=TA_initial, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   #facet_wrap(~date, scales = "free_x") + 
@@ -382,7 +372,7 @@ ggsave(here("Outputs", "NutrientAnalyses", "Varari", "Respiration", "TA_plot.jpg
 
 ```{r}
 ###  make new dataset 
-Nutrient_Models_Varari_NP <- RespoR_Normalized_Full_ExcelUpdates %>% 
+Nutrient_Models_Varari_NP <- FULL_RespoNEC_allParams %>% 
   filter(site=="Varari") %>% 
   drop_na(NN_umolL) %>% 
   filter(P_R=="NP") %>% 
@@ -407,7 +397,7 @@ pHbyNPplot <- Nutrient_Models_Varari_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=new_pH, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -433,7 +423,7 @@ salinitybyNPplot <- Nutrient_Models_Varari_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -459,7 +449,7 @@ phosphatebyNPplot <- Nutrient_Models_Varari_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=phosphate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -484,7 +474,7 @@ NNbyNPplot <- Nutrient_Models_Varari_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=NN_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -509,7 +499,7 @@ silicatebyNPplot <- Nutrient_Models_Varari_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=silicate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -535,7 +525,7 @@ ammoniabyNPplot <- Nutrient_Models_Varari_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=ammonia_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -561,7 +551,7 @@ TAbyNPplot <- Nutrient_Models_Varari_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=TA_initial, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -586,7 +576,7 @@ ggsave(here("Outputs", "NutrientAnalyses", "Varari", "NetPhotosynthesis", "TA_pl
 #### Varari GP for each nutrient
 
 ```{r}
-Nutrient_Models_Varari_GP <- RespoR_Normalized_Full_ExcelUpdates %>% 
+Nutrient_Models_Varari_GP <- FULL_RespoNEC_allParams %>% 
   filter(site=="Varari") %>% 
   drop_na(NN_umolL) %>% 
   filter(P_R=="GP") %>% 
@@ -611,7 +601,7 @@ pHbyGPplot <- Nutrient_Models_Varari_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=new_pH, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -636,7 +626,7 @@ TAbyGPplot <- Nutrient_Models_Varari_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=TA_initial, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -661,7 +651,7 @@ salinitybyGPplot <- Nutrient_Models_Varari_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -686,7 +676,7 @@ ammoniabyGPplot <- Nutrient_Models_Varari_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=ammonia_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -711,7 +701,7 @@ silicatebyGPplot <- Nutrient_Models_Varari_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=silicate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -736,7 +726,7 @@ NNbyGPplot <- Nutrient_Models_Varari_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=NN_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -761,7 +751,7 @@ phosphatebyGPplot <- Nutrient_Models_Varari_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=phosphate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -845,7 +835,7 @@ SGDdilsbyVplot2
 
 ## V NEC for each nutrient 
 ```{r}
-Nutrient_Models_Varari_NEC <- RespoR_Normalized_Full_ExcelUpdates %>% 
+Nutrient_Models_Varari_NEC <- FULL_RespoNEC_allParams %>% 
   filter(site=="Varari") %>% 
   drop_na(NN_umolL) %>% 
   filter(P_R=="C") %>% 
@@ -870,7 +860,7 @@ ammoniabyVplot <- Nutrient_Models_Varari_NEC  %>%
          SGD_number=as.factor(SGD_number)) %>% 
    ggplot(aes(x=ammonia_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   #scale_color_manual(values=pnw_palette("Sailboat")) +
@@ -896,7 +886,7 @@ silicatebyVplot <- Nutrient_Models_Varari_NEC  %>%
          SGD_number=as.factor(SGD_number)) %>% 
    ggplot(aes(x=silicate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   #scale_color_manual(values=pnw_palette("Sailboat")) +
@@ -922,7 +912,7 @@ NNbyVplot <- Nutrient_Models_Varari_NEC  %>%
          SGD_number=as.factor(SGD_number)) %>% 
    ggplot(aes(x=NN_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   #scale_color_manual(values=pnw_palette("Sailboat")) +
@@ -949,11 +939,11 @@ PhosbyVplot <- Nutrient_Models_Varari_NEC  %>%
          SGD_number=as.factor(SGD_number)) %>% 
    ggplot(aes(x=phosphate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   #scale_color_manual(values=pnw_palette("Sailboat")) +
-#  facet_wrap(~date, scales = "free_x") +
+# facet_wrap(~new_colonynumber, scales = "free_x") +
   labs(x = "Phosphate",
        y = "Rate (umol CaCO3 g-1 hr-1)",
        title = "NEC Rates for Varari with Phosphate") +
@@ -974,11 +964,11 @@ pHbyVplot <- Nutrient_Models_Varari_NEC  %>%
          SGD_number=as.factor(SGD_number)) %>% 
    ggplot(aes(x=new_pH, 
              y=umol.cm2.hr, 
-             color=date)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   #scale_color_manual(values=pnw_palette("Sailboat")) +
-#  facet_wrap(~date, scales = "free_x") +
+  #facet_wrap(~new_colonynumber, scales = "free_x") +
   labs(x = "pH",
        y = "Rate (umol CaCO3 g-1 hr-1)",
        title = "NEC Rates for Varari with pH") +
@@ -1001,11 +991,11 @@ SalinitybyVplot <- Nutrient_Models_Varari_NEC  %>%
          SGD_number=as.factor(SGD_number)) %>% 
    ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   #scale_color_manual(values=pnw_palette("Sailboat")) +
-#  facet_wrap(~date, scales = "free_x") +
+ # facet_wrap(~new_colonynumber, scales = "free_x") +
   labs(x = "Salinity",
        y = "Rate (umol CaCO3 g-1 hr-1)",
        title = "NEC Rates for Varari with Salinity") +
@@ -1027,11 +1017,11 @@ TAbyVplot <- Nutrient_Models_Varari_NEC  %>%
          SGD_number=as.factor(SGD_number)) %>% 
    ggplot(aes(x=TA_initial, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
   #scale_color_manual(values=pnw_palette("Sailboat")) +
-#  facet_wrap(~date, scales = "free_x") +
+  #facet_wrap(~new_colonynumber, scales = "free_x") +
   labs(x = "TA",
        y = "Rate (umol CaCO3 g-1 hr-1)",
        title = "NEC Rates for Varari with TA") +
@@ -1044,6 +1034,44 @@ TAbyVplot <- Nutrient_Models_Varari_NEC  %>%
 TAbyVplot
 ggsave(here::here("Outputs", "NutrientAnalyses", "Varari", "Calcification", "NECbyTA.jpg"))
 
+```
+
+## quick visualization of TA at both sites 
+TA is significant (0.002)
+```{r}
+### plot both sites together for NEC Phos
+TA_bothsites <- FULL_RespoNEC_allParams  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(phosphate_umolL<1) %>% 
+  filter(P_R=="C") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date), 
+         SGD_number=as.factor(SGD_number)) %>% 
+   ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr, 
+             color=new_colonynumber)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+# facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Both Sites with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TA_bothsites
+
+
+linearmod_bothsites_TA <- lmer(umol.cm2.hr ~ TA_initial + (1|new_colonynumber), 
+                               data=FULL_RespoNEC_allParams  %>%
+                                 filter(umol.cm2.hr!="Inf") %>%
+                                 filter(P_R=="C"))
+
+anova(linearmod_bothsites_TA)
 
 ```
 
@@ -1073,7 +1101,7 @@ pHbyNPplot <- Nutrient_Models_Cabral_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=new_pH, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1099,7 +1127,7 @@ salbyNPplot <- Nutrient_Models_Cabral_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1125,7 +1153,7 @@ phosphatebyNPplot <- Nutrient_Models_Cabral_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=phosphate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1151,7 +1179,7 @@ phosphatebyNPplot <- Nutrient_Models_Cabral_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=phosphate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1176,7 +1204,7 @@ ammoniabyNPplot <- Nutrient_Models_Cabral_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=ammonia_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1201,7 +1229,7 @@ NNbyNPplot <- Nutrient_Models_Cabral_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=NN_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1226,7 +1254,7 @@ silicatebyNPplot <- Nutrient_Models_Cabral_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=silicate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1251,7 +1279,7 @@ TAbyNPplot <- Nutrient_Models_Cabral_NP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=TA_initial, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1273,7 +1301,7 @@ ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "NetPhotosynthesis", "TA_pl
 
 ### Cabral R plots 
 ```{r}
-Nutrient_Models_Cabral_R <- RespoR_Normalized_Full_ExcelUpdates %>% 
+Nutrient_Models_Cabral_R <- FULL_RespoNEC_allParams %>% 
   filter(site=="Cabral") %>% 
   drop_na(NN_umolL) %>% 
   filter(P_R=="R") %>% 
@@ -1298,7 +1326,7 @@ pHbyRplot <- Nutrient_Models_Cabral_R %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=new_pH, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1323,7 +1351,7 @@ TAbyRplot <- Nutrient_Models_Cabral_R %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=TA_initial, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1349,7 +1377,7 @@ salinitybyRplot <- Nutrient_Models_Cabral_R %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1375,7 +1403,7 @@ phosphatebyRplot <- Nutrient_Models_Cabral_R %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=phosphate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1402,7 +1430,7 @@ ammoniabyRplot <- Nutrient_Models_Cabral_R %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=ammonia_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1428,7 +1456,7 @@ NNbyRplot <- Nutrient_Models_Cabral_R %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=NN_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1454,7 +1482,7 @@ silicatebyRplot <- Nutrient_Models_Cabral_R %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=silicate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1499,7 +1527,7 @@ pHbyGPplot <- Nutrient_Models_Cabral_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=new_pH, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1525,7 +1553,7 @@ TAbyGPplot <- Nutrient_Models_Cabral_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=TA_initial, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1550,7 +1578,7 @@ salinitybyGPplot <- Nutrient_Models_Cabral_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1575,7 +1603,7 @@ phosphatebyGPplot <- Nutrient_Models_Cabral_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=phosphate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1600,7 +1628,7 @@ ammoniabyGPplot <- Nutrient_Models_Cabral_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=ammonia_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1625,7 +1653,7 @@ NNbyGPplot <- Nutrient_Models_Cabral_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=NN_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1650,7 +1678,7 @@ silicatebyGPplot <- Nutrient_Models_Cabral_GP %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=silicate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1723,7 +1751,7 @@ ammoniabyCplot <- Nutrient_Models_Cabral_NEC %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=ammonia_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1749,7 +1777,7 @@ silicatebyCplot <- Nutrient_Models_Cabral_NEC %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=silicate_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1775,7 +1803,7 @@ NNbyCplot <- Nutrient_Models_Cabral_NEC %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=NN_umolL, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1798,11 +1826,11 @@ PhosbyCplot <- Nutrient_Models_Cabral_NEC %>%
          date=as.factor(date), 
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=phosphate_umolL, 
-             y=umol.cm2.hr, 
-             color=SGD_number)) + 
-  geom_point(size=3) +
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  geom_smooth(method="lm") +
   theme_bw() + 
-#  facet_wrap(~date, scales = "free_x") +
+  #facet_wrap(~new_colonynumber, scales = "free_x") +
   labs(x = "Phosphate",
        y = "Rate (umol CaCO3 g-1 hr-1)",
        title = "NEC Rates for Cabral with Phosphate") +
@@ -1824,7 +1852,7 @@ salinitybyCplot <- Nutrient_Models_Cabral_NEC %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=salinity, 
              y=umol.cm2.hr, 
-             color=SGD_number)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1849,10 +1877,10 @@ pHbyCplot <- Nutrient_Models_Cabral_NEC %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=new_pH, 
              y=umol.cm2.hr, 
-             color=date)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
-#  facet_wrap(~date, scales = "free_x") +
+  #facet_wrap(~new_colonynumber, scales = "free_x") +
   labs(x = "pH",
        y = "Rate (umol CaCO3 g-1 hr-1)",
        title = "NEC Rates for Cabral with pH") +
@@ -1874,7 +1902,7 @@ TAbyCplot <- Nutrient_Models_Cabral_NEC %>%
          SGD_number=as.factor(SGD_number)) %>% 
   ggplot(aes(x=TA_initial, 
              y=umol.cm2.hr, 
-             color=date)) + 
+             color=new_colonynumber)) + 
   geom_point(size=3) +
   theme_bw() + 
 #  facet_wrap(~date, scales = "free_x") +
@@ -1995,5 +2023,7 @@ summary(Cabral_avgSGD_NEC)
 
 
 
+### Results to share with Nyssa: (June 6th) 
+- after going through the data AGAIN in depth and resolving join issues -- with new NEC models, initial TA is significant 
 
 
