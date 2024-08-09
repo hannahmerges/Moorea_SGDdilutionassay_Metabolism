@@ -1948,6 +1948,7 @@ ggsave(here("Outputs", "NutrientAnalyses", "Varari", "N_P_Ratios", "R_plot.jpg")
 model_V_NPratiobyR <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) , data=Nutrient_Models_Varari_R2 %>% 
   mutate(new_colonynumber= as.factor(new_colonynumber)))
 anova(model_V_NPratiobyR)
+summary(model_V_NPratiobyR)
 
 ##############
 ## NEC 
@@ -2096,6 +2097,65 @@ ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "N_P_Ratios", "NEC_plot.jpg
 
 
 ```
+
+
+### models for N:P to see if it is significant 
+```{r}
+
+## Varari GP 
+Nutrient_Models_Varari_GP2 
+
+### Varari R 
+Nutrient_Models_Varari_R2 
+
+### Varari C 
+Nutrient_Models_Varari_C2 
+
+### Cabral GP
+Nutrient_Models_Cabral_GP2 
+
+### Cabral R
+Nutrient_Models_Cabral_R2
+
+### Cabral C
+Nutrient_Models_Cabral_C2
+
+
+### models 
+
+##### Varari GP 
+NPvsGP_Varari <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Varari_GP2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsGP_Varari)
+
+##### Varari R  
+NPvsR_Varari <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Varari_R2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsR_Varari)
+
+##### Varari C -- SIGNIFICANT 
+NPvsC_Varari <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Varari_C2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsC_Varari)
+
+##### Cabral GP  
+NPvsGP_Cabral <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Cabral_GP2  %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsGP_Cabral)
+
+##### Cabral R  
+NPvsR_Cabral <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Cabral_R2  %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsR_Cabral)
+
+##### Cabral C  
+NPvsC_Cabral <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Cabral_C2  %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsC_Cabral)
+
+```
+
+
 
 
 ## Creating plots for GP:C at both sites 

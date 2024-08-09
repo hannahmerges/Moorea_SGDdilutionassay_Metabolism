@@ -23,6 +23,8 @@ CarbonateChem <- read_csv("https://raw.githubusercontent.com/njsilbiger/MooreaSG
 ################################################
 ## figure out values for V, C, and Amb SW for nuts, TA, and pH 
 ################################################
+
+#### ONLY HAVE OFFSHORE DATA FROM MARCH 
 AmbSW <- MooreaMarch_full %>% 
   filter(Plate_Seep == "Offshore")
 max(AmbSW$TA, na.rm=TRUE)
@@ -37,6 +39,14 @@ max(AmbSW$pH, na.rm=TRUE)
 min(AmbSW$pH, na.rm=TRUE)
 mean(AmbSW$pH, na.rm=TRUE)
 
+max(AmbSW$Phosphate_umolL, na.rm=TRUE)
+min(AmbSW$Phosphate_umolL, na.rm=TRUE)
+mean(AmbSW$Phosphate_umolL, na.rm=TRUE)
+
+max(AmbSW$Silicate_umolL, na.rm=TRUE)
+min(AmbSW$Silicate_umolL, na.rm=TRUE)
+mean(AmbSW$Silicate_umolL, na.rm=TRUE)
+
 ###
 ###
 
@@ -45,7 +55,7 @@ Varari_March <- MooreaMarch_full %>%
   filter(Plate_Seep!= "Offshore")
 
 V_August <- MooreaAugust2 %>% 
-  filter(Location=="Varari")
+  filter(Location=="Varari") 
 
 ### 
 max(Varari_March$TA, na.rm=TRUE)
@@ -98,13 +108,23 @@ min(C_August$pH, na.rm=TRUE)
 ### making bar graphs to illustrate differences ### 
 ##########################################################
 MooreaAugust2_edit <- MooreaAugust2 %>% 
-  select(-c(,2:7,10:16,24:30))
+  select(-c(,2:7,10:14,16,24:30))
 MooreaMarch_edit <- MooreaMarch_full %>% 
-  select(-c(,2:7,10:16,24:30))
+  select(-c(,2:7,10:14,16,24:30))
 
 MooreaAugust_addedOffshore <- MooreaMarch_edit %>%  
   full_join(MooreaAugust2_edit) %>% 
-  pivot_longer(cols= TA:Ammonia_umolL, names_to = "Parameter") 
+  pivot_longer(cols= Salinity:Ammonia_umolL, names_to = "Parameter") 
+
+
+Salinitygraph <- MooreaAugust_addedOffshore %>% 
+  filter(Parameter=="Salinity") %>% 
+  filter(Plate_Seep=="Spring") %>% 
+  filter(Location=="Cabral") %>% 
+  dplyr::summarize(mean=mean(value))
+
+max(Salinitygraph$value, na.rm=TRUE)
+
 
 
 
