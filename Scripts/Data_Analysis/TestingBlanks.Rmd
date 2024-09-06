@@ -33,7 +33,7 @@ RespoR2 <- read_csv(here("Data","RespoR2.csv"))
 # Normalize to Blanks for regular R and GP
 Things to think about: 
 -  compare the outputs of the averaged and individual days and see if they are similar or really different 
--  plot raw data aginst blanks to make sure that raw data BEFORE normalized are substantially higher than blanks 
+-  plot raw data against blanks to make sure that raw data BEFORE normalized are substantially higher than blanks 
 
 ### first way: average across all days 
 -  average across all the days and get one point for each dilution 
@@ -72,7 +72,8 @@ blanks_perday <- RespoR2 %>%
   filter(new_colonynumber== "BLANK") %>%
   group_by(SGD_number, light_dark, date, new_colonynumber, site) %>% 
   summarise(umol.sec = mean(umol.sec, na.rm=TRUE)) %>% ## so should have one value for each dilution 
-  dplyr::select(blank.rate = umol.sec, site)
+  dplyr::select(blank.rate = umol.sec, site) %>% 
+  filter(date!="6/13/23")
 
 
 ###############################################
@@ -83,10 +84,19 @@ plot_BlankRates <- blanks_perday %>%
              y=blank.rate)) +
   scale_x_continuous(trans="log10") +
   geom_point() + 
-  facet_wrap(site~date, scales="free_y")
+  facet_wrap(~site, scales="free_y")
 
 plot_BlankRates
 
+
+plot_BlankRates2 <- blanks_perday %>% 
+  ggplot(aes(x=SGD_number, 
+             y=blank.rate)) +
+  scale_x_continuous(trans="log10") +
+  geom_point() + 
+  facet_wrap(site~date, scales="free_y")
+
+plot_BlankRates2
 ```
 
 ### Now combine blank data with RespoR2 df 
@@ -313,11 +323,9 @@ Rrates_avgblanks <- AllRates_Normalized_avgblanks %>%
              y=umol.cm2.hr, 
              color=new_colonynumber)) + 
   geom_point() + 
-  facet_wrap(date~site)
+  facet_wrap(~new_colonynumber)
 
 Rrates_avgblanks
-
-
 
 #### daily for R
 Rrates_dailyblanks <- AllRates_Normalized_dailyblanks %>% 
@@ -326,7 +334,7 @@ Rrates_dailyblanks <- AllRates_Normalized_dailyblanks %>%
              y=umol.cm2.hr, 
              color=new_colonynumber)) + 
   geom_point() + 
-  facet_wrap(date~site)
+  facet_wrap(~new_colonynumber)
 
 Rrates_dailyblanks
 
@@ -343,7 +351,7 @@ GPrates_avgblanks <- AllRates_Normalized_avgblanks %>%
              y=umol.cm2.hr, 
              color=new_colonynumber)) + 
   geom_point() + 
-  facet_wrap(date~site)
+  facet_wrap(~new_colonynumber)
 
 GPrates_avgblanks
 
@@ -354,11 +362,19 @@ GPrates_dailyblanks <- AllRates_Normalized_dailyblanks %>%
              y=umol.cm2.hr, 
              color=new_colonynumber)) + 
   geom_point() + 
-  facet_wrap(date~site)
+  facet_wrap(~new_colonynumber)
 
 GPrates_dailyblanks
-
-
-GPrates_dailyblanks + GPrates_avgblanks
 ```
+
+
+
+
+
+
+
+
+
+
+
 
