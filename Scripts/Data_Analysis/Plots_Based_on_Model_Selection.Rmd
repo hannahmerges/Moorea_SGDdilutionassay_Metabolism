@@ -1,5 +1,5 @@
 ---
-title: "June 17th: Plots based on Model Selection for Environmental Parameters in SGD "
+title: "August 2024: Plots based on Model Selection for Environmental Parameters in SGD (this script is used for majority of results)"
 author: "Hannah Merges"
 date: "`r Sys.Date()`"
 output: html_document
@@ -41,16 +41,24 @@ library(kableExtra)
 library(reshape2)
 theme_set(theme_classic()) ### This sets the default ggplot theme
 library(Hmisc)
+require(effects)
 ```
 
 ### Loading Data
 ```{r, echo=FALSE}
 RespoR_Normalized_Full_withNEC_nutrients <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
+## full datasheet with GP, R, and C rates along with all env data 
+
 ActualvsPredicted_Nutrients <- read_csv(here::here("Data", "ActualvsPredicted_Values.csv"))
+## actual vs predicted nutrient levels- excel calculations 
+
 RawGWData <- read_csv(here::here("Data", "RespoFiles", "Fragment_MeasurementSampling_Cabral_Varari2.csv")) 
+## all background data on fragments and dilutions 
 
 MooreaMarch_full <- read_csv("https://raw.githubusercontent.com/njsilbiger/MooreaSGD_site-selection/main/Data/March2022/Allbiogeochemdata_QC_march_fdom2.csv")
+
 MooreaAugust <- read_csv("https://raw.githubusercontent.com/njsilbiger/MooreaSGD_site-selection/main/Data/August2021/Nutrients/Nutrients_Watersampling_Aug21.csv")
+
 MooreaAugust2 <- read_csv("https://raw.githubusercontent.com/njsilbiger/MooreaSGD_site-selection/main/Data/August2021/Allbiogeochemdata_QC2.csv")
 
 ```
@@ -691,6 +699,7 @@ C_Varari_SGDDils
 ```
 
 ### Plot nutrient levels with SGD dils to see how different the nutrients actually are across the dilutions 
+-  just using as a check/baseline 
 
 ```{r, echo=FALSE}
 
@@ -905,6 +914,8 @@ TA_Levels_per_SGDDil
 ```
 
 ### Plot how many corals are net calcifying vs net dissolving  
+-  this is supplementarl figure used as additional evidence to show difference in Varari gw vs Cabral 
+-  Results: more fragments in Varari were net dissolving compared to Cabral (and at lower dilutions)
 
 ```{r}
 ### should make a stacked bar plot with all corals in one group of dilution - % of which of those are positive or negative 
@@ -1092,111 +1103,6 @@ anova(model_GP_R_SGD_Cabral)
 
 ```
 
-### Make correlation matrix for nutrients 
-
-```{r}
-## data 
-corr_matrix_envparams <- RespoR_Normalized_Full_withNEC_nutrients %>% 
-  filter(P_R=="R") %>% 
-  mutate(Salinity=salinity) %>% 
-  select(!c("salinity", "umol.cm2.hr", "SGD_number", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL")) ## removed ammonia for rn because have less than values and causing NAs
-
-##visualize it 
-ggcorr(corr_matrix_envparams, method = c("everything", "pearson")) 
-
-###############################
-### Dani B's methods #######
-cor_mat <- round(cor(corr_matrix_envparams),4)
-head(cor_mat)
-
-#melt the correlation matrix means it reassembles data frame to be more effective to complete corr matrix
-#to long format
-melted_cormat <- melt(cor_mat)
-head(melted_cormat)
-
-#visulaize the correlation matrix in general
-ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + 
-  geom_tile()
-
-# Get lower and upper triangle of the correlation matrix
-#Note that, a correlation matrix has redundant information. We’ll use the functions below to set half of it to NA
-get_lower_tri<-function(cor_mat){
-  cormat[upper.tri(cor_mat)] <- NA
-  return(cor_mat)
-}
-# Get upper triangle of the correlation matrix
-get_upper_tri <- function(cor_mat){
-  cor_mat[lower.tri(cor_mat)]<- NA
-  return(cor_mat)
-}
-
-#apply upper tri calculation to graphc
-upper_tri <- get_upper_tri(cor_mat)
-upper_tri
-
-#melt the correlation matrix
-#melt the correlation data and drop the rows with NA values 
-melted_cormat <- melt(upper_tri, na.rm = TRUE)
-
-#heatmap of correlation matrix
-#negative correlations are in purple color and positive correlations in red
-#scale_fill_gradient2 is used with the argument limit = c(-1,1) as correlation coefficients range from -1 to 1
-#coord_fixed() : this function ensures that one unit on the x-axis is the same length as one unit on the y-axis
-ggplot(data = melted_cormat, aes(Var2, Var1, fill = value))+
-  geom_tile(color = "white")+
-  scale_fill_gradient2(low = "midnightblue", high = "firebrick4", mid = "white", 
-                       midpoint = 0, limit = c(-1,1), space = "Lab", 
-                       name="Pearson\nCorrelation") +
-  theme_minimal()+ 
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
-                                   size = 12, hjust = 1))+
-  coord_fixed()
-
-melted_cormat <- melted_cormat %>% mutate_at(vars(starts_with("value")), funs(round(., 2)))
-
-# Create a ggheatmap with basic characteristics, etc. 
-ggheatmap <- ggplot(melted_cormat, aes(Var2, Var1, fill = value))+
-  geom_tile(color = "white")+
-  scale_fill_gradient2(low = "firebrick3", mid = "white", high = "dodgerblue3", 
-                       midpoint = 0, limit = c(-1,1), space = "Lab", 
-                       name="Pearson\nCorrelation") +
-  theme_minimal()+ # minimal theme
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
-                                   size = 12, hjust = 1))+
-  coord_fixed()
-
-
-# Print the heatmap
-print(ggheatmap)
-
-#add correlation coefficients to the heatmap
-#geom_text() to add the correlation coefficients on the graph
-#guides() to change the position of the legend title
-#if else statement in melted data frame to quotes of black and white to adjust text color 
-corr_matrix_SGD_params <- ggheatmap + 
-  geom_text(aes(Var2, Var1, label = value), color = "black", size = 6) +
-  theme(axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
-        axis.text.x = element_text(size = 18, face="bold", color="black"),
-        axis.text.y = element_text(size = 18, face="bold", color="black"),
-        panel.grid.major = element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank(),
-        axis.ticks = element_blank(),
-        legend.justification = c(0.8, 0),
-        legend.title = element_text(size = 18, face="bold", color="black"),
-        legend.text = element_text(size = 20, face="bold", color="black"),
-        legend.position = c(0.48, 0.75),
-        legend.direction = "horizontal") +
-  guides(fill = guide_colorbar(barwidth = 12, barheight = 2, 
-                               title.position = "top", title.hjust = 0.5, title.vjust = 1.0))
-
-corr_matrix_SGD_params
-
-```
-
-### Results of back calculating 
-Essentially found that the predicted values were too low to be useful for 
 
 # NEW UPDATES FROM JUNE 19TH MEETING WITH NYSSA: 
 Three main figures for publication will include: 
@@ -1210,12 +1116,11 @@ Three main figures for publication will include:
 -  Exploratory figures: Net calcifying vs net dissolving, GP:C (potentially for index)
 
 
-### Figure 1: Conceptual 
+### Figure 1: Conceptual (made in Biorender)
 
 
-
-### Figure 2: ReVamp'd (correlation matrix)
-- this has all but the significant correlations for each site as blank 
+##### Figure 2: ReVamp'd (correlation matrix) (ignore these)
+- this has all the significant correlations and labeled for each site  
 ```{r}
 ###################################
 ## Varari 
@@ -1338,8 +1243,8 @@ ggsave(here::here("Outputs", "Results", "REDO_CabralCorrelation.jpg"),
        width=10, height=7)
 ```
 
-### Figure 2: ReVamp'd 
-- this is revamped but still includes all the squares more interpreation 
+##### Figure 2: ReVamp'd again (ignore these)
+- this is revamped but still includes all the squares further interpretation 
 ```{r}
  ###################################
 ## Varari 
@@ -1465,7 +1370,139 @@ ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"),
        width=12, height=15)
 ```
 
-### Figure 2a: RE Vamp'd (barplots)
+### Figure 2a: correlation matrix ONLY with silicate AND spearman correlation - THIS IS THE ONE TO USE
+-  this is the final figure included for publication, which only has silicate compared to other env params AND uses the Spearman correlation which is better for nonlinear, monotonic data 
+```{r}
+ ###################################
+## Varari 
+###################################
+## data 
+corr_matrix_Varari_silicateonly <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  mutate(N_P = NN_umolL/phosphate_umolL) %>% 
+  filter(P_R=="R") %>% 
+  mutate("Salinity"=salinity, 
+         "TA" = TA_initial, 
+         "pH" = new_pH, 
+         "N+N" = NN_umolL, 
+         "Phosphate" = phosphate_umolL,
+         "Silicate" = silicate_umolL) %>% 
+         #"N+N:P" = N_P) %>% 
+  filter(site=="Varari") %>% 
+  select(!c("salinity", "silicate_umolL", "log_silicate", "log_silicate2", "TA_initial", "new_pH", "N_P", "phosphate_umolL", "NN_umolL", "umol.cm2.hr", "SGD_number", "temp_C", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL")) 
+
+## version 2.0 
+corr_Varari_spearman <- round(cor(corr_matrix_Varari_silicateonly, method="spearman"), 1)
+
+# Compute a matrix of correlation p-values
+p.mat_Varari_spearman <- cor_pmat(corr_Varari_spearman)
+
+# Extract the correlations involving "Silicate"
+corr_silicate_V <- corr_Varari_spearman[, "Silicate", drop = FALSE]
+
+# Transpose the matrix to make "Silicate" the row instead of the column
+corr_silicate_matrix_V <- t(as.matrix(corr_silicate_V))
+
+# Convert the matrix to a long format
+corr_melted_V <- melt(corr_silicate_matrix_V)
+
+# Plot the correlation matrix vertically
+Varari_corr_matrix_spearman <- ggplot(corr_melted_V, aes(x=Var2, y=Var1, fill=value)) +
+  geom_tile(color = "white") +  # Adjust width of the tiles to make the plot narrower
+  scale_fill_gradient2(low = "steelblue3", high = "tomato3", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Spearman\nCorrelation") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 5) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12, face = "bold", color="black"),
+        axis.text.y = element_text(size = 12, face = "bold", color="black")) +  
+  coord_flip() +  # Flip coordinates for vertical layout
+  labs(x = "", y = "")
+
+# Display the plot
+Varari_corr_matrix_spearman
+
+ggsave(here::here("Outputs", "Results", "Final", "Vsilicate_corrmatrix.jpg"), 
+       width=7, height=12)
+
+###################################
+## Cabral 
+###################################
+## data 
+corr_matrix_Cabral <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  mutate(N_P = NN_umolL/phosphate_umolL) %>% 
+  filter(P_R=="R") %>% 
+  mutate("Salinity"=salinity, 
+         "TA" = TA_initial, 
+         "pH" = new_pH, 
+         "N+N" = NN_umolL, 
+         "Phosphate" = phosphate_umolL,
+         "Silicate" = silicate_umolL) %>%  
+        # "N:P" = N_P) %>% 
+  filter(site=="Cabral") %>% 
+  select(!c("salinity", "log_silicate", "log_silicate2", "silicate_umolL", "TA_initial", "new_pH", "N_P", "phosphate_umolL", "NN_umolL", "umol.cm2.hr", "SGD_number", "temp_C", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL")) 
+
+# Compute a correlation matrix
+corr_Cabral_spearman <- round(cor(corr_matrix_Cabral, method="spearman"), 1)
+
+# Compute a matrix of correlation p-values
+p.mat_Cabral_spearman <- cor_pmat(corr_Cabral_spearman)
+
+# Specify the desired order of parameters
+#param_orderC <- c("Salinity", "TA", "pH", "N+N", "Phosphate", "Silicate") # Replace with your actual parameter names
+
+# Reorder the correlation matrix
+#corr_Cabral2 <- corr_Cabral2[param_orderC, param_orderC]
+
+# Extract the correlations involving "Silicate"
+corr_silicate_C <- corr_Cabral_spearman[, "Silicate", drop = FALSE]
+
+# Transpose the matrix to make "Silicate" the row instead of the column
+corr_silicate_matrix_C <- t(as.matrix(corr_silicate_C))
+
+# Convert the matrix to a long format
+corr_melted_C <- melt(corr_silicate_matrix_C)
+
+# Plot the correlation matrix vertically
+Cabral_corr_matrix_spearman <- ggplot(corr_melted_C, aes(x=Var2, y=Var1, fill=value)) +
+  geom_tile(color = "white") +  # Adjust width of the tiles to make the plot narrower
+  scale_fill_gradient2(low = "steelblue3", high = "tomato3", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Spearman\nCorrelation") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 5) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12, face = "bold", color="black"),
+        axis.text.y = element_text(size = 12, face = "bold", color="black")) +  
+  coord_flip() +  # Flip coordinates for vertical layout
+  labs(x = "", y = "")
+
+Cabral_corr_matrix_spearman
+
+ggsave(here::here("Outputs", "Results", "Final", "Csilicate_corrmatrix.jpg"), 
+       width=7, height=12)
+
+
+########################### 
+## patch together 
+###########################
+
+#### remove x-axis labels 
+p_Ccorr_silicate <- Cabral_corr_matrix_spearman 
+p_Vcorr_silicate <- Varari_corr_matrix_spearman 
+ 
+combined_corr_plot_silicate <- p_Ccorr_silicate/p_Vcorr_silicate + plot_layout(guides = 'collect')
+
+combined_corr_plot_silicate + 
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.margin = unit(c(1, 1, 1, 1), "cm"), 
+        plot.tag = element_text(size = 18, face = "bold"))
+
+ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"), 
+       width=10, height=15)
+
+
+```
+
+### Figure 2a (part2): Barplots for GW endmember data 
 - making bar graphs to illustrate differences between sites and from sites to offshore ambient SW 
 ```{r}
 ###########################################################
@@ -1657,7 +1694,90 @@ ggsave(here::here("Outputs", "Results", "Final", "rawGW_barplots.jpg"),
 
 ```
 
-### Figure 3:
+
+### Figure 2b: Background information (plots with silicate vs parameters)
+-  for personal understanding - not to include in paper
+```{r}
+##########################
+## site data  
+##########################
+background_site_plots <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+ # mutate(N_P = NN_umolL/phosphate_umolL) %>% 
+  filter(P_R=="R") %>% 
+  mutate("Salinity"=salinity, 
+         "TA" = TA_initial, 
+         "pH" = new_pH, 
+         "NN" = NN_umolL, 
+         "Phosphate" = phosphate_umolL,
+         "Silicate" = silicate_umolL) %>% 
+  select(!c("salinity", "log_silicate", "log_silicate2", "silicate_umolL", "TA_initial", "new_pH", "phosphate_umolL", "NN_umolL", "umol.cm2.hr", "SGD_number", "temp_C", "new_colonynumber", "sample_ID", "date", "P_R", "ammonia_umolL")) %>% 
+  filter(Phosphate<0.9 & TA < 2550)
+
+##########################
+## ggplots - silciate vs everything else 
+##########################
+
+### Phos 
+silicate_vs_phos <- background_site_plots %>% 
+  ggplot(aes(x=Silicate, 
+             y=Phosphate, 
+             color=site)) + 
+  geom_point(size=3) + 
+  facet_wrap(~site, scales = "free_y") ## OUTLIER AT 0.9 for PHOS (removed)
+
+silicate_vs_phos
+
+### NN
+silicate_vs_NN <- background_site_plots %>% 
+  ggplot(aes(x=Silicate, 
+             y= NN,
+             color=site)) + 
+  geom_point(size=3) + 
+  facet_wrap(~site, scales = "free_y") 
+
+silicate_vs_NN
+
+### TA
+silicate_vs_TA <- background_site_plots %>% 
+  ggplot(aes(x= Silicate, 
+             y= TA,
+             color=site)) + 
+  geom_point(size=3) + 
+  facet_wrap(~site, scales = "free_y") ## OUTLIER AT VARARI ABOVE 2550 
+
+silicate_vs_TA
+
+### Salinity
+silicate_vs_salinity <- background_site_plots %>% 
+  ggplot(aes(x=Silicate, 
+             y= Salinity,
+             color=site)) + 
+  geom_point(size=3) + 
+  facet_wrap(~site, scales = "free_y") 
+
+silicate_vs_salinity
+
+### pH
+silicate_vs_pH <- background_site_plots %>% 
+  ggplot(aes(x=Silicate, 
+             y= pH,
+             color=site)) + 
+  geom_point(size=3) + 
+  facet_wrap(~site, scales = "free_y") 
+
+silicate_vs_pH
+
+############ patch together 
+silicate_by_otherparams <- silicate_vs_pH + silicate_vs_salinity + silicate_vs_TA + silicate_vs_NN + silicate_vs_phos
+
+silicate_by_otherparams
+
+ggsave(here::here("Outputs", "Results", "Final", "silicate_vs_otherparams.jpg"), 
+       width=24, height = 12)
+```
+
+
+### Figure 3: Physio rate plots 
 
 ```{r}
 ### Respiration 
@@ -1670,7 +1790,10 @@ R_silicate <- RespoR_Normalized_Full_withNEC_nutrients %>%
   scale_color_manual(values=c("darkgoldenrod2", "firebrick4")) +
   theme_classic() + 
   coord_trans(x ="log") +
-#  geom_smooth(method="lm", formula = "y~poly(log(x),2)", color="black") +
+  geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
+                filter(P_R == "R", !is.infinite(umol.cm2.hr)), 
+              aes(x = silicate_umolL, y = umol.cm2.hr), 
+              method = "lm", formula = y~poly(log(x),2), color = "black") +
   labs(y = expression(Respiration~Rate~(mu*mol~O[2]~cm^-2~hr^-1)),
        color = "Site") +
    theme(axis.text.x=element_text(size=18), 
@@ -1684,17 +1807,16 @@ R_silicate <- RespoR_Normalized_Full_withNEC_nutrients %>%
                                 size=20, 
                                 face="bold"))
 R_silicate
-ggsave(here::here("Outputs", "Results", "R_silicate.jpg"), 
+ggsave(here::here("Outputs", "Results", "Final", "R_silicate.jpg"), 
        width=10, height=7)
 
-### R model 
-R_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
-                                            filter(P_R=="R") %>% 
-                                            filter(!is.infinite(umol.cm2.hr)))
-
-anova(R_bothsites_silicate_linearmodel)
-r.squaredGLMM(R_bothsites_silicate_linearmodel)
-
+RespoR_Normalized_Full_withNEC_nutrientsR <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+   filter(P_R=="C") %>% 
+ filter(site=="Cabral") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+  
+max(RespoR_Normalized_Full_withNEC_nutrientsR$umol.cm2.hr)
+min(RespoR_Normalized_Full_withNEC_nutrientsR$umol.cm2.hr)
 ###############################
 ## Gross Photosynthesis 
 ###############################
@@ -1708,14 +1830,9 @@ GP_silicate <- RespoR_Normalized_Full_withNEC_nutrients %>%
   theme_classic() + 
   coord_trans(x ="log") +
   geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
-                filter(P_R == "GP", site == "Varari", !is.infinite(umol.cm2.hr)), 
+                filter(P_R == "GP", !is.infinite(umol.cm2.hr)), 
               aes(x = silicate_umolL, y = umol.cm2.hr), 
-              method = "lm", formula = y ~ log(x), color = "firebrick4", linetype = "dashed") +
-  geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
-                filter(P_R == "GP", site == "Cabral", !is.infinite(umol.cm2.hr)), 
-              aes(x = silicate_umolL, y = umol.cm2.hr), 
-              method = "lm", formula = y ~ log(x), color = "darkgoldenrod2") +
-  #geom_smooth(method="lm", formula = "y~log(x)", color="black", linetype = "dashed") +
+              method = "lm", formula = y~poly(log(x),2), color = "black") +
   labs(x = expression(Silicate~(mu*mol~L^-1)),
       y = expression(Gross~Photosynthesis~Rate~(mu*mol~O[2]~cm^-2~hr^-1)),
        color = "Site") +
@@ -1733,19 +1850,6 @@ GP_silicate
 ggsave(here::here("Outputs", "Results", "GP_silicate.jpg"), 
        width=10, height=7)
 
-
-### GP model
-GP_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
-                                            filter(P_R=="GP") %>% 
-                                            filter(!is.infinite(umol.cm2.hr)))
-
-anova(GP_bothsites_silicate_linearmodel)
-r.squaredGLMM(GP_bothsites_silicate_linearmodel)
-summary(GP_bothsites_silicate_linearmodel)
-
-### no significant reaction per site - slopes are indistinguishable which explains why there is one line --> 
-
-
 ###############################
 ## Calcification 
 ###############################
@@ -1762,16 +1866,9 @@ C_silicate_ECRS_firebrick4 <- RespoR_Normalized_Full_withNEC_nutrients %>%
   #scale_x_discrete(breaks = c(1, 10, 20)) +
   geom_hline(yintercept = 0) +
   geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
-                filter(P_R == "C", site == "Varari", !is.infinite(umol.cm2.hr)), 
+                filter(P_R == "C", !is.infinite(umol.cm2.hr)), 
               aes(x = silicate_umolL, y = umol.cm2.hr), 
-              method = "lm", formula = y ~ log(x), color = "firebrick4") +
-  geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
-                filter(P_R == "C", site == "Cabral", !is.infinite(umol.cm2.hr)), 
-              aes(x = silicate_umolL, y = umol.cm2.hr), 
-              method = "lm", formula = y ~ log(x), color = "darkgoldenrod2", linetype = "dashed") +
- # geom_smooth(method="lm", formula = "y~log(x)", color="red3", 
-           #   method="lm", formula = "y~log(x)", color="deepskyblue4", type="dashed") +
- # geom_smooth(method="lm", formula = "y~log(x)", color="deepskyblue4", type="dashed") +
+              method = "lm", formula = y~log(x), color = "black") +
  labs(x = expression(Silicate~(mu*mol~L^-1)),
        y = expression(Calcification~Rate~(mu*mol~CaCO[3]~cm^-2~hr^-1)),
        color = "Site") +
@@ -1789,21 +1886,6 @@ C_silicate_ECRS_firebrick4
 
 ggsave(here::here("Outputs", "Results", "C_silicate.jpg"), 
        width=10, height=7)
-
-
-### C model 
-C_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
-                                            filter(P_R=="C") %>%
-                                            filter(!is.infinite(umol.cm2.hr)))
-
-anova(C_bothsites_silicate_linearmodel)
-r.squaredGLMM(C_bothsites_silicate_linearmodel)
-summary(C_bothsites_silicate_linearmodel)
-
-## intercept = 0.15352 
-## slope =  -0.02219  
-
-### ^^ these are Varari's slope and intercept 
 
 #############################################
 ### make these plots figure worthy using patchwork 
@@ -1830,15 +1912,13 @@ combined_column +
  theme(plot.margin = unit(c(1, 1, 1, 1), "cm"),
         plot.tag = element_text(size = 24, face = "bold"))
 
-ggsave(here::here("Outputs", "Results", "CombinedRates.jpg"), 
-       width=10, height=15)
+ggsave(here::here("Outputs", "Results", "Final", "CombinedRates.jpg"), 
+       width=10, height=16)
 
 ```
 
 
-### Figure 3: Re'Vampd with GP nonlinear
-Going back to reVamp because nonlinear models show significance in GP at Varari also 
-- linearly there is no significance but at Cabral and Varari in nonlinear models (like hypothesized) there is significance 
+### Figure 3: Re'Vampd with GP and R nonlinear
 ```{r}
 ###################
 ### GP 2.0
@@ -1922,34 +2002,52 @@ ggsave(here::here("Outputs", "Results", "Final", "CombinedRates.jpg"),
 
 ```
 
+
 ### FINAL MODELS USED IN RESULTS: 
 RESULTS SHOW THAT: 
-- linear model is better fit for R, GP, and C 
+-  linear model is better fit for R, GP, and C 
+-  decided on ANCOVA design rather than analyzing sites separately -- acknowledging that they are different BUT want to test for the relationship between the two to see HOW they are different and how the GP, R, and C rates are different in the fragments exposed to gw from both sites
+-  model set-up: "model <- lmer(umol.cm2.hr ~ log_silicate*site + log_silicate2 + (1|new_colonynumber), data=data" -- and then filter for specifically R, GP, or C
+  
+-  **Respiration**: log_silicate, 2 (poly) = 0.0065 and log_silicate is 0.0045, so both _significant_. The interaction between silicate and site = 0.95 and just site (0.2) are both _insignificant_ 
+-  **Photosynthesis**: Poly (0.001) and linear silicate (0.0005) both _significant_. Interaction and just site are both _insignificant_ 
+-  **Calcification**: ONLY testing linear. Logged silicate = 0.01 so _significant_. Interaction and just site are both _insignificant_ 
 ```{r}
 
 RespoR_Normalized_Full_withNEC_nutrients <- RespoR_Normalized_Full_withNEC_nutrients %>% 
   mutate(log_silicate = log(silicate_umolL+1), 
-         log_silicate2 = (log_silicate^2)) 
-
+         log_silicate2 = (log_silicate^2), 
+         date=factor(date))
 ########################
 ## R
 ########################
 ### nonlinear model 
-R_silicate_nonlinearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + log_silicate2 + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
-  filter(P_R=="R") %>% 
+#R_silicate_nonlinearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + log_silicate2 + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
+ # filter(P_R=="R") %>% 
+  #filter(!is.infinite(umol.cm2.hr)))
+
+R_silicate_nonlinearmodel2 <- lmer(umol.cm2.hr ~ log_silicate*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
+  filter(P_R=="C") %>% 
   filter(!is.infinite(umol.cm2.hr)))
 
-anova(R_silicate_nonlinearmodel)
+anova(R_silicate_nonlinearmodel2)
+summary(R_silicate_nonlinearmodel2)
+check_model(R_silicate_nonlinearmodel2)
 
-summary(R_silicate_nonlinearmodel)
 AIC(R_silicate_nonlinearmodel)
+r.squaredGLMM(R_silicate_nonlinearmodel)
 
 
 ### linear model 
-R_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL+1)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
+#R_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL+1)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
   #filter(site=="Varari") %>% 
-  filter(P_R=="R") %>% 
-  filter(!is.infinite(umol.cm2.hr)))
+ # filter(P_R=="R") %>% 
+ # filter(!is.infinite(umol.cm2.hr)))
+
+R_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
+                                            filter(P_R=="R") %>% 
+                                            filter(!is.infinite(umol.cm2.hr)))
+anova(R_bothsites_silicate_linearmodel)
 
 summary(R_silicate_linearmodel)
 AIC(R_silicate_linearmodel)
@@ -1958,19 +2056,21 @@ AIC(R_silicate_linearmodel)
 ## GP
 ########################
 ### nonlinear model 
-GP_silicate_nonlinearmodel <- lmer(umol.cm2.hr ~ poly(log_silicate,2)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
+GP_silicate_nonlinearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + log_silicate2 + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
   filter(P_R=="GP") %>% 
   filter(!is.infinite(umol.cm2.hr)))
 
 anova(GP_silicate_nonlinearmodel)
 summary(GP_silicate_nonlinearmodel)
 AIC(GP_silicate_nonlinearmodel)
+r.squaredGLMM(GP_silicate_nonlinearmodel)
+
 
 ### linear model 
-GP_silicate_linearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
+#GP_silicate_linearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
   #filter(site=="Varari") %>% 
-  filter(P_R=="GP") %>% 
-  filter(!is.infinite(umol.cm2.hr)))
+ # filter(P_R=="GP") %>% 
+  #filter(!is.infinite(umol.cm2.hr)))
 
 anova(GP_silicate_linearmodel)
 summary(GP_silicate_linearmodel)
@@ -1980,28 +2080,263 @@ AIC(GP_silicate_linearmodel)
 ## Calcification 
 ########################
 ### nonlinear model 
-C_Varari_silicate_nonlinearmodel <- lmer(umol.cm2.hr ~ poly(log(silicate_umolL+1),2)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
+#C_silicate_nonlinearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + log_silicate2 + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
   #filter(site=="Varari") %>% 
-  filter(P_R=="C") %>% 
-  filter(!is.infinite(umol.cm2.hr)))
+#  filter(P_R=="C") %>% 
+#  filter(!is.infinite(umol.cm2.hr)))
 
+anova(C_Varari_silicate_nonlinearmodel)
 summary(C_Varari_silicate_nonlinearmodel)
 AIC(C_Varari_silicate_nonlinearmodel)
 
 ### linear model 
-C_Varari_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL+1)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
-  #filter(site=="Varari") %>% 
+C_silicate_linearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
   filter(P_R=="C") %>% 
   filter(!is.infinite(umol.cm2.hr)))
 
+anova(C_silicate_linearmodel)
 summary(C_Varari_silicate_linearmodel)
 AIC(C_Varari_silicate_linearmodel)
+r.squaredGLMM(C_silicate_linearmodel)
+
+########################################################
+########################################################
+
+
+```
+
+### Models worked on August 29th, 2024
+```{r}
+
+#####################
+## Respiration 
+#####################
+modeltest_R <- lmer(umol.cm2.hr ~ log_silicate*site + I(log_silicate^2) + (1|date/new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
+  filter(P_R=="R") %>%
+  filter(!is.infinite(umol.cm2.hr)))
+
+anova(modeltest_R)
+summary(modeltest_R)
+
+#####################
+## Photosynthesis  
+#####################
+modeltest_GP <- lmer(umol.cm2.hr ~ log_silicate*site + I(log_silicate^2) + (1|date/new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
+  filter(P_R=="GP") %>%
+  filter(!is.infinite(umol.cm2.hr)))
+
+anova(modeltest_GP)
+summary(modeltest_GP)
+```
+
+
+
+### FINAL PLOTS BASED ON MODELS: RESPIRATION
+```{r}
+###################
+### R 
+###################
+
+modeltest_R <- lmer(umol.cm2.hr ~ log_silicate*site + I(log_silicate^2) + (1|date/new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
+  filter(P_R=="R") %>%
+  filter(!is.infinite(umol.cm2.hr)))
+
+anova(modeltest_R)
+summary(modeltest_R)
+
+### based on reference from stack overflow on how to visualize a mixed model with random effects 
+### create a new dataframe that has x var (silicate), z var (color by colony number), and then create y values using predict function
+### logged or not logged silicate? 
+
+### first isolate just R values 
+R_only <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  filter(P_R=="R") 
+
+write_csv(R_only, here::here("Data", "R_only.csv"))
+  
+
+### now make new df 
+plot_df_R <- data.frame(silicate = R_only$silicate_umolL,
+                        pred_umol = predict(modeltest_R, newdata = R_only), 
+                        new_colonynumber = as.factor(R_only$new_colonynumber))
+
+
+### define the desired color groups based on colony number (z variable)
+plot_df_R$color_group <- ifelse(plot_df_R$new_colonynumber %in% as.character(1:8), "red2", 
+                                ifelse(plot_df_R$new_colonynumber %in% as.character(13:18), "gold2", NA))
+
+### define the gradients (Varari in red, Cabral in blue)
+Varari_gradient <- scales::gradient_n_pal(c("red2", "coral4"))(seq(0, 1, length.out = length(unique(plot_df_R$new_colonynumber[plot_df_R$color_group == "red2"]))))
+
+Cabral_gradient <- scales::gradient_n_pal(c("gold2", "goldenrod"))(seq(0, 1, length.out = length(unique(plot_df_R$new_colonynumber[plot_df_R$color_group == "gold2"]))))
+
+### Create the ggplot with conditional gradients
+Rplot <- plot_df_R %>% 
+  ggplot(aes(x = silicate, 
+             y = pred_umol,
+             color = new_colonynumber)) +
+  geom_point(size = 3, alpha = 0.5, 
+             data = R_only, 
+             aes(x= silicate_umolL,
+                 y= umol.cm2.hr, 
+                 color = as.factor(new_colonynumber))) +
+  geom_line(data = plot_df_R, linetype = 1) +
+  coord_trans(x ="log") +
+ # geom_abline(aes(intercept = fixef(modeltest_R)[1], slope = fixef(modeltest_R)[2],
+           #       linetype = "Fixed effect"), key_glyph = draw_key_path,
+           #   linewidth = 1) +
+  scale_color_manual(values = c(Varari_gradient, Cabral_gradient)) +
+  labs(linetype = NULL, color = "Colony Number", color_group = "Site") +
+ # annotation_custom(grid::textGrob(
+    #bquote(bold(~y == 
+          #   .(round(fixef(modeltest_R)[1], 3)) + .(round(fixef(modeltest_R)[2], 3)) * x)),
+   # x = 0.05, y = 0.9, hjust = 0, gp = grid::gpar(cex = 1.2))) +
+  ggtitle("Illustration of mixed effects model with random intercept for RESPIRATION") +
+  theme(legend.position = "top",
+        plot.title = element_text(face = 2, hjust = 0.5),
+        panel.border = element_rect(fill = NA, linewidth = 0.2))
+
+Rplot
+
+
+```
+
+### FINAL PLOTS BASED ON MODELS: PHOTOSYNTHESIS
+
+```{r}
+
+###################
+### GP
+###################
+
+### based on reference from stack overflow on how to visualize a mixed model with random effects 
+### create a new dataframe that has x var (silicate), z var (color by colony number), and then create y values using predict function
+### logged or not logged silicate? 
+
+### first isolate just R values 
+GP_only <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  filter(P_R=="GP")  
+
+### now make new df 
+plot_df_GP <- data.frame(silicate = GP_only$log_silicate,
+                        pred_umol = predict(modeltest_GP, newdata = GP_only), 
+                        new_colonynumber = as.factor(GP_only$new_colonynumber))
+
+
+### define the desired color groups based on colony number (z variable)
+plot_df_GP$color_group <- ifelse(plot_df_GP$new_colonynumber %in% as.character(1:8), "firebrick4", 
+                              ifelse(plot_df_GP$new_colonynumber %in% as.character(13:18), "goldenrod", NA))
+
+### define the gradients (Varari in red, Cabral in blue)
+red_gradient <- scales::gradient_n_pal(c("firebrick4"))(seq(0, 1, length.out = length(unique(plot_df_GP$new_colonynumber[plot_df_GP$color_group == "firebrick4"]))))
+
+blue_gradient <- scales::gradient_n_pal(c("goldenrod"))(seq(0, 1, length.out = length(unique(plot_df_GP$new_colonynumber[plot_df_GP$color_group == "goldenrod"]))))
+
+### Create the ggplot with conditional gradients
+GPplot <- plot_df_GP %>% 
+  ggplot(aes(x = silicate, 
+             y = pred_umol,
+             color = new_colonynumber)) +
+  geom_point(size = 3, alpha = 0.5, 
+             data = GP_only, 
+             aes(x= log_silicate,
+                 y= umol.cm2.hr, 
+                 color = as.factor(new_colonynumber))) +
+  geom_line(data = plot_df_GP, linetype = 2) +
+ # geom_abline(aes(intercept = fixef(modeltest_GP)[1], slope = fixef(modeltest_GP)[2],
+              #    linetype = "Fixed effect"), key_glyph = draw_key_path,
+             # linewidth = 1) +
+  scale_color_manual(values = c(red_gradient, blue_gradient)) +
+  labs(linetype = NULL, color = "Colony Number") +
+  annotation_custom(grid::textGrob(
+    bquote(bold(~y == 
+             .(round(fixef(modeltest_GP)[1], 3)) + .(round(fixef(modeltest_GP)[2], 3)) * x)),
+    x = 0.05, y = 0.9, hjust = 0, gp = grid::gpar(cex = 1.2))) +
+  ggtitle("Illustration of mixed effects model with random intercept for PHOTOSYNTHESIS") +
+  theme(legend.position = "top",
+        plot.title = element_text(face = 2, hjust = 0.5),
+        panel.border = element_rect(fill = NA, linewidth = 0.2))
+
+GPplot
+
+```
+
+
+### FINAL PLOTS BASED ON MODELS: CALCIFICATION
+
+```{r}
+C_silicate2 <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(P_R=="C") %>% 
+  filter(SGD_number!=0) %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr, 
+             color=as.factor(new_colonynumber))) + 
+  geom_point(size=4) +
+  facet_wrap(~new_colonynumber) +
+ # scale_color_manual(values=c("darkgoldenrod2", "firebrick4")) +
+  theme_classic() + 
+  coord_trans(x ="log") +
+  geom_smooth(method="lm", formula="y~x + I(x^2)") + 
+  labs(x = expression(Silicate~(mu*mol~L^-1)),
+      y = expression(Calcification~Rate~(mu*mol~O[2]~cm^2~hr^-1))) +
+    theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=20, face="bold"),
+        axis.title.y=element_text(size=20, face="bold"),
+        legend.title = element_text(size=18, 
+                                    face="bold"), 
+        legend.text = element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20, 
+                                face="bold"))
+C_silicate2 
+
+```
+
+
+### Patch plots together 
+```{r}
+########################### 
+## patch together 
+###########################
+
+#### remove x-axis labels 
+p1 <- R_silicate + theme(axis.title.x = element_blank(), axis.text.x = element_blank(),  
+                         legend.title = element_blank(), legend.text = element_blank(), legend.position = "none", 
+                         axis.title.y=element_text(size=15, face="bold")) + 
+  scale_x_continuous(breaks = c(2, 10, 20)) 
+p2 <- GP_silicate2 + theme(axis.title.x = element_blank(), axis.text.x = element_blank(), 
+                          axis.title.y=element_text(size=15, face="bold")) + 
+  scale_x_continuous(breaks = c(2, 10, 20)) 
+p3 <- C_silicate_ECRS_firebrick4 + 
+  theme(legend.title = element_blank(), legend.text = element_blank(), legend.position = "none", 
+        axis.title.x=element_text(size=15, face="bold"), 
+        axis.title.y=element_text(size=15, face="bold")) +
+  scale_x_continuous(breaks = c(2, 10, 20)) 
+
+combined_column <- p1/p2/p3 + plot_layout(guides = 'collect')
+
+combined_column + 
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.margin = unit(c(1, 1, 1, 1), "cm"),
+        plot.tag = element_text(size = 18, face = "bold"))
+
+ggsave(here::here("Outputs", "Results", "Final", "CombinedRates.jpg"), 
+       width=10, height=15)
 ```
 
 
 
 
+
+#############################
+
+
 ### Plots using pred() function 
+-  as of August 2024, still need to figure out how to do properly 
 ```{r}
 #####################################
 ## New attempt: July 29th, 2024
@@ -2087,7 +2422,9 @@ Pred_plot_C_10
 ```
 
 
+
 ## Comparing Actual vs Predicted Nutrient Values 
+-  these plots are meant to compare the actual env data collected from the dilutions to the predicted values based on calculations from the endmember gw data 
 
 ```{r}
 ActualvsPredicted_Nutrients_edit_Nitrate <- ActualvsPredicted_Nutrients %>% 
@@ -2181,67 +2518,78 @@ actualVpredicted_NutsPlot
 ggsave(here::here("Outputs", "Results", "Final", "ActualVPredicted_NutsPlot.jpg"), 
        width = 12, height=8)
 
+
+#########################################
+## look at day by day measurements 
+## because averages are off for first three dilutions for actual data 
+#########################################
+
+### NN
+NN_byday_C <- ActualvsPredicted_Nutrients_edit_Nitrate %>% 
+  filter(Site=="Cabral") %>% 
+  ggplot(aes(x=(SGD_number+1), 
+             y=Value, 
+             color=Value_Type)) + 
+  geom_point() +
+  facet_wrap(~Day)  + 
+  scale_color_manual(values=pnw_palette("Bay", n=2)) +
+   coord_trans(x ="log") + 
+  labs(title="NN for Cabral")
+
+NN_byday_C
+
+NN_byday_V <- ActualvsPredicted_Nutrients_edit_Nitrate %>% 
+  filter(Site=="Varari") %>% 
+  ggplot(aes(x=(SGD_number+1), 
+             y=Value, 
+             color=Value_Type)) + 
+  geom_point() +
+  facet_wrap(~Day)  + 
+  scale_color_manual(values=pnw_palette("Bay", n=2)) +
+   coord_trans(x ="log") + 
+  labs(title="NN for Varari")
+
+NN_byday_V
+  
+### Phos
+Phos_byday_C <- ActualvsPredicted_Nutrients_edit_Phosphate %>% 
+  filter(Site=="Cabral") %>% 
+  ggplot(aes(x=(SGD_number+1), 
+             y=Value, 
+             color=Value_Type)) + 
+  geom_point() +
+  facet_wrap(~Day) + 
+  scale_color_manual(values=pnw_palette("Bay", n=2)) +
+   coord_trans(x ="log") + 
+  labs(title="Phosphate for Cabral")
+
+Phos_byday_C
+
+Phos_byday_V <- ActualvsPredicted_Nutrients_edit_Phosphate %>% 
+  filter(Site=="Varari") %>% 
+  ggplot(aes(x=(SGD_number+1), 
+             y=Value, 
+             color=Value_Type)) + 
+  geom_point() +
+  facet_wrap(~Day) + 
+  scale_color_manual(values=pnw_palette("Bay", n=2)) +
+   coord_trans(x ="log") + 
+  labs(title="Phosphate for Varari")
+
+Phos_byday_V
+
+#########################
+### Patch 
+#########################
+NN_byday_C + Phos_byday_C + NN_byday_V + Phos_byday_V
+
+ggsave(here::here("Outputs", "Results", "exploring_actualvspred.jpg"), 
+       width = 12, height=7)
+
 ```
-
-
-
-## For ECRS: 
-```{r}
-###############################
-## Calcification 
-###############################
-
-C_silicate_ECRS_firebrick4 <- RespoR_Normalized_Full_withNEC_nutrients %>% 
-  mutate(site = dplyr::recode(site, 
-                      "Varari" = "Site 2",
-                      "Cabral" = "Site 1")) %>% 
-  filter(P_R=="C") %>% 
-  filter(!is.infinite(umol.cm2.hr)) %>% 
-  ggplot(aes(x=silicate_umolL, 
-             y=umol.cm2.hr)) + 
-  geom_point(size=5, aes(color=site)) +
-  scale_color_manual(values=c("darkgoldenrod2", "firebrick4")) +
-  theme_classic() + 
-  coord_trans(x ="log") +
-  theme(strip.background = element_rect(fill = "white")) +
-  geom_hline(yintercept = 0) +
-  geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
-                filter(P_R == "C", site == "Varari", !is.infinite(umol.cm2.hr)), 
-              aes(x = silicate_umolL, y = umol.cm2.hr), 
-              method = "lm", formula = y ~ log(x), color = "firebrick4") +
-  geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
-                filter(P_R == "C", site == "Cabral", !is.infinite(umol.cm2.hr)), 
-              aes(x = silicate_umolL, y = umol.cm2.hr), 
-              method = "lm", formula = y ~ log(x), color = "darkgoldenrod2", linetype = "dashed") +
- # geom_smooth(method="lm", formula = "y~log(x)", color="red3", 
-           #   method="lm", formula = "y~log(x)", color="deepskyblue4", type="dashed") +
- # geom_smooth(method="lm", formula = "y~log(x)", color="deepskyblue4", type="dashed") +
-  labs(x = "Logged Silicate (umolL)",
-       y = "Rate (umol CaCO3 g-1 hr-1)",
-       title = "Calcification Rates as a Function of Silicate",
-       color = "Site") +
-   theme(axis.text.x=element_text(size=18), 
-        axis.text.y=element_text(size=18), 
-        axis.title.x=element_text(size=20, face="bold"),
-        axis.title.y=element_text(size=20, face="bold"),
-        legend.title = element_text(size=18, 
-                                    face="bold"), 
-        legend.text = element_text(size=18), 
-        plot.title=element_text(hjust=0.5, ## centers title 
-                                size=20, 
-                                face="bold"))
-C_silicate_ECRS_firebrick4
-
-ggsave(here::here("Outputs", "Results", "C_silicate_ECRS.jpg"), 
-       width=10, height=7)
-
-
-```
-
-
 
 ### check GP and C again colored by site and TA by NEC rates 
-Results show that TA and NEC relationship is opposite of what we expect ... so it is likely that nutrients have a stronger effect on the physiological rates than TA
+-  Results show that TA and NEC relationship is opposite of what we expect ... so it is likely that nutrients have a stronger effect on the physiological rates than TA
 
 ```{r}
 
@@ -2316,7 +2664,66 @@ TA_bothsites_forNEC
 ```
 
 
+## For ECRS:
+-  editing the calcification plots specifically for the ECRS talk  
+```{r}
+###############################
+## Calcification 
+###############################
+
+C_silicate_ECRS_firebrick4 <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  mutate(site = dplyr::recode(site, 
+                      "Varari" = "Site 2",
+                      "Cabral" = "Site 1")) %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=5, aes(color=site)) +
+  scale_color_manual(values=c("darkgoldenrod2", "firebrick4")) +
+  theme_classic() + 
+  coord_trans(x ="log") +
+  theme(strip.background = element_rect(fill = "white")) +
+  geom_hline(yintercept = 0) +
+  geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
+                filter(P_R == "C", site == "Varari", !is.infinite(umol.cm2.hr)), 
+              aes(x = silicate_umolL, y = umol.cm2.hr), 
+              method = "lm", formula = y ~ log(x), color = "firebrick4") +
+  geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
+                filter(P_R == "C", site == "Cabral", !is.infinite(umol.cm2.hr)), 
+              aes(x = silicate_umolL, y = umol.cm2.hr), 
+              method = "lm", formula = y ~ log(x), color = "darkgoldenrod2", linetype = "dashed") +
+ # geom_smooth(method="lm", formula = "y~log(x)", color="red3", 
+           #   method="lm", formula = "y~log(x)", color="deepskyblue4", type="dashed") +
+ # geom_smooth(method="lm", formula = "y~log(x)", color="deepskyblue4", type="dashed") +
+  labs(x = "Logged Silicate (umolL)",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "Calcification Rates as a Function of Silicate",
+       color = "Site") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=20, face="bold"),
+        axis.title.y=element_text(size=20, face="bold"),
+        legend.title = element_text(size=18, 
+                                    face="bold"), 
+        legend.text = element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20, 
+                                face="bold"))
+C_silicate_ECRS_firebrick4
+
+ggsave(here::here("Outputs", "Results", "C_silicate_ECRS.jpg"), 
+       width=10, height=7)
+
+
+```
+
+
+############################################
+############################################
+
 ## EXtra: 
+-  not really using and not commented but saving as back up 
 ```{r}
 
 RespoR_Normalized_Full_withNEC_nutrients_Cabral_GP <- RespoR_Normalized_Full_withNEC_nutrients %>% 
@@ -2551,6 +2958,109 @@ res.cor.Varari %>%
   
 ##########################
 
+
+```
+
+### Make correlation matrix for nutrients 
+
+```{r}
+## data 
+corr_matrix_envparams <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(P_R=="R") %>% 
+  mutate(Salinity=salinity) %>% 
+  select(!c("salinity", "umol.cm2.hr", "SGD_number", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL")) ## removed ammonia for rn because have less than values and causing NAs
+
+##visualize it 
+ggcorr(corr_matrix_envparams, method = c("everything", "pearson")) 
+
+###############################
+### Dani B's methods #######
+cor_mat <- round(cor(corr_matrix_envparams),4)
+head(cor_mat)
+
+#melt the correlation matrix means it reassembles data frame to be more effective to complete corr matrix
+#to long format
+melted_cormat <- melt(cor_mat)
+head(melted_cormat)
+
+#visulaize the correlation matrix in general
+ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()
+
+# Get lower and upper triangle of the correlation matrix
+#Note that, a correlation matrix has redundant information. We’ll use the functions below to set half of it to NA
+get_lower_tri<-function(cor_mat){
+  cormat[upper.tri(cor_mat)] <- NA
+  return(cor_mat)
+}
+# Get upper triangle of the correlation matrix
+get_upper_tri <- function(cor_mat){
+  cor_mat[lower.tri(cor_mat)]<- NA
+  return(cor_mat)
+}
+
+#apply upper tri calculation to graphc
+upper_tri <- get_upper_tri(cor_mat)
+upper_tri
+
+#melt the correlation matrix
+#melt the correlation data and drop the rows with NA values 
+melted_cormat <- melt(upper_tri, na.rm = TRUE)
+
+#heatmap of correlation matrix
+#negative correlations are in purple color and positive correlations in red
+#scale_fill_gradient2 is used with the argument limit = c(-1,1) as correlation coefficients range from -1 to 1
+#coord_fixed() : this function ensures that one unit on the x-axis is the same length as one unit on the y-axis
+ggplot(data = melted_cormat, aes(Var2, Var1, fill = value))+
+  geom_tile(color = "white")+
+  scale_fill_gradient2(low = "midnightblue", high = "firebrick4", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_minimal()+ 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 12, hjust = 1))+
+  coord_fixed()
+
+melted_cormat <- melted_cormat %>% mutate_at(vars(starts_with("value")), funs(round(., 2)))
+
+# Create a ggheatmap with basic characteristics, etc. 
+ggheatmap <- ggplot(melted_cormat, aes(Var2, Var1, fill = value))+
+  geom_tile(color = "white")+
+  scale_fill_gradient2(low = "firebrick3", mid = "white", high = "dodgerblue3", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_minimal()+ # minimal theme
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 12, hjust = 1))+
+  coord_fixed()
+
+
+# Print the heatmap
+print(ggheatmap)
+
+#add correlation coefficients to the heatmap
+#geom_text() to add the correlation coefficients on the graph
+#guides() to change the position of the legend title
+#if else statement in melted data frame to quotes of black and white to adjust text color 
+corr_matrix_SGD_params <- ggheatmap + 
+  geom_text(aes(Var2, Var1, label = value), color = "black", size = 6) +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(size = 18, face="bold", color="black"),
+        axis.text.y = element_text(size = 18, face="bold", color="black"),
+        panel.grid.major = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks = element_blank(),
+        legend.justification = c(0.8, 0),
+        legend.title = element_text(size = 18, face="bold", color="black"),
+        legend.text = element_text(size = 20, face="bold", color="black"),
+        legend.position = c(0.48, 0.75),
+        legend.direction = "horizontal") +
+  guides(fill = guide_colorbar(barwidth = 12, barheight = 2, 
+                               title.position = "top", title.hjust = 0.5, title.vjust = 1.0))
+
+corr_matrix_SGD_params
 
 ```
 
@@ -2801,6 +3311,53 @@ ggsave(here::here("Outputs", "Results", "Cabral_correlation_matrix.jpg"),
        width=10, height=7)
 
 ```
+
+### Results of back calculating 
+Essentially found that the predicted values were too low to be useful for 
+
+
+
+## silicate vs blanks 
+```{r}
+
+silicate_blanks <- blanks_deltaTA %>% 
+  filter(Sample_Collection!="Initial") %>% 
+  ggplot(aes(x=as.numeric(SGD_number+1), 
+             y=delta_TA_blank, 
+             color=date)) + 
+  geom_point() + 
+  facet_wrap(date~site) + 
+  coord_trans(x="log")
+
+silicate_blanks
+
+```
+
+### take average of Varari Days 2-4 to fill in for ambient day 1 
+```{r}
+
+C_only <- RespoR_Normalized_Full_withNEC_nutrients %>%
+  filter(!is.infinite(umol.cm2.hr)) %>%
+  filter(P_R=="C") %>% 
+  mutate(new_colonynumber=as.numeric(new_colonynumber))
+
+
+-18.427160
+-57.911680
+-63.030418
+
+(-18.427160+-57.911680+-63.030418)/3
+
+## REPLACE 146 FROM AMBIETN DAY 1 WITH -46.45642 WHICH IS AVERAGE OF ALL 3 OTHER DAYS FOR DELTA TA AT SGD NUMBER 1, AMB SW 
+
+
+
+```
+
+
+
+
+
 
 
 

@@ -114,6 +114,8 @@ RespoR2 <- RespoR %>%
   mutate_if(sapply(., is.character), as.factor) %>% #convert character columns to factors
   mutate(new_colonynumber= as.factor(new_colonynumber), 
          date_block= factor(date)) #make the blank column a factor
+
+write_csv(RespoR2 , here("Data","RespoR2.csv"))
 ```
 
 ## Normalize to Blanks for regular R and GP and NP respo 
@@ -409,37 +411,6 @@ post <- calc_data %>%
   filter(Sample_Collection == "Post") %>% 
   select("date","temp_C", "salinity_insitu", "sample_ID", "SGD_number", "TA", "site", "new_colonynumber") ## no repeats 
 
-##############################
-## check for duplicates -- was partially how I solved syntax error 
-##############################
-# Check for duplicate sample_IDs in initial and calc_data_post
-#initial_duplicates <- initial %>% 
- # group_by(sample_ID_initial) %>% 
- # filter(n() > 1)
-
-#calc_data_post_duplicates <- calc_data_post %>% 
- # group_by(sample_ID) %>% 
-  #filter(n() > 1)
-
-#calc_data_duplicates <- calc_data %>% 
-#  group_by(sample_ID) %>% 
-#  filter(n() > 1)
-
-# Verify that there are no duplicate sample_IDs in both dataframes
-#initial_duplicates <- initial %>% 
-#  group_by(sample_ID_initial) %>% 
-#  filter(n() > 1) %>%
-#  ungroup()
-
-#calc_data_post_duplicates <- calc_data_post %>% 
- # group_by(sample_ID) %>% 
- # filter(n() > 1) %>%
-#  ungroup()
-
-###########################################
-## check for white space? 
-###########################################
-
 #############################################
 ## join data 
 #############################################
@@ -464,7 +435,7 @@ blanks_post <- calc_data %>%
          Sample_Collection == "Post")
 
 blanks <- calc_data %>% 
-  filter(Sample_Type == "Blank") ## has blanks from both sites 
+  filter(Sample_Type == "Blank") ## has blanks from both sites and pre and post
 
 ############################################
 ## now join initial and blanks back together and use to figure out the change in TA from initial samples and blanks
@@ -477,14 +448,18 @@ blanks_deltaTA <- blanks1 %>%
   mutate(delta_TA_blank = TA_initial-TA) %>% 
   select(!c("pH_nonTris", "Sample_Type", "salinity_insitu"))
 
-####### getting the averages of blanks for each date and colony/treatment 
+####### getting the averages of blanks for SGD dilution and site  
 blanks_deltaTA_avg <- blanks_deltaTA %>% 
-  select(site, date, SGD_number, delta_TA_blank) %>% 
-  filter(delta_TA_blank!=0) %>% 
-  group_by(date, site, SGD_number) %>% 
+ # select(site, date, SGD_number, delta_TA_blank, Sample_Collection) %>% 
+  filter(Sample_Collection!="Initial") %>% 
+  mutate(delta_TA_blank=if_else(sample_ID_initial=="Varari_BlankD1_Dil1_Dark", -46.45642, delta_TA_blank)) %>% 
+  group_by(site, SGD_number, date) %>% 
   summarise(mean_blanks=mean(delta_TA_blank))
 
 calc_data_InitalPost_wblanks <- left_join(calc_data1, blanks_deltaTA_avg) #bring in mean blanks to calc_data
+
+#write_csv(calc_data_InitalPost_wblanks, here("Data","calc_data_InitalPost_wblanks.csv"))
+
 
 ############################################
 ### need to join in SA, volume data and time data by fragment ID, before calculating NEC
@@ -539,7 +514,7 @@ full_calc_data <- left_join(calc_data_withSA, time_data)
 ### NOW calculate the NEC rate
 ############################################
 full_calc_data2 <- full_calc_data %>% 
-  mutate(deltaTA = (TA_initial - TA) - mean_blanks) %>%  ### subtract blank data from actual colonies
+  mutate(deltaTA = (TA_initial - TA) - mean_blanks) %>%  ### subtract blank data from actual colonies in order to normamlize for blanks
   mutate(timediff = as.numeric(stop_time - start_time))
 
 ##### make a row that has rate.type for "C" assigned to light 
@@ -558,7 +533,7 @@ full_calc_data_NEC <- full_calc_data3 %>%
          umol.cm2.hr = umol.cm2.s*3600) %>% 
   select(!c(deltaTA_2,deltaTA_L,umol.cm2.s))
 
-write_csv(full_calc_data_NEC , here("Data","full_calc_data_NECrates.csv"))  ### updated on June 5th 
+#write_csv(full_calc_data_NEC , here("Data","full_calc_data_NECrates.csv"))  ### updated on June 5th 
 ```
 
 
@@ -622,7 +597,7 @@ pHSlope_nodark <- pHSlope_nodark[-rows_Dark,]
 NEC_wnuts_withpH <- NEC_wnuts %>% 
   left_join(pHSlope_nodark)
 
-write_csv(NEC_wnuts_withpH, here("Data", "NECnuts_withpH.csv"))
+#write_csv(NEC_wnuts_withpH, here("Data", "NECnuts_withpH.csv"))
 
 ```
 
