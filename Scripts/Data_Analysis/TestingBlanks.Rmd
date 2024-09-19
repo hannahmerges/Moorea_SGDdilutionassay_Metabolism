@@ -370,6 +370,42 @@ GPrates_dailyblanks
 
 
 
+#### Show that blanks were always x% of corals
+
+```{r}
+
+perdayblanks_joined_edit <- perdayblanks_joined %>% 
+  dplyr::select(c("new_colonynumber", "blank.rate", "umol.L.sec", "SGD_number", "date", "site", "light_dark")) %>% 
+  group_by(SGD_number, light_dark, date) %>% 
+  mutate(ratio = blank.rate/umol.L.sec) %>% 
+  filter(new_colonynumber!="BLANK")
+
+
+blank_coral_ratio_plot <- perdayblanks_joined_edit %>% 
+  ggplot(aes(x=ratio,
+             fill=site)) + 
+  geom_histogram(bins=40, binwidth=0.01) + 
+  scale_fill_manual(values=c("goldenrod", "firebrick4"))
+
+blank_coral_ratio_plot
+
+
+
+#### look at the values that have ratios greater than 0.1
+
+perdayblanks_joined_edit2 <- perdayblanks_joined_edit %>% 
+  filter(ratio < -0.1) ## 38 (23 values > 0.1 and 15 values < -0.1) values are particularly high out of 250
+
+
+
+
+
+
+
+
+
+
+```
 
 
 
