@@ -1,0 +1,30 @@
+SampleID,TA,Mass,Sample.Index,
+junk1,2238.479541,60.3448,1,
+junk2,2230.882734,59.8991,2,
+postVarari_Col5_Dil1,2374.363769,60.4211,3,
+postVarari_Col6_Dil1,2405.806718,59.5971,4,"col 6 higher, 5 weird "
+postVarari_Blank_Dil1,2435.23184,60.2069,5,
+postVarari_Col5_Dil2,2388.411553,60.4966,6,
+postVarari_Col6_Dil2,2398.740895,59.8041,7,higher
+postVarari_Blank_Dil2,2420.426342,59.5225,8,
+postVarari_Col5_Dil3,2375.090281,59.6824,9,
+postVarari_Col6_Dil3,2370.446021,60.2958,10,higher 
+postVarari_Blank_Dil3,2403.841373,59.8697,11,
+postVarari_Col5_Dil4,2381.933793,60.1711,12,
+postVarari_Col6_Dil4,2377.799281,59.6406,13,higher
+postVarari_Blank_Dil4,2416.147621,59.6928,14,
+postVarari_Col5_Dil5,2390.421068,60.2505,15,
+postVarari_Col6_Dil5,2391.770222,60.2716,16,"higher, blank are higher "
+postVarari_Blank_Dil5,2422.95391,59.9207,17,
+postVarari_Col5_Dil6,2397.04368,59.8293,18,same as pre samples 
+postVarari_Col6_Dil6,2398.136344,60.2396,19,
+postVarari_Blank_Dil6,2420.850642,59.9887,20,blanks are higher :/ 
+postVarari_Col5_Dil7,2405.270071,59.909,21,
+postVarari_Col6_Dil7,2420.40668,59.6001,22,much higher except for 1 
+postVarari_Blank_Dil7,2461.519296,60.0428,23,
+postVarari_Col5_Dil8,2435.293737,60.0295,24,
+postVarari_Col6_Dil8,2446.688983,60.3822,25,all higher 
+postVarari_Blank_Dil8,2478.597019,60.4177,26,
+postVarari_Col5_Dil9,2467.036635,59.7271,27,
+postVarari_Col6_Dil9,2474.818821,60.3306,28,all around the same 
+postVarari_Blank_Dil9,2497.162746,59.9666,29,

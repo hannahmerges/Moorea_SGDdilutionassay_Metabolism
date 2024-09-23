@@ -1,0 +1,435 @@
+﻿sample_ID_edit,date ,salinity_insitu,temp_C,TA,Sample_Type,Sample_Collection ,pH_nonTris,new_colonynumber,sample_ID,site,SGD_number
+Cabral_Col5_Dil1_Light,6/10/23,36.6,27.11,2372.132104,colony,Post,,13,Cabral_Col5_Dil1_Light,Cabral ,0
+Cabral_Col5_Dil2_Light,6/10/23,36.5,27.224,2401.373533,colony,Post,,13,Cabral_Col5_Dil2_Light,Cabral ,0.01
+Cabral_Col5_Dil3_Light,6/10/23,36.6,26.984,2362.172576,colony,Post,,13,Cabral_Col5_Dil3_Light,Cabral ,0.03
+Cabral_Col5_Dil4_Light,6/10/23,36.5,27.108,2361.937918,colony,Post,,13,Cabral_Col5_Dil4_Light,Cabral ,0.05
+Cabral_Col5_Dil5_Light,6/10/23,36.5,27.058,2351.838941,colony,Post,,13,Cabral_Col5_Dil5_Light,Cabral ,0.1
+Cabral_Col5_Dil6_Light,6/10/23,36.4,27.294,2340.395434,colony,Post,,13,Cabral_Col5_Dil6_Light,Cabral ,0.5
+Cabral_Col5_Dil7_Light,6/10/23,36.1,27.269,2380.764249,colony,Post,,13,Cabral_Col5_Dil7_Light,Cabral ,1
+Cabral_Col5_Dil8_Light,6/10/23,35.9,26.909,2343.77277,colony,Post,,13,Cabral_Col5_Dil8_Light,Cabral ,2
+Cabral_Col5_Dil9_Light,6/10/23,35.2,27.163,2357.879249,colony,Post,,13,Cabral_Col5_Dil9_Light,Cabral ,4
+Cabral_Col5_Dil1_pre,6/10/23,36.6,27.11,2376.083907,colony,Initial ,,13,Cabral_Col5_Dil1_Dark,Cabral ,0
+Cabral_Col5_Dil2_pre,6/10/23,36.5,27.224,2387.582754,colony,Initial ,,13,Cabral_Col5_Dil2_Dark,Cabral ,0.01
+Cabral_Col5_Dil3_pre,6/10/23,36.6,26.984,2385.141998,colony,Initial ,,13,Cabral_Col5_Dil3_Dark,Cabral ,0.03
+Cabral_Col5_Dil4_pre,6/10/23,36.5,27.108,2416.980703,colony,Initial ,,13,Cabral_Col5_Dil4_Dark,Cabral ,0.05
+Cabral_Col5_Dil5_pre,6/10/23,36.5,27.058,2396.451536,colony,Initial ,,13,Cabral_Col5_Dil5_Dark,Cabral ,0.1
+Cabral_Col5_Dil6_pre,6/10/23,36.4,27.294,2401.021379,colony,Initial ,,13,Cabral_Col5_Dil6_Dark,Cabral ,0.5
+Cabral_Col5_Dil7_pre,6/10/23,36.1,27.269,2433.16241,colony,Initial ,,13,Cabral_Col5_Dil7_Dark,Cabral ,1
+Cabral_Col5_Dil8_pre,6/10/23,35.9,26.909,2427.573363,colony,Initial ,,13,Cabral_Col5_Dil8_Dark,Cabral ,2
+Cabral_Col5_Dil9_pre,6/10/23,35.2,27.163,2410.363767,colony,Initial ,,13,Cabral_Col5_Dil9_Dark,Cabral ,4
+Cabral_Col6_Dil1_Light,6/10/23,36.6,27.11,2400.146374,colony,Post,,14,Cabral_Col6_Dil1_Light,Cabral ,0
+Cabral_Col6_Dil2_Light,6/10/23,36.5,27.224,2364.618326,colony,Post,,14,Cabral_Col6_Dil2_Light,Cabral ,0.01
+Cabral_Col6_Dil3_Light,6/10/23,36.6,26.984,2382.397296,colony,Post,,14,Cabral_Col6_Dil3_Light,Cabral ,0.03
+Cabral_Col6_Dil4_Light,6/10/23,36.5,27.108,2369.001411,colony,Post,,14,Cabral_Col6_Dil4_Light,Cabral ,0.05
+Cabral_Col6_Dil5_Light,6/10/23,36.5,27.058,2342.277241,colony,Post,,14,Cabral_Col6_Dil5_Light,Cabral ,0.1
+Cabral_Col6_Dil6_Light,6/10/23,36.4,27.294,2353.187015,colony,Post,,14,Cabral_Col6_Dil6_Light,Cabral ,0.5
+Cabral_Col6_Dil7_Light,6/10/23,36.1,27.269,2374.480852,colony,Post,,14,Cabral_Col6_Dil7_Light,Cabral ,1
+Cabral_Col6_Dil8_Light,6/10/23,35.9,26.909,2368.174013,colony,Post,,14,Cabral_Col6_Dil8_Light,Cabral ,2
+Cabral_Col6_Dil9_Light,6/10/23,35.2,27.163,2381.689204,colony,Post,,14,Cabral_Col6_Dil9_Light,Cabral ,4
+Cabral_Col6_Dil1_pre,6/10/23,36.6,27.11,2376.083907,colony,Initial ,,14,Cabral_Col6_Dil1_Dark,Cabral ,0
+Cabral_Col6_Dil2_pre,6/10/23,36.5,27.224,2387.582754,colony,Initial ,,14,Cabral_Col6_Dil2_Dark,Cabral ,0.01
+Cabral_Col6_Dil3_pre,6/10/23,36.6,26.984,2385.141998,colony,Initial ,,14,Cabral_Col6_Dil3_Dark,Cabral ,0.03
+Cabral_Col6_Dil4_pre,6/10/23,36.5,27.108,2416.980703,colony,Initial ,,14,Cabral_Col6_Dil4_Dark,Cabral ,0.05
+Cabral_Col6_Dil5_pre,6/10/23,36.5,27.058,2396.451536,colony,Initial ,,14,Cabral_Col6_Dil5_Dark,Cabral ,0.1
+Cabral_Col6_Dil6_pre,6/10/23,36.4,27.294,2401.021379,colony,Initial ,,14,Cabral_Col6_Dil6_Dark,Cabral ,0.5
+Cabral_Col6_Dil7_pre,6/10/23,36.1,27.269,2433.16241,colony,Initial ,,14,Cabral_Col6_Dil7_Dark,Cabral ,1
+Cabral_Col6_Dil8_pre,6/10/23,35.9,26.909,2427.573363,colony,Initial ,,14,Cabral_Col6_Dil8_Dark,Cabral ,2
+Cabral_Col6_Dil9_pre,6/10/23,35.2,27.163,2410.363767,colony,Initial ,,14,Cabral_Col6_Dil9_Dark,Cabral ,4
+Cabral_Blank_Dil1_Light_Day3,6/10/23,36.6,27.11,2424.787647,Blank,Post,,BLANK,Cabral_BlankD3_Dil1_Light,Cabral ,0
+Cabral_Blank_Dil2_Light_Day3,6/10/23,36.5,27.224,2395.421809,Blank,Post,,BLANK,Cabral_BlankD3_Dil2_Light,Cabral ,0.01
+Cabral_Blank_Dil3_Light_Day3,6/10/23,36.6,26.984,2393.11067,Blank,Post,,BLANK,Cabral_BlankD3_Dil3_Light,Cabral ,0.03
+Cabral_Blank_Dil4_Light_Day3,6/10/23,36.5,27.108,2406.089385,Blank,Post,,BLANK,Cabral_BlankD3_Dil4_Light,Cabral ,0.05
+Cabral_Blank_Dil5_Light_Day3,6/10/23,36.5,27.058,2373.888162,Blank,Post,,BLANK,Cabral_BlankD3_Dil5_Light,Cabral ,0.1
+Cabral_Blank_Dil6_Light_Day3,6/10/23,36.4,27.294,2364.770186,Blank,Post,,BLANK,Cabral_BlankD3_Dil6_Light,Cabral ,0.5
+Cabral_Blank_Dil7_Light_Day3,6/10/23,36.1,27.269,2387.441125,Blank,Post,,BLANK,Cabral_BlankD3_Dil7_Light,Cabral ,1
+Cabral_Blank_Dil8_Light_Day3,6/10/23,35.9,26.909,2392.885578,Blank,Post,,BLANK,Cabral_BlankD3_Dil8_Light,Cabral ,2
+Cabral_Blank_Dil9_Light_Day3,6/10/23,35.2,27.163,2395.006147,Blank,Post,,BLANK,Cabral_BlankD3_Dil9_Light,Cabral ,4
+Cabral_Blank_Dil1_pre_Day3,6/10/23,36.6,27.11,2376.083907,Blank,Initial ,,BLANK,Cabral_BlankD3_Dil1_Dark,Cabral ,0
+Cabral_Blank_Dil2_pre_Day3,6/10/23,36.5,27.224,2387.582754,Blank,Initial ,,BLANK,Cabral_BlankD3_Dil2_Dark,Cabral ,0.01
+Cabral_Blank_Dil3_pre_Day3,6/10/23,36.6,26.984,2385.141998,Blank,Initial ,,BLANK,Cabral_BlankD3_Dil3_Dark,Cabral ,0.03
+Cabral_Blank_Dil4_pre_Day3,6/10/23,36.5,27.108,2416.980703,Blank,Initial ,,BLANK,Cabral_BlankD3_Dil4_Dark,Cabral ,0.05
+Cabral_Blank_Dil5_pre_Day3,6/10/23,36.5,27.058,2396.451536,Blank,Initial ,,BLANK,Cabral_BlankD3_Dil5_Dark,Cabral ,0.1
+Cabral_Blank_Dil6_pre_Day3,6/10/23,36.4,27.294,2401.021379,Blank,Initial ,,BLANK,Cabral_BlankD3_Dil6_Dark,Cabral ,0.5
+Cabral_Blank_Dil7_pre_Day3,6/10/23,36.1,27.269,2433.16241,Blank,Initial ,,BLANK,Cabral_BlankD3_Dil7_Dark,Cabral ,1
+Cabral_Blank_Dil8_pre_Day3,6/10/23,35.9,26.909,2427.573363,Blank,Initial ,,BLANK,Cabral_BlankD3_Dil8_Dark,Cabral ,2
+Cabral_Blank_Dil9_pre_Day3,6/10/23,35.2,27.163,2410.363767,Blank,Initial ,,BLANK,Cabral_BlankD3_Dil9_Dark,Cabral ,4
+Cabral_Col7_Dil1_Light,6/11/23,36.5,27.436,2371.581242,colony ,Post,,15,Cabral_Col7_Dil1_Light,Cabral ,0
+Cabral_Col7_Dil2_Light,6/11/23,36.6,27.345,2372.372145,colony ,Post,,15,Cabral_Col7_Dil2_Light,Cabral ,0.01
+Cabral_Col7_Dil3_Light,6/11/23,36.5,27.68,2395.493573,colony ,Post,,15,Cabral_Col7_Dil3_Light,Cabral ,0.03
+Cabral_Col7_Dil4_Light,6/11/23,36.5,27.788,2364.631864,colony ,Post,,15,Cabral_Col7_Dil4_Light,Cabral ,0.05
+Cabral_Col7_Dil5_Light,6/11/23,36.5,27.779,2386.033331,colony ,Post,,15,Cabral_Col7_Dil5_Light,Cabral ,0.1
+Cabral_Col7_Dil6_Light,6/11/23,36.3,27.685,2370.480641,colony ,Post,,15,Cabral_Col7_Dil6_Light,Cabral ,0.5
+Cabral_Col7_Dil7_Light,6/11/23,36.2,27.602,2436.457464,colony ,Post,,15,Cabral_Col7_Dil7_Light,Cabral ,1
+Cabral_Col7_Dil8_Light,6/11/23,35.9,27.452,2374.238719,colony ,Post,,15,Cabral_Col7_Dil8_Light,Cabral ,2
+Cabral_Col7_Dil9_Light,6/11/23,35.1,27.734,2381.336345,colony ,Post,,15,Cabral_Col7_Dil9_Light,Cabral ,4
+Cabral_Col7_Dil1_pre,6/11/23,36.5,27.436,2382.096706,colony ,Initial ,,15,Cabral_Col7_Dil1_Dark,Cabral ,0
+Cabral_Col7_Dil2_pre,6/11/23,36.6,27.345,2381.684085,colony ,Initial ,,15,Cabral_Col7_Dil2_Dark,Cabral ,0.01
+Cabral_Col7_Dil3_pre,6/11/23,36.5,27.68,2377.767651,colony ,Initial ,,15,Cabral_Col7_Dil3_Dark,Cabral ,0.03
+Cabral_Col7_Dil4_pre,6/11/23,36.5,27.788,2372.216347,colony ,Initial ,,15,Cabral_Col7_Dil4_Dark,Cabral ,0.05
+Cabral_Col7_Dil5_pre,6/11/23,36.5,27.779,2379.793461,colony ,Initial ,,15,Cabral_Col7_Dil5_Dark,Cabral ,0.1
+Cabral_Col7_Dil6_pre,6/11/23,36.3,27.685,2369.619428,colony ,Initial ,,15,Cabral_Col7_Dil6_Dark,Cabral ,0.5
+Cabral_Col7_Dil7_pre,6/11/23,36.2,27.602,2416.039082,colony ,Initial ,,15,Cabral_Col7_Dil7_Dark,Cabral ,1
+Cabral_Col7_Dil8_pre,6/11/23,35.9,27.452,2378.953672,colony ,Initial ,,15,Cabral_Col7_Dil8_Dark,Cabral ,2
+Cabral_Col7_Dil9_pre,6/11/23,35.1,27.734,2380.96903,colony ,Initial ,,15,Cabral_Col7_Dil9_Dark,Cabral ,4
+Cabral_Col8_Dil1_Light,6/11/23,36.5,27.436,2387.010951,colony ,Post,,16,Cabral_Col8_Dil1_Light,Cabral ,0
+Cabral_Col8_Dil2_Light,6/11/23,36.6,27.345,2378.883991,colony ,Post,,16,Cabral_Col8_Dil2_Light,Cabral ,0.01
+Cabral_Col8_Dil3_Light,6/11/23,36.5,27.68,2397.745495,colony ,Post,,16,Cabral_Col8_Dil3_Light,Cabral ,0.03
+Cabral_Col8_Dil4_Light,6/11/23,36.5,27.788,2371.355603,colony ,Post,,16,Cabral_Col8_Dil4_Light,Cabral ,0.05
+Cabral_Col8_Dil5_Light,6/11/23,36.5,27.779,2401.438151,colony ,Post,,16,Cabral_Col8_Dil5_Light,Cabral ,0.1
+Cabral_Col8_Dil6_Light,6/11/23,36.3,27.685,2387.583749,colony ,Post,,16,Cabral_Col8_Dil6_Light,Cabral ,0.5
+Cabral_Col8_Dil7_Light,6/11/23,36.2,27.602,2414.232623,colony ,Post,,16,Cabral_Col8_Dil7_Light,Cabral ,1
+Cabral_Col8_Dil8_Light,6/11/23,35.9,27.452,2382.143503,colony ,Post,,16,Cabral_Col8_Dil8_Light,Cabral ,2
+Cabral_Col8_Dil9_Light,6/11/23,35.1,27.734,2410.307212,colony ,Post,,16,Cabral_Col8_Dil9_Light,Cabral ,4
+Cabral_Col8_Dil1_pre,6/11/23,36.5,27.436,2382.096706,colony ,Initial ,,16,Cabral_Col8_Dil1_Dark,Cabral ,0
+Cabral_Col8_Dil2_pre,6/11/23,36.6,27.345,2381.684085,colony ,Initial ,,16,Cabral_Col8_Dil2_Dark,Cabral ,0.01
+Cabral_Col8_Dil3_pre,6/11/23,36.5,27.68,2377.767651,colony ,Initial ,,16,Cabral_Col8_Dil3_Dark,Cabral ,0.03
+Cabral_Col8_Dil4_pre,6/11/23,36.5,27.788,2372.216347,colony ,Initial ,,16,Cabral_Col8_Dil4_Dark,Cabral ,0.05
+Cabral_Col8_Dil5_pre,6/11/23,36.5,27.779,2379.793461,colony ,Initial ,,16,Cabral_Col8_Dil5_Dark,Cabral ,0.1
+Cabral_Col8_Dil6_pre,6/11/23,36.3,27.685,2369.619428,colony ,Initial ,,16,Cabral_Col8_Dil6_Dark,Cabral ,0.5
+Cabral_Col8_Dil7_pre,6/11/23,36.2,27.602,2416.039082,colony ,Initial ,,16,Cabral_Col8_Dil7_Dark,Cabral ,1
+Cabral_Col8_Dil8_pre,6/11/23,35.9,27.452,2378.953672,colony ,Initial ,,16,Cabral_Col8_Dil8_Dark,Cabral ,2
+Cabral_Col8_Dil9_pre,6/11/23,35.1,27.734,2380.96903,colony ,Initial ,,16,Cabral_Col8_Dil9_Dark,Cabral ,4
+Cabral_Blank_Dil1_Light_Day4,6/11/23,36.5,27.436,2438.209258,Blank,Post,,BLANK,Cabral_BlankD4_Dil1_Light,Cabral ,0
+Cabral_Blank_Dil2_Light_Day4,6/11/23,36.6,27.345,2406.976199,Blank,Post,,BLANK,Cabral_BlankD4_Dil2_Light,Cabral ,0.01
+Cabral_Blank_Dil3_Light_Day4,6/11/23,36.5,27.68,2409.852201,Blank,Post,,BLANK,Cabral_BlankD4_Dil3_Light,Cabral ,0.03
+Cabral_Blank_Dil4_Light_Day4,6/11/23,36.5,27.788,2391.23163,Blank,Post,,BLANK,Cabral_BlankD4_Dil4_Light,Cabral ,0.05
+Cabral_Blank_Dil5_Light_Day4,6/11/23,36.5,27.779,2419.707615,Blank,Post,,BLANK,Cabral_BlankD4_Dil5_Light,Cabral ,0.1
+Cabral_Blank_Dil6_Light_Day4,6/11/23,36.3,27.685,2414.555882,Blank,Post,,BLANK,Cabral_BlankD4_Dil6_Light,Cabral ,0.5
+Cabral_Blank_Dil7_Light_Day4,6/11/23,36.2,27.602,2460.343234,Blank,Post,,BLANK,Cabral_BlankD4_Dil7_Light,Cabral ,1
+Cabral_Blank_Dil8_Light_Day4,6/11/23,35.9,27.452,2403.017238,Blank,Post,,BLANK,Cabral_BlankD4_Dil8_Light,Cabral ,2
+Cabral_Blank_Dil9_Light_Day4,6/11/23,35.1,27.734,2396.494132,Blank,Post,,BLANK,Cabral_BlankD4_Dil9_Light,Cabral ,4
+Cabral_Blank_Dil1_pre_Day4,6/11/23,36.5,27.436,2382.096706,Blank,Initial ,,BLANK,Cabral_BlankD4_Dil1_Dark,Cabral ,0
+Cabral_Blank_Dil2_pre_Day4,6/11/23,36.6,27.345,2381.684085,Blank,Initial ,,BLANK,Cabral_BlankD4_Dil2_Dark,Cabral ,0.01
+Cabral_Blank_Dil3_pre_Day4,6/11/23,36.5,27.68,2377.767651,Blank,Initial ,,BLANK,Cabral_BlankD4_Dil3_Dark,Cabral ,0.03
+Cabral_Blank_Dil4_pre_Day4,6/11/23,36.5,27.788,2372.216347,Blank,Initial ,,BLANK,Cabral_BlankD4_Dil4_Dark,Cabral ,0.05
+Cabral_Blank_Dil5_pre_Day4,6/11/23,36.5,27.779,2379.793461,Blank,Initial ,,BLANK,Cabral_BlankD4_Dil5_Dark,Cabral ,0.1
+Cabral_Blank_Dil6_pre_Day4,6/11/23,36.3,27.685,2369.619428,Blank,Initial ,,BLANK,Cabral_BlankD4_Dil6_Dark,Cabral ,0.5
+Cabral_Blank_Dil7_pre_Day4,6/11/23,36.2,27.602,2416.039082,Blank,Initial ,,BLANK,Cabral_BlankD4_Dil7_Dark,Cabral ,1
+Cabral_Blank_Dil8_pre_Day4,6/11/23,35.9,27.452,2378.953672,Blank,Initial ,,BLANK,Cabral_BlankD4_Dil8_Dark,Cabral ,2
+Cabral_Blank_Dil9_pre_Day4,6/11/23,35.1,27.734,2380.96903,Blank,Initial ,,BLANK,Cabral_BlankD4_Dil9_Dark,Cabral ,4
+Cabral_Col9_Dil1_Light,6/12/23,36.3,28.172,2358.205389,colony ,Post,,17,Cabral_Col9_Dil1_Light,Cabral ,0
+Cabral_Col9_Dil2_Light,6/12/23,36.6,27.982,2363.486669,colony ,Post,,17,Cabral_Col9_Dil2_Light,Cabral ,0.01
+Cabral_Col9_Dil3_Light,6/12/23,36.4,28.395,2363.234435,colony ,Post,,17,Cabral_Col9_Dil3_Light,Cabral ,0.03
+Cabral_Col9_Dil4_Light,6/12/23,36.6,28.219,2363.771572,colony ,Post,,17,Cabral_Col9_Dil4_Light,Cabral ,0.05
+Cabral_Col9_Dil5_Light,6/12/23,36.4,28.251,2405.42999,colony ,Post,,17,Cabral_Col9_Dil5_Light,Cabral ,0.1
+Cabral_Col9_Dil6_Light,6/12/23,36.3,28.313,2351.136681,colony ,Post,,17,Cabral_Col9_Dil6_Light,Cabral ,0.5
+Cabral_Col9_Dil7_Light,6/12/23,36.1,28.899,2379.484557,colony ,Post,,17,Cabral_Col9_Dil7_Light,Cabral ,1
+Cabral_Col9_Dil8_Light,6/12/23,35.8,28.199,2368.758982,colony ,Post,,17,Cabral_Col9_Dil8_Light,Cabral ,2
+Cabral_Col9_Dil9_Light,6/12/23,35.1,28.389,2376.244383,colony ,Post,,17,Cabral_Col9_Dil9_Light,Cabral ,4
+Cabral_Col9_Dil1_pre,6/12/23,36.3,28.172,2366.430138,colony ,Initial ,,17,Cabral_Col9_Dil1_Dark,Cabral ,0
+Cabral_Col9_Dil2_pre,6/12/23,36.6,27.982,2437.47068,colony ,Initial ,,17,Cabral_Col9_Dil2_Dark,Cabral ,0.01
+Cabral_Col9_Dil3_pre,6/12/23,36.4,28.395,2378.494426,colony ,Initial ,,17,Cabral_Col9_Dil3_Dark,Cabral ,0.03
+Cabral_Col9_Dil4_pre,6/12/23,36.6,28.219,2378.482368,colony ,Initial ,,17,Cabral_Col9_Dil4_Dark,Cabral ,0.05
+Cabral_Col9_Dil5_pre,6/12/23,36.4,28.251,2387.15343,colony ,Initial ,,17,Cabral_Col9_Dil5_Dark,Cabral ,0.1
+Cabral_Col9_Dil6_pre,6/12/23,36.3,28.313,2370.703949,colony ,Initial ,,17,Cabral_Col9_Dil6_Dark,Cabral ,0.5
+Cabral_Col9_Dil7_pre,6/12/23,36.1,28.899,2386.611317,colony ,Initial ,,17,Cabral_Col9_Dil7_Dark,Cabral ,1
+Cabral_Col9_Dil8_pre,6/12/23,35.8,28.199,2368.313481,colony ,Initial ,,17,Cabral_Col9_Dil8_Dark,Cabral ,2
+Cabral_Col9_Dil9_pre,6/12/23,35.1,28.389,2377.671921,colony ,Initial ,,17,Cabral_Col9_Dil9_Dark,Cabral ,4
+Cabral_Col10_Dil1_Light,6/12/23,36.3,28.172,2362.981772,colony ,Post,,18,Cabral_Col10_Dil1_Light,Cabral ,0
+Cabral_Col10_Dil2_Light,6/12/23,36.6,27.982,2392.314449,colony ,Post,,18,Cabral_Col10_Dil2_Light,Cabral ,0.01
+Cabral_Col10_Dil3_Light,6/12/23,36.4,28.395,2408.60394,colony ,Post,,18,Cabral_Col10_Dil3_Light,Cabral ,0.03
+Cabral_Col10_Dil4_Light,6/12/23,36.6,28.219,2381.965281,colony ,Post,,18,Cabral_Col10_Dil4_Light,Cabral ,0.05
+Cabral_Col10_Dil5_Light,6/12/23,36.4,28.251,2391.804065,colony ,Post,,18,Cabral_Col10_Dil5_Light,Cabral ,0.1
+Cabral_Col10_Dil6_Light,6/12/23,36.3,28.313,2367.783342,colony ,Post,,18,Cabral_Col10_Dil6_Light,Cabral ,0.5
+Cabral_Col10_Dil7_Light,6/12/23,36.1,28.899,2394.8548,colony ,Post,,18,Cabral_Col10_Dil7_Light,Cabral ,1
+Cabral_Col10_Dil8_Light,6/12/23,35.8,28.199,2393.560792,colony ,Post,,18,Cabral_Col10_Dil8_Light,Cabral ,2
+Cabral_Col10_Dil9_Light,6/12/23,35.1,28.389,2381.338346,colony ,Post,,18,Cabral_Col10_Dil9_Light,Cabral ,4
+Cabral_Col10_Dil1_pre,6/12/23,36.3,28.172,2366.430138,colony ,Initial ,,18,Cabral_Col10_Dil1_Dark,Cabral ,0
+Cabral_Col10_Dil2_pre,6/12/23,36.6,27.982,2437.47068,colony ,Initial ,,18,Cabral_Col10_Dil2_Dark,Cabral ,0.01
+Cabral_Col10_Dil3_pre,6/12/23,36.4,28.395,2378.494426,colony ,Initial ,,18,Cabral_Col10_Dil3_Dark,Cabral ,0.03
+Cabral_Col10_Dil4_pre,6/12/23,36.6,28.219,2378.482368,colony ,Initial ,,18,Cabral_Col10_Dil4_Dark,Cabral ,0.05
+Cabral_Col10_Dil5_pre,6/12/23,36.4,28.251,2387.15343,colony ,Initial ,,18,Cabral_Col10_Dil5_Dark,Cabral ,0.1
+Cabral_Col10_Dil6_pre,6/12/23,36.3,28.313,2370.703949,colony ,Initial ,,18,Cabral_Col10_Dil6_Dark,Cabral ,0.5
+Cabral_Col10_Dil7_pre,6/12/23,36.1,28.899,2386.611317,colony ,Initial ,,18,Cabral_Col10_Dil7_Dark,Cabral ,1
+Cabral_Col10_Dil8_pre,6/12/23,35.8,28.199,2368.313481,colony ,Initial ,,18,Cabral_Col10_Dil8_Dark,Cabral ,2
+Cabral_Col10_Dil9_pre,6/12/23,35.1,28.389,2377.671921,colony ,Initial ,,18,Cabral_Col10_Dil9_Dark,Cabral ,4
+Cabral_Blank_Dil1_Light_Day5,6/12/23,36.3,28.172,2390.789009,Blank,Post,,BLANK,Cabral_BlankD5_Dil1_Light,Cabral ,0
+Cabral_Blank_Dil2_Light_Day5,6/12/23,36.6,27.982,2415.253229,Blank,Post,,BLANK,Cabral_BlankD5_Dil2_Light,Cabral ,0.01
+Cabral_Blank_Dil3_Light_Day5,6/12/23,36.4,28.395,2454.707376,Blank,Post,,BLANK,Cabral_BlankD5_Dil3_Light,Cabral ,0.03
+Cabral_Blank_Dil4_Light_Day5,6/12/23,36.6,28.219,2411.69022,Blank,Post,,BLANK,Cabral_BlankD5_Dil4_Light,Cabral ,0.05
+Cabral_Blank_Dil5_Light_Day5,6/12/23,36.4,28.251,2417.911065,Blank,Post,,BLANK,Cabral_BlankD5_Dil5_Light,Cabral ,0.1
+Cabral_Blank_Dil6_Light_Day5,6/12/23,36.3,28.313,2378.442628,Blank,Post,,BLANK,Cabral_BlankD5_Dil6_Light,Cabral ,0.5
+Cabral_Blank_Dil7_Light_Day5,6/12/23,36.1,28.899,2450.621529,Blank,Post,,BLANK,Cabral_BlankD5_Dil7_Light,Cabral ,1
+Cabral_Blank_Dil8_Light_Day5,6/12/23,35.8,28.199,2382.772327,Blank,Post,,BLANK,Cabral_BlankD5_Dil8_Light,Cabral ,2
+Cabral_Blank_Dil9_Light_Day5,6/12/23,35.1,28.389,2398.004813,Blank,Post,,BLANK,Cabral_BlankD5_Dil9_Light,Cabral ,4
+Cabral_Blank_Dil1_pre_Day5,6/12/23,36.3,28.172,2366.430138,Blank,Initial ,,BLANK,Cabral_BlankD5_Dil1_Dark,Cabral ,0
+Cabral_Blank_Dil2_pre_Day5,6/12/23,36.6,27.982,2437.47068,Blank,Initial ,,BLANK,Cabral_BlankD5_Dil2_Dark,Cabral ,0.01
+Cabral_Blank_Dil3_pre_Day5,6/12/23,36.4,28.395,2378.494426,Blank,Initial ,,BLANK,Cabral_BlankD5_Dil3_Dark,Cabral ,0.03
+Cabral_Blank_Dil4_pre_Day5,6/12/23,36.6,28.219,2378.482368,Blank,Initial ,,BLANK,Cabral_BlankD5_Dil4_Dark,Cabral ,0.05
+Cabral_Blank_Dil5_pre_Day5,6/12/23,36.4,28.251,2387.15343,Blank,Initial ,,BLANK,Cabral_BlankD5_Dil5_Dark,Cabral ,0.1
+Cabral_Blank_Dil6_pre_Day5,6/12/23,36.3,28.313,2370.703949,Blank,Initial ,,BLANK,Cabral_BlankD5_Dil6_Dark,Cabral ,0.5
+Cabral_Blank_Dil7_pre_Day5,6/12/23,36.1,28.899,2386.611317,Blank,Initial ,,BLANK,Cabral_BlankD5_Dil7_Dark,Cabral ,1
+Cabral_Blank_Dil8_pre_Day5,6/12/23,35.8,28.199,2368.313481,Blank,Initial ,,BLANK,Cabral_BlankD5_Dil8_Dark,Cabral ,2
+Cabral_Blank_Dil9_pre_Day5,6/12/23,35.1,28.389,2377.671921,Blank,Initial ,,BLANK,Cabral_BlankD5_Dil9_Dark,Cabral ,4
+Cabral_Col11_Dil1_Light,6/13/23,37.1,30.465,2442.941134,colony ,Post,,19,Cabral_Col11_Dil1_Light,Cabral ,0
+Cabral_Col11_Dil2_Light,6/13/23,37.2,30.4,2464.5608,colony ,Post,,19,Cabral_Col11_Dil2_Light,Cabral ,0.01
+Cabral_Col11_Dil3_Light,6/13/23,37.1,30.339,2441.208201,colony ,Post,,19,Cabral_Col11_Dil3_Light,Cabral ,0.03
+Cabral_Col11_Dil4_Light,6/13/23,37.1,30.291,2428.873396,colony ,Post,,19,Cabral_Col11_Dil4_Light,Cabral ,0.05
+Cabral_Col11_Dil5_Light,6/13/23,37.1,30.269,2437.535838,colony ,Post,,19,Cabral_Col11_Dil5_Light,Cabral ,0.1
+Cabral_Col11_Dil6_Light,6/13/23,36.8,30.273,2467.21916,colony ,Post,,19,Cabral_Col11_Dil6_Light,Cabral ,0.5
+Cabral_Col11_Dil7_Light,6/13/23,36.7,29.582,2348.298799,colony ,Post,,19,Cabral_Col11_Dil7_Light,Cabral ,1
+Cabral_Col11_Dil8_Light,6/13/23,36.4,30.059,2473.435503,colony ,Post,,19,Cabral_Col11_Dil8_Light,Cabral ,2
+Cabral_Col11_Dil9_Light,6/13/23,35.8,30.442,2420.249398,colony ,Post,,19,Cabral_Col11_Dil9_Light,Cabral ,4
+Cabral_Col11_Dil1_pre,6/13/23,37.1,30.465,2409.886958,colony ,Initial ,,19,Cabral_Col11_Dil1_Dark,Cabral ,0
+Cabral_Col11_Dil2_pre,6/13/23,37.2,30.4,2417.135896,colony ,Initial ,,19,Cabral_Col11_Dil2_Dark,Cabral ,0.01
+Cabral_Col11_Dil3_pre,6/13/23,37.1,30.339,2402.061753,colony ,Initial ,,19,Cabral_Col11_Dil3_Dark,Cabral ,0.03
+Cabral_Col11_Dil4_pre,6/13/23,37.1,30.291,2423.427196,colony ,Initial ,,19,Cabral_Col11_Dil4_Dark,Cabral ,0.05
+Cabral_Col11_Dil5_pre,6/13/23,37.1,30.269,2396.422617,colony ,Initial ,,19,Cabral_Col11_Dil5_Dark,Cabral ,0.1
+Cabral_Col11_Dil6_pre,6/13/23,36.8,30.273,2423.122264,colony ,Initial ,,19,Cabral_Col11_Dil6_Dark,Cabral ,0.5
+Cabral_Col11_Dil7_pre,6/13/23,36.7,29.582,2341.707381,colony ,Initial ,,19,Cabral_Col11_Dil7_Dark,Cabral ,1
+Cabral_Col11_Dil8_pre,6/13/23,36.4,30.059,2389.677339,colony ,Initial ,,19,Cabral_Col11_Dil8_Dark,Cabral ,2
+Cabral_Col11_Dil9_pre,6/13/23,35.8,30.442,2394.361398,colony ,Initial ,,19,Cabral_Col11_Dil9_Dark,Cabral ,4
+Cabral_Col12_Dil1_Light,6/13/23,37.1,30.465,2466.661921,colony ,Post,,20,Cabral_Col12_Dil1_Light,Cabral ,0
+Cabral_Col12_Dil2_Light,6/13/23,37.2,30.4,2433.375697,colony ,Post,,20,Cabral_Col12_Dil2_Light,Cabral ,0.01
+Cabral_Col12_Dil3_Light,6/13/23,37.1,30.339,2501.603356,colony ,Post,,20,Cabral_Col12_Dil3_Light,Cabral ,0.03
+Cabral_Col12_Dil4_Light,6/13/23,37.1,30.291,2540.811925,colony ,Post,,20,Cabral_Col12_Dil4_Light,Cabral ,0.05
+Cabral_Col12_Dil5_Light,6/13/23,37.1,30.269,2433.435378,colony ,Post,,20,Cabral_Col12_Dil5_Light,Cabral ,0.1
+Cabral_Col12_Dil6_Light,6/13/23,36.8,30.273,2196.818233,colony ,Post,,20,Cabral_Col12_Dil6_Light,Cabral ,0.5
+Cabral_Col12_Dil7_Light,6/13/23,36.7,29.582,2428.878627,colony ,Post,,20,Cabral_Col12_Dil7_Light,Cabral ,1
+Cabral_Col12_Dil8_Light,6/13/23,36.4,30.059,2430.050622,colony ,Post,,20,Cabral_Col12_Dil8_Light,Cabral ,2
+Cabral_Col12_Dil9_Light,6/13/23,35.8,30.442,2460.878232,colony ,Post,,20,Cabral_Col12_Dil9_Light,Cabral ,4
+Cabral_Col12_Dil1_pre,6/13/23,37.1,30.465,2409.886958,colony ,Initial ,,20,Cabral_Col12_Dil1_Dark,Cabral ,0
+Cabral_Col12_Dil2_pre,6/13/23,37.2,30.4,2417.135896,colony ,Initial ,,20,Cabral_Col12_Dil2_Dark,Cabral ,0.01
+Cabral_Col12_Dil3_pre,6/13/23,37.1,30.339,2402.061753,colony ,Initial ,,20,Cabral_Col12_Dil3_Dark,Cabral ,0.03
+Cabral_Col12_Dil4_pre,6/13/23,37.1,30.291,2423.427196,colony ,Initial ,,20,Cabral_Col12_Dil4_Dark,Cabral ,0.05
+Cabral_Col12_Dil5_pre,6/13/23,37.1,30.269,2396.422617,colony ,Initial ,,20,Cabral_Col12_Dil5_Dark,Cabral ,0.1
+Cabral_Col12_Dil6_pre,6/13/23,36.8,30.273,2423.122264,colony ,Initial ,,20,Cabral_Col12_Dil6_Dark,Cabral ,0.5
+Cabral_Col12_Dil7_pre,6/13/23,36.7,29.582,2341.707381,colony ,Initial ,,20,Cabral_Col12_Dil7_Dark,Cabral ,1
+Cabral_Col12_Dil8_pre,6/13/23,36.4,30.059,2389.677339,colony ,Initial ,,20,Cabral_Col12_Dil8_Dark,Cabral ,2
+Cabral_Col12_Dil9_pre,6/13/23,35.8,30.442,2394.361398,colony ,Initial ,,20,Cabral_Col12_Dil9_Dark,Cabral ,4
+Cabral_Blank_Dil1_Light_Day6,6/13/23,37.1,30.465,2499.775504,Blank,Post,,BLANK,Cabral_BlankD6_Dil1_Light,Cabral ,0
+Cabral_Blank_Dil2_Light_Day6,6/13/23,37.2,30.4,2461.851389,Blank,Post,,BLANK,Cabral_BlankD6_Dil2_Light,Cabral ,0.01
+Cabral_Blank_Dil3_Light_Day6,6/13/23,37.1,30.339,2474.90874,Blank,Post,,BLANK,Cabral_BlankD6_Dil3_Light,Cabral ,0.03
+Cabral_Blank_Dil4_Light_Day6,6/13/23,37.1,30.291,2504.5199,Blank,Post,,BLANK,Cabral_BlankD6_Dil4_Light,Cabral ,0.05
+Cabral_Blank_Dil5_Light_Day6,6/13/23,37.1,30.269,2439.310596,Blank,Post,,BLANK,Cabral_BlankD6_Dil5_Light,Cabral ,0.1
+Cabral_Blank_Dil6_Light_Day6,6/13/23,36.8,30.273,2473.581771,Blank,Post,,BLANK,Cabral_BlankD6_Dil6_Light,Cabral ,0.5
+Cabral_Blank_Dil7_Light_Day6,6/13/23,36.7,29.582,2384.700347,Blank,Post,,BLANK,Cabral_BlankD6_Dil7_Light,Cabral ,1
+Cabral_Blank_Dil8_Light_Day6,6/13/23,36.4,30.059,2449.71186,Blank,Post,,BLANK,Cabral_BlankD6_Dil8_Light,Cabral ,2
+Cabral_Blank_Dil9_Light_Day6,6/13/23,35.8,30.442,2456.162853,Blank,Post,,BLANK,Cabral_BlankD6_Dil9_Light,Cabral ,4
+Cabral_Blank_Dil1_pre_Day6,6/13/23,37.1,30.465,2409.886958,Blank,Initial ,,BLANK,Cabral_BlankD6_Dil1_Dark,Cabral ,0
+Cabral_Blank_Dil2_pre_Day6,6/13/23,37.2,30.4,2417.135896,Blank,Initial ,,BLANK,Cabral_BlankD6_Dil2_Dark,Cabral ,0.01
+Cabral_Blank_Dil3_pre_Day6,6/13/23,37.1,30.339,2402.061753,Blank,Initial ,,BLANK,Cabral_BlankD6_Dil3_Dark,Cabral ,0.03
+Cabral_Blank_Dil4_pre_Day6,6/13/23,37.1,30.291,2423.427196,Blank,Initial ,,BLANK,Cabral_BlankD6_Dil4_Dark,Cabral ,0.05
+Cabral_Blank_Dil5_pre_Day6,6/13/23,37.1,30.269,2396.422617,Blank,Initial ,,BLANK,Cabral_BlankD6_Dil5_Dark,Cabral ,0.1
+Cabral_Blank_Dil6_pre_Day6,6/13/23,36.8,30.273,2423.122264,Blank,Initial ,,BLANK,Cabral_BlankD6_Dil6_Dark,Cabral ,0.5
+Cabral_Blank_Dil7_pre_Day6,6/13/23,36.7,29.582,2341.707381,Blank,Initial ,,BLANK,Cabral_BlankD6_Dil7_Dark,Cabral ,1
+Cabral_Blank_Dil8_pre_Day6,6/13/23,36.4,30.059,2389.677339,Blank,Initial ,,BLANK,Cabral_BlankD6_Dil8_Dark,Cabral ,2
+Cabral_Blank_Dil9_pre_Day6,6/13/23,35.8,30.442,2394.361398,Blank,Initial ,,BLANK,Cabral_BlankD6_Dil9_Dark,Cabral ,4
+Varari_Col1_Dil1_Light_Day1,6/17/23,37.3,27.714,2438.26195,colony ,Post,,1,Varari_Col1_Dil1_Light,Varari ,0
+Varari_Col1_Dil2_Light_Day1,6/17/23,37.4,27.764,2449.282369,colony ,Post,,1,Varari_Col1_Dil2_Light,Varari ,0.01
+Varari_Col1_Dil3_Light_Day1,6/17/23,37.4,27.81,2492.936803,colony ,Post,,1,Varari_Col1_Dil3_Light,Varari ,0.03
+Varari_Col1_Dil4_Light_Day1,6/17/23,37.3,27.795,2426.240287,colony ,Post,,1,Varari_Col1_Dil4_Light,Varari ,0.05
+Varari_Col1_Dil5_Light_Day1,6/17/23,37.3,27.816,2430.789996,colony ,Post,,1,Varari_Col1_Dil5_Light,Varari ,0.1
+Varari_Col1_Dil6_Light_Day1,6/17/23,37.1,27.818,2443.270645,colony ,Post,,1,Varari_Col1_Dil6_Light,Varari ,0.5
+Varari_Col1_Dil7_Light_Day1,6/17/23,37,27.829,2514.647364,colony ,Post,,1,Varari_Col1_Dil7_Light,Varari ,1
+Varari_Col1_Dil8_Light_Day1,6/17/23,36.6,27.793,2483.262838,colony ,Post,,1,Varari_Col1_Dil8_Light,Varari ,2
+Varari_Col1_Dil9_Light_Day1,6/17/23,35.9,27.887,2612.424652,colony ,Post,,1,Varari_Col1_Dil9_Light,Varari ,4
+Varari_Col1_Dil1_pre_Day1,6/17/23,37.3,27.714,2440.699175,colony ,Initial ,,1,Varari_Col1_Dil1_Dark,Varari ,0
+Varari_Col1_Dil2_pre_Day1,6/17/23,37.4,27.764,2437.499547,colony ,Initial ,,1,Varari_Col1_Dil2_Dark,Varari ,0.01
+Varari_Col1_Dil3_pre_Day1,6/17/23,37.4,27.81,2470.63337,colony ,Initial ,,1,Varari_Col1_Dil3_Dark,Varari ,0.03
+Varari_Col1_Dil4_pre_Day1,6/17/23,37.3,27.795,2427.532743,colony ,Initial ,,1,Varari_Col1_Dil4_Dark,Varari ,0.05
+Varari_Col1_Dil5_pre_Day1,6/17/23,37.3,27.816,2441.384493,colony ,Initial ,,1,Varari_Col1_Dil5_Dark,Varari ,0.1
+Varari_Col1_Dil6_pre_Day1,6/17/23,37.1,27.818,2447.2949,colony ,Initial ,,1,Varari_Col1_Dil6_Dark,Varari ,0.5
+Varari_Col1_Dil7_pre_Day1,6/17/23,37,27.829,2461.829614,colony ,Initial ,,1,Varari_Col1_Dil7_Dark,Varari ,1
+Varari_Col1_Dil8_pre_Day1,6/17/23,36.6,27.793,2472.535253,colony ,Initial ,,1,Varari_Col1_Dil8_Dark,Varari ,2
+Varari_Col1_Dil9_pre_Day1,6/17/23,35.9,27.887,2580.241802,colony ,Initial ,,1,Varari_Col1_Dil9_Dark,Varari ,4
+Varari_Col2_Dil1_Light_Day1,6/17/23,37.3,27.714,2482.526374,colony ,Post,,2,Varari_Col2_Dil1_Light,Varari ,0
+Varari_Col2_Dil2_Light_Day1,6/17/23,37.4,27.764,2456.904693,colony ,Post,,2,Varari_Col2_Dil2_Light,Varari ,0.01
+Varari_Col2_Dil3_Light_Day1,6/17/23,37.4,27.81,2500.803311,colony ,Post,,2,Varari_Col2_Dil3_Light,Varari ,0.03
+Varari_Col2_Dil4_Light_Day1,6/17/23,37.3,27.795,2439.017346,colony ,Post,,2,Varari_Col2_Dil4_Light,Varari ,0.05
+Varari_Col2_Dil5_Light_Day1,6/17/23,37.3,27.816,2460.231538,colony ,Post,,2,Varari_Col2_Dil5_Light,Varari ,0.1
+Varari_Col2_Dil6_Light_Day1,6/17/23,37.1,27.818,2472.193149,colony ,Post,,2,Varari_Col2_Dil6_Light,Varari ,0.5
+Varari_Col2_Dil7_Light_Day1,6/17/23,37,27.829,2483.040044,colony ,Post,,2,Varari_Col2_Dil7_Light,Varari ,1
+Varari_Col2_Dil8_Light_Day1,6/17/23,36.6,27.793,2498.71768,colony ,Post,,2,Varari_Col2_Dil8_Light,Varari ,2
+Varari_Col2_Dil9_Light_Day1,6/17/23,35.9,27.887,2639.130211,colony ,Post,,2,Varari_Col2_Dil9_Light,Varari ,4
+Varari_Col2_Dil1_pre_Day1,6/17/23,37.3,27.714,2440.699175,colony ,Initial ,,2,Varari_Col2_Dil1_Dark,Varari ,0
+Varari_Col2_Dil2_pre_Day1,6/17/23,37.4,27.764,2437.499547,colony ,Initial ,,2,Varari_Col2_Dil2_Dark,Varari ,0.01
+Varari_Col2_Dil3_pre_Day1,6/17/23,37.4,27.81,2470.63337,colony ,Initial ,,2,Varari_Col2_Dil3_Dark,Varari ,0.03
+Varari_Col2_Dil4_pre_Day1,6/17/23,37.3,27.795,2427.532743,colony ,Initial ,,2,Varari_Col2_Dil4_Dark,Varari ,0.05
+Varari_Col2_Dil5_pre_Day1,6/17/23,37.3,27.816,2441.384493,colony ,Initial ,,2,Varari_Col2_Dil5_Dark,Varari ,0.1
+Varari_Col2_Dil6_pre_Day1,6/17/23,37.1,27.818,2447.2949,colony ,Initial ,,2,Varari_Col2_Dil6_Dark,Varari ,0.5
+Varari_Col2_Dil7_pre_Day1,6/17/23,37,27.829,2461.829614,colony ,Initial ,,2,Varari_Col2_Dil7_Dark,Varari ,1
+Varari_Col2_Dil8_pre_Day1,6/17/23,36.6,27.793,2472.535253,colony ,Initial ,,2,Varari_Col2_Dil8_Dark,Varari ,2
+Varari_Col2_Dil9_pre_Day1,6/17/23,35.9,27.887,2580.241802,colony ,Initial ,,2,Varari_Col2_Dil9_Dark,Varari ,4
+Varari_Col3_Dil1_Light_Day1,6/17/23,37.3,27.714,2513.591198,colony ,Post,,3,Varari_Col3_Dil1_Light,Varari ,0
+Varari_Col3_Dil2_Light_Day1,6/17/23,37.4,27.764,2518.479657,colony ,Post,,3,Varari_Col3_Dil2_Light,Varari ,0.01
+Varari_Col3_Dil3_Light_Day1,6/17/23,37.4,27.81,2542.368009,colony ,Post,,3,Varari_Col3_Dil3_Light,Varari ,0.03
+Varari_Col3_Dil4_Light_Day1,6/17/23,37.3,27.795,2469.675977,colony ,Post,,3,Varari_Col3_Dil4_Light,Varari ,0.05
+Varari_Col3_Dil5_Light_Day1,6/17/23,37.3,27.816,2502.807205,colony ,Post,,3,Varari_Col3_Dil5_Light,Varari ,0.1
+Varari_Col3_Dil6_Light_Day1,6/17/23,37.1,27.818,2509.361504,colony ,Post,,3,Varari_Col3_Dil6_Light,Varari ,0.5
+Varari_Col3_Dil7_Light_Day1,6/17/23,37,27.829,2513.660708,colony ,Post,,3,Varari_Col3_Dil7_Light,Varari ,1
+Varari_Col3_Dil8_Light_Day1,6/17/23,36.6,27.793,2537.164029,colony ,Post,,3,Varari_Col3_Dil8_Light,Varari ,2
+Varari_Col3_Dil9_Light_Day1,6/17/23,35.9,27.887,2681.361697,colony ,Post,,3,Varari_Col3_Dil9_Light,Varari ,4
+Varari_Col3_Dil1_pre_Day1,6/17/23,37.3,27.714,2440.699175,colony ,Initial ,,3,Varari_Col3_Dil1_Dark,Varari ,0
+Varari_Col3_Dil2_pre_Day1,6/17/23,37.4,27.764,2437.499547,colony ,Initial ,,3,Varari_Col3_Dil2_Dark,Varari ,0.01
+Varari_Col3_Dil3_pre_Day1,6/17/23,37.4,27.81,2470.63337,colony ,Initial ,,3,Varari_Col3_Dil3_Dark,Varari ,0.03
+Varari_Col3_Dil4_pre_Day1,6/17/23,37.3,27.795,2427.532743,colony ,Initial ,,3,Varari_Col3_Dil4_Dark,Varari ,0.05
+Varari_Col3_Dil5_pre_Day1,6/17/23,37.3,27.816,2441.384493,colony ,Initial ,,3,Varari_Col3_Dil5_Dark,Varari ,0.1
+Varari_Col3_Dil6_pre_Day1,6/17/23,37.1,27.818,2447.2949,colony ,Initial ,,3,Varari_Col3_Dil6_Dark,Varari ,0.5
+Varari_Col3_Dil7_pre_Day1,6/17/23,37,27.829,2461.829614,colony ,Initial ,,3,Varari_Col3_Dil7_Dark,Varari ,1
+Varari_Col3_Dil8_pre_Day1,6/17/23,36.6,27.793,2472.535253,colony ,Initial ,,3,Varari_Col3_Dil8_Dark,Varari ,2
+Varari_Col3_Dil9_pre_Day1,6/17/23,35.9,27.887,2580.241802,colony ,Initial ,,3,Varari_Col3_Dil9_Dark,Varari ,4
+Varari_Blank_Dil1_Light_Day1,6/17/23,37.3,27.714,2586.914632,Blank,Post,,BLANK,Varari_BlankD1_Dil1_Light,Varari ,0
+Varari_Blank_Dil2_Light_Day1,6/17/23,37.4,27.764,2480.293396,Blank,Post,,BLANK,Varari_BlankD1_Dil2_Light,Varari ,0.01
+Varari_Blank_Dil3_Light_Day1,6/17/23,37.4,27.81,2508.654943,Blank,Post,,BLANK,Varari_BlankD1_Dil3_Light,Varari ,0.03
+Varari_Blank_Dil4_Light_Day1,6/17/23,37.3,27.795,2461.693787,Blank,Post,,BLANK,Varari_BlankD1_Dil4_Light,Varari ,0.05
+Varari_Blank_Dil5_Light_Day1,6/17/23,37.3,27.816,2475.902766,Blank,Post,,BLANK,Varari_BlankD1_Dil5_Light,Varari ,0.1
+Varari_Blank_Dil6_Light_Day1,6/17/23,37.1,27.818,2492.204325,Blank,Post,,BLANK,Varari_BlankD1_Dil6_Light,Varari ,0.5
+Varari_Blank_Dil7_Light_Day1,6/17/23,37,27.829,2502.780714,Blank,Post,,BLANK,Varari_BlankD1_Dil7_Light,Varari ,1
+Varari_Blank_Dil8_Light_Day1,6/17/23,36.6,27.793,2525.38962,Blank,Post,,BLANK,Varari_BlankD1_Dil8_Light,Varari ,2
+Varari_Blank_Dil9_Light_Day1,6/17/23,35.9,27.887,2620.27029,Blank,Post,,BLANK,Varari_BlankD1_Dil9_Light,Varari ,4
+Varari_rerunBlank_Dil7_Light_Day1,6/17/23,37.3,27.714,2502.780714,Blank,Post,,BLANK,Varari_rerunBlankD1_Dil7_Light,Varari ,1
+Varari_Blank_Dil1_pre_Day1,6/17/23,37.4,27.764,2440.699175,Blank,Initial ,,BLANK,Varari_BlankD1_Dil1_Dark,Varari ,0
+Varari_Blank_Dil2_pre_Day1,6/17/23,37.4,27.81,2437.499547,Blank,Initial ,,BLANK,Varari_BlankD1_Dil2_Dark,Varari ,0.01
+Varari_Blank_Dil3_pre_Day1,6/17/23,37.3,27.795,2470.63337,Blank,Initial ,,BLANK,Varari_BlankD1_Dil3_Dark,Varari ,0.03
+Varari_Blank_Dil4_pre_Day1,6/17/23,37.3,27.816,2427.532743,Blank,Initial ,,BLANK,Varari_BlankD1_Dil4_Dark,Varari ,0.05
+Varari_Blank_Dil5_pre_Day1,6/17/23,37.1,27.818,2441.384493,Blank,Initial ,,BLANK,Varari_BlankD1_Dil5_Dark,Varari ,0.1
+Varari_Blank_Dil6_pre_Day1,6/17/23,37,27.829,2447.2949,Blank,Initial ,,BLANK,Varari_BlankD1_Dil6_Dark,Varari ,0.5
+Varari_Blank_Dil7_pre_Day1,6/17/23,36.6,27.793,2461.829614,Blank,Initial ,,BLANK,Varari_BlankD1_Dil7_Dark,Varari ,1
+Varari_Blank_Dil8_pre_Day1,6/17/23,35.9,27.887,2472.535253,Blank,Initial ,,BLANK,Varari_BlankD1_Dil8_Dark,Varari ,2
+Varari_Blank_Dil9_pre_Day1,6/17/23,36.6,27.793,2580.241802,Blank,Initial ,,BLANK,Varari_BlankD1_Dil9_Dark,Varari ,4
+Varari_rerunBlank_Dil7_pre_Day1,6/17/23,35.9,27.887,2461.829614,Blank,Initial ,,BLANK,Varari_rerunBlankD1_Dil7_Dark,Varari ,1
+Varari_Col4_Dil1_Light_Day2,6/18/23,36.4,28.695,2394.6567,colony ,Post,,4,Varari_Col4_Dil1_Light,Varari ,0
+Varari_Col4_Dil2_Light_Day2,6/18/23,36.7,28.644,2382.785971,colony ,Post,,4,Varari_Col4_Dil2_Light,Varari ,0.01
+Varari_Col4_Dil3_Light_Day2,6/18/23,36.7,28.724,2380.394282,colony ,Post,,4,Varari_Col4_Dil3_Light,Varari ,0.03
+Varari_Col4_Dil4_Light_Day2,6/18/23,36.5,28.809,2367.51833,colony ,Post,,4,Varari_Col4_Dil4_Light,Varari ,0.05
+Varari_Col4_Dil5_Light_Day2,6/18/23,36.6,28.728,2385.940605,colony ,Post,,4,Varari_Col4_Dil5_Light,Varari ,0.1
+Varari_Col4_Dil6_Light_Day2,6/18/23,36.5,28.782,2389.74034,colony ,Post,,4,Varari_Col4_Dil6_Light,Varari ,0.5
+Varari_Col4_Dil7_Light_Day2,6/18/23,36.1,28.788,2386.651362,colony ,Post,,4,Varari_Col4_Dil7_Light,Varari ,1
+Varari_Col4_Dil8_Light_Day2,6/18/23,36,28.741,2440.306591,colony ,Post,,4,Varari_Col4_Dil8_Light,Varari ,2
+Varari_Col4_Dil9_Light_Day2,6/18/23,35.3,28.826,2681.361697,colony ,Post,,4,Varari_Col4_Dil9_Light,Varari ,4
+Varari_Col4_Dil1_pre_Day2,6/18/23,36.4,28.695,2388.02795,colony ,Initial ,,4,Varari_Col4_Dil1_Dark,Varari ,0
+Varari_Col4_Dil2_pre_Day2,6/18/23,36.7,28.644,2378.83987,colony ,Initial ,,4,Varari_Col4_Dil2_Dark,Varari ,0.01
+Varari_Col4_Dil3_pre_Day2,6/18/23,36.7,28.724,2378.42618,colony ,Initial ,,4,Varari_Col4_Dil3_Dark,Varari ,0.03
+Varari_Col4_Dil4_pre_Day2,6/18/23,36.5,28.809,2373.20997,colony ,Initial ,,4,Varari_Col4_Dil4_Dark,Varari ,0.05
+Varari_Col4_Dil5_pre_Day2,6/18/23,36.6,28.728,2381.8341,colony ,Initial ,,4,Varari_Col4_Dil5_Dark,Varari ,0.1
+Varari_Col4_Dil6_pre_Day2,6/18/23,36.5,28.782,2383.81035,colony ,Initial ,,4,Varari_Col4_Dil6_Dark,Varari ,0.5
+Varari_Col4_Dil7_pre_Day2,6/18/23,36.1,28.788,2395.06591,colony ,Initial ,,4,Varari_Col4_Dil7_Dark,Varari ,1
+Varari_Col4_Dil8_pre_Day2,6/18/23,36,28.741,2434.37846,colony ,Initial ,,4,Varari_Col4_Dil8_Dark,Varari ,2
+Varari_Col4_Dil9_pre_Day2,6/18/23,35.3,28.826,2484.55214,colony ,Initial ,,4,Varari_Col4_Dil9_Dark,Varari ,4
+Varari_Blank_Dil1_Light_Day2,6/18/23,36.4,28.695,2406.45511,Blank,Post,,BLANK,Varari_BlankD2_Dil1_Light,Varari ,0
+Varari_Blank_Dil2_Light_Day2,6/18/23,36.7,28.644,2395.175019,Blank,Post,,BLANK,Varari_BlankD2_Dil2_Light,Varari ,0.01
+Varari_Blank_Dil3_Light_Day2,6/18/23,36.7,28.724,2410.129854,Blank,Post,,BLANK,Varari_BlankD3_Dil3_Light,Varari ,0.03
+Varari_Blank_Dil4_Light_Day2,6/18/23,36.5,28.809,2402.049634,Blank,Post,,BLANK,Varari_BlankD2_Dil4_Light,Varari ,0.05
+Varari_Blank_Dil5_Light_Day2,6/18/23,36.6,28.728,2399.762356,Blank,Post,,BLANK,Varari_BlankD2_Dil5_Light,Varari ,0.1
+Varari_Blank_Dil6_Light_Day2,6/18/23,36.5,28.782,2407.03929,Blank,Post,,BLANK,Varari_BlankD2_Dil6_Light,Varari ,0.5
+Varari_Blank_Dil7_Light_Day2,6/18/23,36.1,28.788,2399.765718,Blank,Post,,BLANK,Varari_BlankD2_Dil7_Light,Varari ,1
+Varari_Blank_Dil8_Light_Day2,6/18/23,36,28.741,2447.874296,Blank,Post,,BLANK,Varari_BlankD2_Dil8_Light,Varari ,2
+Varari_Blank_Dil9_Light_Day2,6/18/23,35.3,28.826,2512.945311,Blank,Post,,BLANK,Varari_BlankD2_Dil9_Light,Varari ,4
+Varari_Blank_Dil1_pre_Day2,6/18/23,36.4,28.695,2388.02795,Blank,Initial ,,BLANK,Varari_BlankD2_Dil1_Dark,Varari ,0
+Varari_Blank_Dil2_pre_Day2,6/18/23,36.7,28.644,2378.83987,Blank,Initial ,,BLANK,Varari_BlankD2_Dil2_Dark,Varari ,0.01
+Varari_Blank_Dil3_pre_Day2,6/18/23,36.7,28.724,2378.42618,Blank,Initial ,,BLANK,Varari_BlankD2_Dil3_Dark,Varari ,0.03
+Varari_Blank_Dil4_pre_Day2,6/18/23,36.5,28.809,2373.20997,Blank,Initial ,,BLANK,Varari_BlankD2_Dil4_Dark,Varari ,0.05
+Varari_Blank_Dil5_pre_Day2,6/18/23,36.6,28.728,2381.8341,Blank,Initial ,,BLANK,Varari_BlankD2_Dil5_Dark,Varari ,0.1
+Varari_Blank_Dil6_pre_Day2,6/18/23,36.5,28.782,2383.81035,Blank,Initial ,,BLANK,Varari_BlankD2_Dil6_Dark,Varari ,0.5
+Varari_Blank_Dil7_pre_Day2,6/18/23,36.1,28.788,2395.06591,Blank,Initial ,,BLANK,Varari_BlankD2_Dil7_Dark,Varari ,1
+Varari_Blank_Dil8_pre_Day2,6/18/23,36,28.741,2434.37846,Blank,Initial ,,BLANK,Varari_BlankD2_Dil8_Dark,Varari ,2
+Varari_Blank_Dil9_pre_Day2,6/18/23,35.3,28.826,2484.55214,Blank,Initial ,,BLANK,Varari_BlankD2_Dil9_Dark,Varari ,4
+Varari_Col5_Dil1_Light_Day3,6/21/23,36.4,29.092,2374.363769,colony ,Post,,5,Varari_Col5_Dil1_Light,Varari ,0
+Varari_Col5_Dil2_Light_Day3,6/21/23,36.4,29.187,2388.411553,colony ,Post,,5,Varari_Col5_Dil2_Light,Varari ,0.01
+Varari_Col5_Dil3_Light_Day3,6/21/23,36.3,29.115,2375.090281,colony ,Post,,5,Varari_Col5_Dil3_Light,Varari ,0.03
+Varari_Col5_Dil4_Light_Day3,6/21/23,36.3,29.11,2381.933793,colony ,Post,,5,Varari_Col5_Dil4_Light,Varari ,0.05
+Varari_Col5_Dil5_Light_Day3,6/21/23,36.3,29.156,2390.421068,colony ,Post,,5,Varari_Col5_Dil5_Light,Varari ,0.1
+Varari_Col5_Dil6_Light_Day3,6/21/23,36.2,29.155,2397.04368,colony ,Post,,5,Varari_Col5_Dil6_Light,Varari ,0.5
+Varari_Col5_Dil7_Light_Day3,6/21/23,36,29.13,2405.270071,colony ,Post,,5,Varari_Col5_Dil7_Light,Varari ,1
+Varari_Col5_Dil8_Light_Day3,6/21/23,35.9,28.909,2435.293737,colony ,Post,,5,Varari_Col5_Dil8_Light,Varari ,2
+Varari_Col5_Dil9_Light_Day3,6/21/23,35,29.067,2467.036635,colony ,Post,,5,Varari_Col5_Dil9_Light,Varari ,4
+Varari_Col5_Dil1_pre_Day3,6/21/23,36.4,29.092,2377.32016,colony ,Initial ,,5,Varari_Col5_Dil1_Dark,Varari ,0
+Varari_Col5_Dil2_pre_Day3,6/21/23,36.4,29.187,2384.387201,colony ,Initial ,,5,Varari_Col5_Dil2_Dark,Varari ,0.01
+Varari_Col5_Dil3_pre_Day3,6/21/23,36.3,29.115,2367.39884,colony ,Initial ,,5,Varari_Col5_Dil3_Dark,Varari ,0.03
+Varari_Col5_Dil4_pre_Day3,6/21/23,36.3,29.11,2364.629086,colony ,Initial ,,5,Varari_Col5_Dil4_Dark,Varari ,0.05
+Varari_Col5_Dil5_pre_Day3,6/21/23,36.3,29.156,2388.441818,colony ,Initial ,,5,Varari_Col5_Dil5_Dark,Varari ,0.1
+Varari_Col5_Dil6_pre_Day3,6/21/23,36.2,29.155,2391.440484,colony ,Initial ,,5,Varari_Col5_Dil6_Dark,Varari ,0.5
+Varari_Col5_Dil7_pre_Day3,6/21/23,36,29.13,2407.472045,colony ,Initial ,,5,Varari_Col5_Dil7_Dark,Varari ,1
+Varari_Col5_Dil8_pre_Day3,6/21/23,35.9,28.909,2429.451371,colony ,Initial ,,5,Varari_Col5_Dil8_Dark,Varari ,2
+Varari_Col5_Dil9_pre_Day3,6/21/23,35,29.067,2473.296673,colony ,Initial ,,5,Varari_Col5_Dil9_Dark,Varari ,4
+Varari_Col6_Dil1_Light_Day3,6/21/23,36.4,29.092,2405.806718,colony ,Post,,6,Varari_Col6_Dil1_Light,Varari ,0
+Varari_Col6_Dil2_Light_Day3,6/21/23,36.4,29.187,2398.740895,colony ,Post,,6,Varari_Col6_Dil2_Light,Varari ,0.01
+Varari_Col6_Dil3_Light_Day3,6/21/23,36.3,29.115,2370.446021,colony ,Post,,6,Varari_Col6_Dil3_Light,Varari ,0.03
+Varari_Col6_Dil4_Light_Day3,6/21/23,36.3,29.11,2377.799281,colony ,Post,,6,Varari_Col6_Dil4_Light,Varari ,0.05
+Varari_Col6_Dil5_Light_Day3,6/21/23,36.3,29.156,2391.770222,colony ,Post,,6,Varari_Col6_Dil5_Light,Varari ,0.1
+Varari_Col6_Dil6_Light_Day3,6/21/23,36.2,29.155,2398.136344,colony ,Post,,6,Varari_Col6_Dil6_Light,Varari ,0.5
+Varari_Col6_Dil7_Light_Day3,6/21/23,36,29.13,2420.40668,colony ,Post,,6,Varari_Col6_Dil7_Light,Varari ,1
+Varari_Col6_Dil8_Light_Day3,6/21/23,35.9,28.909,2446.688983,colony ,Post,,6,Varari_Col6_Dil8_Light,Varari ,2
+Varari_Col6_Dil9_Light_Day3,6/21/23,35,29.067,2474.818821,colony ,Post,,6,Varari_Col6_Dil9_Light,Varari ,4
+Varari_Col6_Dil1_pre_Day3,6/21/23,36.4,29.092,2377.32016,colony ,Initial ,,6,Varari_Col6_Dil1_Dark,Varari ,0
+Varari_Col6_Dil2_pre_Day3,6/21/23,36.4,29.187,2384.387201,colony ,Initial ,,6,Varari_Col6_Dil2_Dark,Varari ,0.01
+Varari_Col6_Dil3_pre_Day3,6/21/23,36.3,29.115,2367.39884,colony ,Initial ,,6,Varari_Col6_Dil3_Dark,Varari ,0.03
+Varari_Col6_Dil4_pre_Day3,6/21/23,36.3,29.11,2364.629086,colony ,Initial ,,6,Varari_Col6_Dil4_Dark,Varari ,0.05
+Varari_Col6_Dil5_pre_Day3,6/21/23,36.3,29.156,2388.441818,colony ,Initial ,,6,Varari_Col6_Dil5_Dark,Varari ,0.1
+Varari_Col6_Dil6_pre_Day3,6/21/23,36.2,29.155,2391.440484,colony ,Initial ,,6,Varari_Col6_Dil6_Dark,Varari ,0.5
+Varari_Col6_Dil7_pre_Day3,6/21/23,36,29.13,2407.472045,colony ,Initial ,,6,Varari_Col6_Dil7_Dark,Varari ,1
+Varari_Col6_Dil8_pre_Day3,6/21/23,35.9,28.909,2429.451371,colony ,Initial ,,6,Varari_Col6_Dil8_Dark,Varari ,2
+Varari_Col6_Dil9_pre_Day3,6/21/23,35,29.067,2473.296673,colony ,Initial ,,6,Varari_Col6_Dil9_Dark,Varari ,4
+Varari_Blank_Dil1_Light_Day3,6/21/23,36.4,29.092,2435.23184,Blank,Post,,BLANK,Varari_BlankD3_Dil1_Light,Varari ,0
+Varari_Blank_Dil2_Light_Day3,6/21/23,36.4,29.187,2420.426342,Blank,Post,,BLANK,Varari_BlankD3_Dil2_Light,Varari ,0.01
+Varari_Blank_Dil3_Light_Day3,6/21/23,36.3,29.115,2403.841373,Blank,Post,,BLANK,Varari_BlankD3_Dil3_Light,Varari ,0.03
+Varari_Blank_Dil4_Light_Day3,6/21/23,36.3,29.11,2416.147621,Blank,Post,,BLANK,Varari_BlankD3_Dil4_Light,Varari ,0.05
+Varari_Blank_Dil5_Light_Day3,6/21/23,36.3,29.156,2422.95391,Blank,Post,,BLANK,Varari_BlankD3_Dil5_Light,Varari ,0.1
+Varari_Blank_Dil6_Light_Day3,6/21/23,36.2,29.155,2420.850642,Blank,Post,,BLANK,Varari_BlankD3_Dil6_Light,Varari ,0.5
+Varari_Blank_Dil7_Light_Day3,6/21/23,36,29.13,2461.519296,Blank,Post,,BLANK,Varari_BlankD3_Dil7_Light,Varari ,1
+Varari_Blank_Dil8_Light_Day3,6/21/23,35.9,28.909,2478.597019,Blank,Post,,BLANK,Varari_BlankD3_Dil8_Light,Varari ,2
+Varari_Blank_Dil9_Light_Day3,6/21/23,35,29.067,2497.162746,Blank,Post,,BLANK,Varari_BlankD3_Dil9_Light,Varari ,4
+Varari_Blank_Dil1_pre_Day3,6/21/23,36.4,29.092,2377.32016,Blank,Initial ,,BLANK,Varari_BlankD3_Dil1_Dark,Varari ,0
+Varari_Blank_Dil2_pre_Day3,6/21/23,36.4,29.187,2384.387201,Blank,Initial ,,BLANK,Varari_BlankD3_Dil2_Dark,Varari ,0.01
+Varari_Blank_Dil3_pre_Day3,6/21/23,36.3,29.115,2367.39884,Blank,Initial ,,BLANK,Varari_BlankD3_Dil3_Dark,Varari ,0.03
+Varari_Blank_Dil4_pre_Day3,6/21/23,36.3,29.11,2364.629086,Blank,Initial ,,BLANK,Varari_BlankD3_Dil4_Dark,Varari ,0.05
+Varari_Blank_Dil5_pre_Day3,6/21/23,36.3,29.156,2388.441818,Blank,Initial ,,BLANK,Varari_BlankD3_Dil5_Dark,Varari ,0.1
+Varari_Blank_Dil6_pre_Day3,6/21/23,36.2,29.155,2391.440484,Blank,Initial ,,BLANK,Varari_BlankD3_Dil6_Dark,Varari ,0.5
+Varari_Blank_Dil7_pre_Day3,6/21/23,36,29.13,2407.472045,Blank,Initial ,,BLANK,Varari_BlankD3_Dil7_Dark,Varari ,1
+Varari_Blank_Dil8_pre_Day3,6/21/23,35.9,28.909,2429.451371,Blank,Initial ,,BLANK,Varari_BlankD3_Dil8_Dark,Varari ,2
+Varari_Blank_Dil9_pre_Day3,6/21/23,35,29.067,2473.296673,Blank,Initial ,,BLANK,Varari_BlankD3_Dil9_Dark,Varari ,4
+Varari_Col7_Dil1_Light_Day4,6/22/23,36.4,28.503,2367.213829,colony ,Post,,7,Varari_Col7_Dil1_Light,Varari ,0
+Varari_Col7_Dil2_Light_Day4,6/22/23,36.4,27.7,2355.112621,colony ,Post,,7,Varari_Col7_Dil2_Light,Varari ,0.01
+Varari_Col7_Dil3_Light_Day4,6/22/23,36.4,28.492,2360.117012,colony ,Post,,7,Varari_Col7_Dil3_Light,Varari ,0.03
+Varari_Col7_Dil4_Light_Day4,6/22/23,36.4,27.717,2338.340876,colony ,Post,,7,Varari_Col7_Dil4_Light,Varari ,0.05
+Varari_Col7_Dil5_Light_Day4,6/22/23,36.5,27.629,2338.179983,colony ,Post,,7,Varari_Col7_Dil5_Light,Varari ,0.1
+Varari_Col7_Dil6_Light_Day4,6/22/23,36.3,27.767,2379.486858,colony ,Post,,7,Varari_Col7_Dil6_Light,Varari ,0.5
+Varari_Col7_Dil7_Light_Day4,6/22/23,36,27.83,2363.930584,colony ,Post,,7,Varari_Col7_Dil7_Light,Varari ,1
+Varari_Col7_Dil8_Light_Day4,6/22/23,36,27.54,2457.893535,colony ,Post,,7,Varari_Col7_Dil8_Light,Varari ,2
+Varari_Col7_Dil9_Light_Day4,6/22/23,35.2,27.611,2454.87643,colony ,Post,,7,Varari_Col7_Dil9_Light,Varari ,4
+Varari_Col7_Dil1_pre_Day4,6/22/23,36.4,28.503,2368.214155,colony ,Initial ,,7,Varari_Col7_Dil1_Dark,Varari ,0
+Varari_Col7_Dil2_pre_Day4,6/22/23,36.4,27.7,2376.059851,colony ,Initial ,,7,Varari_Col7_Dil2_Dark,Varari ,0.01
+Varari_Col7_Dil3_pre_Day4,6/22/23,36.4,28.492,2359.780882,colony ,Initial ,,7,Varari_Col7_Dil3_Dark,Varari ,0.03
+Varari_Col7_Dil4_pre_Day4,6/22/23,36.4,27.717,2344.51916,colony ,Initial ,,7,Varari_Col7_Dil4_Dark,Varari ,0.05
+Varari_Col7_Dil5_pre_Day4,6/22/23,36.5,27.629,2354.608921,colony ,Initial ,,7,Varari_Col7_Dil5_Dark,Varari ,0.1
+Varari_Col7_Dil6_pre_Day4,6/22/23,36.3,27.767,2379.650785,colony ,Initial ,,7,Varari_Col7_Dil6_Dark,Varari ,0.5
+Varari_Col7_Dil7_pre_Day4,6/22/23,36,27.83,2390.881687,colony ,Initial ,,7,Varari_Col7_Dil7_Dark,Varari ,1
+Varari_Col7_Dil8_pre_Day4,6/22/23,36,27.54,2412.850508,colony ,Initial ,,7,Varari_Col7_Dil8_Dark,Varari ,2
+Varari_Col7_Dil9_pre_Day4,6/22/23,35.2,27.611,2469.40063,colony ,Initial ,,7,Varari_Col7_Dil9_Dark,Varari ,4
+Varari_Col8_Dil1_Light_Day4,6/22/23,36.4,28.503,2418.529218,colony ,Post,,8,Varari_Col8_Dil1_Light,Varari ,0
+Varari_Col8_Dil2_Light_Day4,6/22/23,36.4,27.7,2462.292011,colony ,Post,,8,Varari_Col8_Dil2_Light,Varari ,0.01
+Varari_Col8_Dil3_Light_Day4,6/22/23,36.4,28.492,2473.699538,colony ,Post,,8,Varari_Col8_Dil3_Light,Varari ,0.03
+Varari_Col8_Dil4_Light_Day4,6/22/23,36.4,27.717,2427.480024,colony ,Post,,8,Varari_Col8_Dil4_Light,Varari ,0.05
+Varari_Col8_Dil5_Light_Day4,6/22/23,36.5,27.629,2391.63833,colony ,Post,,8,Varari_Col8_Dil5_Light,Varari ,0.1
+Varari_Col8_Dil6_Light_Day4,6/22/23,36.3,27.767,2458.306838,colony ,Post,,8,Varari_Col8_Dil6_Light,Varari ,0.5
+Varari_Col8_Dil7_Light_Day4,6/22/23,36,27.83,2439.18948,colony ,Post,,8,Varari_Col8_Dil7_Light,Varari ,1
+Varari_Col8_Dil8_Light_Day4,6/22/23,36,27.54,2494.173175,colony ,Post,,8,Varari_Col8_Dil8_Light,Varari ,2
+Varari_Col8_Dil9_Light_Day4,6/22/23,35.2,27.611,2522.572069,colony ,Post,,8,Varari_Col8_Dil9_Light,Varari ,4
+Varari_Col8_Dil1_pre_Day4,6/22/23,36.4,28.503,2368.214155,colony ,Initial ,,8,Varari_Col8_Dil1_Dark,Varari ,0
+Varari_Col8_Dil2_pre_Day4,6/22/23,36.4,27.7,2376.059851,colony ,Initial ,,8,Varari_Col8_Dil2_Dark,Varari ,0.01
+Varari_Col8_Dil3_pre_Day4,6/22/23,36.4,28.492,2359.780882,colony ,Initial ,,8,Varari_Col8_Dil3_Dark,Varari ,0.03
+Varari_Col8_Dil4_pre_Day4,6/22/23,36.4,27.717,2344.51916,colony ,Initial ,,8,Varari_Col8_Dil4_Dark,Varari ,0.05
+Varari_Col8_Dil5_pre_Day4,6/22/23,36.5,27.629,2354.608921,colony ,Initial ,,8,Varari_Col8_Dil5_Dark,Varari ,0.1
+Varari_Col8_Dil6_pre_Day4,6/22/23,36.3,27.767,2379.650785,colony ,Initial ,,8,Varari_Col8_Dil6_Dark,Varari ,0.5
+Varari_Col8_Dil7_pre_Day4,6/22/23,36,27.83,2390.881687,colony ,Initial ,,8,Varari_Col8_Dil7_Dark,Varari ,1
+Varari_Col8_Dil8_pre_Day4,6/22/23,36,27.54,2412.850508,colony ,Initial ,,8,Varari_Col8_Dil8_Dark,Varari ,2
+Varari_Col8_Dil9_pre_Day4,6/22/23,35.2,27.611,2469.40063,colony ,Initial ,,8,Varari_Col8_Dil9_Dark,Varari ,4
+Varari_Blank_Dil1_Light_Day4,6/22/23,36.4,28.503,2431.244573,Blank,Post,,BLANK,Varari_BlankD4_Dil1_Light,Varari ,0
+Varari_Blank_Dil2_Light_Day4,6/22/23,36.4,27.7,2450.689606,Blank,Post,,BLANK,Varari_BlankD4_Dil2_Light,Varari ,0.01
+Varari_Blank_Dil3_Light_Day4,6/22/23,36.4,28.492,2444.70147,Blank,Post,,BLANK,Varari_BlankD4_Dil3_Light,Varari ,0.03
+Varari_Blank_Dil4_Light_Day4,6/22/23,36.4,27.717,2430.571261,Blank,Post,,BLANK,Varari_BlankD4_Dil4_Light,Varari ,0.05
+Varari_Blank_Dil5_Light_Day4,6/22/23,36.5,27.629,2412.596078,Blank,Post,,BLANK,Varari_BlankD4_Dil5_Light,Varari ,0.1
+Varari_Blank_Dil6_Light_Day4,6/22/23,36.3,27.767,2441.718064,Blank,Post,,BLANK,Varari_BlankD4_Dil6_Light,Varari ,0.5
+Varari_Blank_Dil7_Light_Day4,6/22/23,36,27.83,2444.444952,Blank,Post,,BLANK,Varari_BlankD4_Dil7_Light,Varari ,1
+Varari_Blank_Dil8_Light_Day4,6/22/23,36,27.54,2491.746731,Blank,Post,,BLANK,Varari_BlankD4_Dil8_Light,Varari ,2
+Varari_Blank_Dil9_Light_Day4,6/22/23,35.2,27.611,2549.627471,Blank,Post,,BLANK,Varari_BlankD4_Dil9_Light,Varari ,4
+Varari_Blank_Dil1_pre_Day4,6/22/23,36.4,28.503,2368.214155,Blank,Initial ,,BLANK,Varari_BlankD4_Dil1_Dark,Varari ,0
+Varari_Blank_Dil2_pre_Day4,6/22/23,36.4,27.7,2376.059851,Blank,Initial ,,BLANK,Varari_BlankD4_Dil2_Dark,Varari ,0.01
+Varari_Blank_Dil3_pre_Day4,6/22/23,36.4,28.492,2359.780882,Blank,Initial ,,BLANK,Varari_BlankD4_Dil3_Dark,Varari ,0.03
+Varari_Blank_Dil4_pre_Day4,6/22/23,36.4,27.717,2344.51916,Blank,Initial ,,BLANK,Varari_BlankD4_Dil4_Dark,Varari ,0.05
+Varari_Blank_Dil5_pre_Day4,6/22/23,36.5,27.629,2354.608921,Blank,Initial ,,BLANK,Varari_BlankD4_Dil5_Dark,Varari ,0.1
+Varari_Blank_Dil6_pre_Day4,6/22/23,36.3,27.767,2379.650785,Blank,Initial ,,BLANK,Varari_BlankD4_Dil6_Dark,Varari ,0.5
+Varari_Blank_Dil7_pre_Day4,6/22/23,36,27.83,2390.881687,Blank,Initial ,,BLANK,Varari_BlankD4_Dil7_Dark,Varari ,1
+Varari_Blank_Dil8_pre_Day4,6/22/23,36,27.54,2412.850508,Blank,Initial ,,BLANK,Varari_BlankD4_Dil8_Dark,Varari ,2
+Varari_Blank_Dil9_pre_Day4,6/22/23,35.2,27.611,2469.40063,Blank,Initial ,,BLANK,Varari_BlankD4_Dil9_Dark,Varari ,4

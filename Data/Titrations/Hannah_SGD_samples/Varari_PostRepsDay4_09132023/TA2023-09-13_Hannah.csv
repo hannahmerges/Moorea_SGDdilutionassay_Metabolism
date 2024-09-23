@@ -1,0 +1,30 @@
+SampleID,TA,Mass,Sample.Index,
+junk1,2250.67564,60.4688,1,
+junk2,2235.39173,60.1001,2,
+postVarari_Col7_Dil1,2367.213829,60.3717,3,
+postVarari_Col8_Dil1,2418.529218,59.7953,4,"higher, Col 7 and is lower "
+postVarari_Blank_Dil1,2431.244573,59.6048,5,
+postVarari_Col7_Dil2,2355.112621,60.3608,6,
+postVarari_Col8_Dil2,2462.292011,60.4032,7,higher 
+postVarari_Blank_Dil2,2450.689606,60.0043,8,
+postVarari_Col7_Dil3,2360.117012,60.4518,9,
+postVarari_Col8_Dil3,2473.699538,59.9119,10,higher
+postVarari_Blank_Dil3,2444.70147,60.1057,11,
+postVarari_Col7_Dil4,2338.340876,60.2105,12,
+postVarari_Col8_Dil4,2427.480024,60.4096,13,"higher, except for col 7 "
+postVarari_Blank_Dil4,2430.571261,60.4089,14,
+postVarari_Col7_Dil5,2338.179983,59.5165,15,
+postVarari_Col8_Dil5,2391.63833,59.5193,16,Col7 lower 
+postVarari_Blank_Dil5,2412.596078,59.8867,17,
+postVarari_Col7_Dil6,2379.486858,59.7588,18,
+postVarari_Col8_Dil6,2458.306838,60.0902,19,"higher, except for Col 7 "
+postVarari_Blank_Dil6,2441.718064,60.2358,20,
+postVarari_Col7_Dil7,2363.930584,59.6917,21,
+postVarari_Col8_Dil7,2439.18948,60.4821,22,higher 
+postVarari_Blank_Dil7,2444.444952,59.9538,23,
+postVarari_Col7_Dil8,2457.893535,60.1122,24,
+postVarari_Col8_Dil8,2494.173175,60.3103,25,all way higher 
+postVarari_Blank_Dil8,2491.746731,59.8606,26,
+postVarari_Col7_Dil9,2454.87643,60.0513,27,lower 
+postVarari_Col8_Dil9,2522.572069,59.5332,28,sig hghier 
+postVarari_Blank_Dil9,2549.627471,60.2031,29,
