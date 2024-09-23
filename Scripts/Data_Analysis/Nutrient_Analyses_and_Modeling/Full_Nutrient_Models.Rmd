@@ -1,0 +1,2900 @@
+---
+title: "Full_Nutrient_Models"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning=FALSE, 
+                      message=FALSE)
+```
+
+## Loading libraries 
+
+```{r, echo=FALSE}
+library(LoLinR)
+library(lubridate)
+library(patchwork)
+library(tidyverse)
+library(here)
+library(car)
+library(GGally)
+library(corrplot)
+library(PNWColors)
+library(seacarb)
+library(broom)
+library(agricolae)
+library(lme4)
+library(lmerTest)
+library(modelsummary)
+library(performance)
+library(emmeans)
+library(MuMIn)
+```
+
+## Loading Data
+```{r}
+pHSlope <- read_csv(here("Data", "pHSlope.csv")) ## manually deleted BLANK DATA on MAY 30th 
+calc.data <- read_csv(here("Data", "Titrations", "Calc_TArates.csv"))
+full_calc_data <- read_csv(here("Data", "full_calc_data.csv"))
+#RespoR_Normalized_Full_ExcelUpdates <- read_csv(here::here("Data","RespoFiles", "Respo_RNormalized_AllRates.csv"))
+#NEC_wnuts <- read_csv(here("Data", "NECnuts_withpH.csv"))
+#FULL_RespoNEC_allParams <- read_csv(here("Data", "RespoR_Normalized_Full_withNEC_ExcelUpdates.csv"))
+RespoR_Normalized_Full_withNEC_nutrients <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
+```
+
+## Tidy the dataframes and play around with them to explore data
+calculated mean, sd and var --- maybe this is something to come back to only if stick with SGD dils as final x axis 
+
+```{r}
+## calculate mean, variances, and sd of O2 rates so we have that work with just in case
+#RespoR_Normalized_Full_meanvar <- RespoR_Normalized_Full_ExcelUpdates %>% 
+ # group_by(SGD_number, site, P_R) %>% 
+ # summarize(mean_umol = mean(umol.cm2.hr, na.rm=TRUE), 
+        #    var_umol = var(umol.cm2.hr, na.rm=TRUE), 
+         #   sd_umol = sd(umol.cm2.hr, na.rm = TRUE)) %>% 
+ # filter(!is.infinite(mean_umol))
+
+#RespoR_Normalized_Full2 <- RespoR_Normalized_Full_ExcelUpdates %>% 
+  #left_join(RespoR_Normalized_Full_meanvar, join_by(SGD_number, site, P_R))
+
+## for calc data as well 
+#full.calc.data_meanvar <- full_calc_data %>% 
+#  filter(!is.infinite(umol.cm2.hr)) %>% 
+ # group_by(SGD_number, site) %>% 
+ # summarize(mean_umol = mean(umol.cm2.hr, na.rm=TRUE), 
+          #  var_umol = var(umol.cm2.hr, na.rm=TRUE), 
+          #  sd_umol = sd(umol.cm2.hr, na.rm = TRUE))
+
+### and with the NEC_nuts df 
+#full.calc.data_meanvar_withnuts <- NEC_wnuts %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+ # group_by(SGD_number, site) %>% ## this groups all the 8 replicates together for one average 
+ # summarize(mean_umol = mean(umol.cm2.hr, na.rm=TRUE), 
+          #  var_umol = var(umol.cm2.hr, na.rm=TRUE), 
+           # sd_umol = sd(umol.cm2.hr, na.rm = TRUE))
+
+```
+
+## THINGS TO CONSIDER: 
+Note: pH is also calculated based on measurements taken *WHEN* (before or after 12 hours??)
+
+# PLOT CENTRAL: series of plots for each physio measurement (R, GP, NP, NEC) per each env param (sal, pH, NN, phos, silicate, ammonia, and TA)
+Goal: create models to see if specific nutrients have an effect on the O2 rates 
+
+#### starting with VARARI, RESPIRATION - updated on June 13th
+```{r}
+RespoR_Normalized_Full_AllInfo <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date), 
+         NN_umolL=as.numeric(NN_umolL), 
+         ammonia_umolL=as.numeric(ammonia_umolL), 
+         silicate_umolL=as.numeric(silicate_umolL), 
+         phosphate_umolL=as.numeric(phosphate_umolL), 
+         new_pH=as.numeric(new_pH), 
+         salinity=as.numeric(salinity), 
+         TA_initial=as.numeric(TA_initial),
+         umol.cm2.hr=as.numeric(umol.cm2.hr))
+
+Nutrient_Models_Varari_R <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+Nutrient_Models_Varari_R<-Nutrient_Models_Varari_R[-c(47),]  ## removes the outlier (really low value) -- CHECK THIS - good as of June 1st
+
+#######################
+## NN ## 
+########################
+NNbyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date), 
+         NN_umolL=as.numeric(NN_umolL)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  coord_trans(x="log") +
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") + 
+  labs(x = "N+N (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "N+N for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyRplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "Respiration", "NN_plot.jpg"), 
+       width = 10, height = 7)
+
+## normal model with full nesting and random effects 
+Varari_NN_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(NN_umolL, degree=2) + (1|new_colonynumber))
+
+anova(Varari_NN_resp) 
+summary(Varari_NN_resp)
+
+#######################
+## NH4 ## 
+########################
+NH4byRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date), 
+         ammonia_umolL=as.numeric(ammonia_umolL)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+  labs(x = "Logged NH4 (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NH4 for Varari") +
+ # facet_wrap(~date, scales = "free_x") + 
+   theme(axis.text.x=element_text(size=6), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+
+NH4byRplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "Respiration", "NH4_plot.jpg"), 
+       width = 10, height = 7)
+
+### model 
+Varari_NH4_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(ammonia_umolL, degree=2) + (1|new_colonynumber))
+
+anova(Varari_NH4_resp) 
+summary(Varari_NH4_resp)
+
+#######################
+## PO4 ## 
+########################
+PhosbyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #facet_wrap(~date, scales = "free_x") + 
+  labs(x = "Logged Phosphate (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Phosphate for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+PhosbyRplot
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "Respiration", "PO4_plot.jpg"), 
+       width = 10, height = 7)
+
+Varari_PO4_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_PO4_resp) 
+summary(Varari_PO4_resp)
+
+
+#######################
+## SiO3 ## 
+########################
+SilicatebyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+ # facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged Silicate (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Respiration Rates for Varari with Silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SilicatebyRplot
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "Respiration", "SiO4_plot.jpg"), 
+       width = 10, height = 7)
+
+Varari_SiO4_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(silicate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_SiO4_resp) 
+summary(Varari_SiO4_resp)
+
+#######################
+## pH ## 
+########################
+pHbyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=new_pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged pH",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Respiration Rates for Varari with pH") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyRplot
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "Respiration", "pH_plot.jpg"), 
+       width = 10, height = 7)
+
+Varari_pH_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(new_pH, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_pH_resp) 
+summary(Varari_pH_resp)
+
+#######################
+## salinity ## 
+########################
+salinitybyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged salinity",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Respiration Rates for Varari with salinity") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+salinitybyRplot
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "Respiration", "salinity_plot.jpg"), 
+       width = 10, height = 7)
+
+Varari_sal_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(salinity, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_sal_resp) 
+summary(Varari_sal_resp)
+
+#######################
+## TA ## 
+########################
+TAbyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #facet_wrap(~date, scales = "free_x") + 
+  labs(x = "Logged TA (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "TA for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TAbyRplot
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "Respiration", "TA_plot.jpg"), 
+       width = 10, height = 7)
+
+```
+
+### Varari NP plots with nutrients 
+
+```{r}
+###  make new dataset 
+Nutrient_Models_Varari_NP <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="NP") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+
+## pH 
+pHbyNPplot <- Nutrient_Models_Varari_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>%  
+         #SGD_number=as.factor(SGD_number)) %>% 
+  ggplot(aes(x=new_pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "pH",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Varari with pH") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "NetPhotosynthesis", "pH_plot.jpg"), 
+       width = 10, height = 7)
+
+
+## salinity 
+salinitybyNPplot <- Nutrient_Models_Varari_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "salinity",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Varari with salinity") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+salinitybyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "NetPhotosynthesis", "sal_plot.jpg"), 
+       width = 10, height = 7)
+
+
+## phosphate 
+phosphatebyNPplot <- Nutrient_Models_Varari_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date), 
+         SGD_number=as.factor(SGD_number)) %>% 
+  filter(phosphate_umolL<1) %>%
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Phosphate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Varari with Phosphate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+phosphatebyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "NetPhotosynthesis", "phosphate_plot.jpg"), 
+       width = 10, height = 7)
+
+## nitrates 
+NNbyNPplot <- Nutrient_Models_Varari_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "NN",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Varari with NN") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "NetPhotosynthesis", "NN_plot.jpg"), 
+       width = 10, height = 7)
+
+## silicate 
+silicatebyNPplot <- Nutrient_Models_Varari_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+   coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Silicate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Varari with silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+silicatebyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "NetPhotosynthesis", "silicate_plot.jpg"), 
+       width = 10, height = 7)
+
+
+## ammonia 
+ammoniabyNPplot <- Nutrient_Models_Varari_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+   coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Ammonia",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Varari with Ammonia") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ammoniabyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "NetPhotosynthesis", "ammonia_plot.jpg"), 
+       width = 10, height = 7)
+
+
+## TA 
+TAbyNPplot <- Nutrient_Models_Varari_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Varari with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TAbyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "NetPhotosynthesis", "TA_plot.jpg"), 
+       width = 10, height = 7)
+
+```
+
+#### Varari GP for each nutrient
+
+```{r}
+Nutrient_Models_Varari_GP <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+
+## pH 
+pHbyGPplot <- Nutrient_Models_Varari_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=new_pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "pH",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Varari with pH") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "GrossPhotosynthesis", "pH_plot.jpg"), 
+       width = 10, height = 7)
+
+## TA 
+TAbyGPplot <- Nutrient_Models_Varari_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+   coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Varari with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TAbyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "GrossPhotosynthesis", "TA_plot.jpg"), 
+       width = 10, height = 7)
+
+## salinity 
+salinitybyGPplot <- Nutrient_Models_Varari_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+   coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "salinity",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Varari with salinity") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+salinitybyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "GrossPhotosynthesis", "salinity_plot.jpg"), 
+       width = 10, height = 7)
+
+## ammonia 
+ammoniabyGPplot <- Nutrient_Models_Varari_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "ammonia",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Varari with ammonia") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ammoniabyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "GrossPhotosynthesis", "ammonia_plot.jpg"), 
+       width = 10, height = 7)
+
+## silicate 
+silicatebyGPplot <- Nutrient_Models_Varari_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") + 
+  geom_smooth(method = "lm", formula="y~poly(x,2)") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "silicate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Varari with silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+silicatebyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "GrossPhotosynthesis", "silicate_plot.jpg"), 
+       width = 10, height = 7)
+
+## NN 
+NNbyGPplot <- Nutrient_Models_Varari_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "NN",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Varari with NN") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "GrossPhotosynthesis", "NN_plot.jpg"), 
+       width = 10, height = 7)
+
+## phosphate 
+phosphatebyGPplot <- Nutrient_Models_Varari_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "phosphate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Varari with phosphate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+phosphatebyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "GrossPhotosynthesis", "phosphate_plot.jpg"), 
+       width = 10, height = 7)
+
+Varari_PO4_GP <- lmer(data = Nutrient_Models_Varari_GP, 
+             umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_PO4_resp) 
+```
+
+#### Varari Calcification just with SGD dils 
+
+```{r}
+SGDdilsbyVplot <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="C") %>% 
+  #filter(sample_ID_edit!="Varari_Col4_Dil9_Light_Day2") %>% ### NOT SURE WHY THIS IS HERE/CAUSING AN ERROR (tried to knit)
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=4) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  geom_smooth(method = "lm", se=TRUE, color="black") +
+  geom_hline(yintercept = 0) +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "SGD Dils",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDdilsbyVplot 
+
+
+SGDdilsbyVplot2 <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=SGD_number+1, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=4, aes(color=new_colonynumber)) +
+  scale_color_manual(values=rev(pnw_palette("Bay", n=9)), 
+                     guide="none") +
+  theme_bw() + 
+  coord_trans(x ="log") +
+  theme(strip.background = element_rect(fill = "white")) +
+  geom_smooth(method = "lm", color="black") +
+  geom_hline(yintercept = 0) +
+  labs(x = "log SGD Dils",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDdilsbyVplot2
+
+model_ex <- lmer(umol.cm2.hr ~ log(SGD_number+1) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex)
+  
+```
+
+#### Varari Calcification for each nutrient 
+```{r}
+Nutrient_Models_Varari_NEC <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)) 
+  
+## ammonia 
+ammoniabyVplot <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "ammonia",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with Ammonia") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ammoniabyVplot
+ggsave(here::here("Outputs", "NutrientAnalyses", "Varari", "Calcification", "NECbyAmmonia.jpg"))
+
+
+### silicate
+silicatebyVplot <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "silicate",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with Silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+silicatebyVplot
+ggsave(here::here("Outputs", "NutrientAnalyses", "Varari", "Calcification", "NECbySilicate.jpg"))
+
+modelsilicate_NEC_V <- lmer(umol.cm2.hr ~ poly(silicate_umolL, degree=2) + (1|new_colonynumber), data=Nutrient_Models_Varari_NEC)
+anova(modelsilicate_NEC_V)
+
+
+
+### NN
+NNbyVplot <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "NN",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with NN") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyVplot
+ggsave(here::here("Outputs", "NutrientAnalyses", "Varari", "Calcification", "NECbyNN.jpg"))
+
+
+### Phos
+PhosbyVplot <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(phosphate_umolL<0.7) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  geom_smooth(method="lm", formula="y~poly(x,2)") +
+  coord_trans(x="log") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+# facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "Phosphate",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with Phosphate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+PhosbyVplot
+ggsave(here::here("Outputs", "NutrientAnalyses", "Varari", "Calcification", "NECbyPhosphate.jpg"))
+
+############## 
+## quick model 
+###############
+modelPhos_NEC_V <- lmer(umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|new_colonynumber), data=Nutrient_Models_Varari_NEC)
+anova(modelPhos_NEC_V)
+
+### pH 
+pHbyVplot <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=new_pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+  #facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "pH",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with pH") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyVplot
+ggsave(here::here("Outputs", "NutrientAnalyses", "Varari", "Calcification", "NECbypH.jpg"))
+
+
+### salinity 
+SalinitybyVplot <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(phosphate_umolL<1) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=salinity, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+ # facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "Salinity",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with Salinity") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SalinitybyVplot
+ggsave(here::here("Outputs", "NutrientAnalyses", "Varari", "Calcification", "NECbySalinity.jpg"))
+
+modelsalinity_NEC_V <- lmer(umol.cm2.hr ~ poly(salinity, degree=2) + (1|new_colonynumber), data=Nutrient_Models_Varari_NEC)
+anova(modelsalinity_NEC_V)
+
+### TA 
+TAbyVplot <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr)) + 
+  geom_point(aes(color=new_colonynumber), size=3) +
+  theme_bw() + 
+  geom_smooth(method="lm") +
+  coord_trans(x="log") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+  #facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TAbyVplot
+ggsave(here::here("Outputs", "NutrientAnalyses", "Varari", "Calcification", "NECbyTA.jpg"))
+
+modelTA_NEC_V <- lmer(umol.cm2.hr ~ poly(TA_initial, degree=2) + (1|new_colonynumber), data=Nutrient_Models_Varari_NEC)
+anova(modelTA_NEC_V)
+
+```
+
+## quick visualization of TA at both sites 
+TA is significant (0.002)
+```{r}
+### plot both sites together for NEC Phos
+TA_bothsites <- RespoR_Normalized_Full_AllInfo  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(phosphate_umolL<1) %>% 
+  filter(P_R=="C") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date), 
+         SGD_number=as.factor(SGD_number)) %>% 
+   ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr, 
+             color=new_colonynumber)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+# facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Both Sites with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TA_bothsites
+
+
+linearmod_bothsites_TA <- lmer(umol.cm2.hr ~ TA_initial + (1|new_colonynumber), 
+                               data=RespoR_Normalized_Full_AllInfo  %>%
+                                 filter(umol.cm2.hr!="Inf") %>%
+                                 filter(P_R=="C"))
+
+anova(linearmod_bothsites_TA)
+
+```
+
+### Cabral NP plots 
+```{r}
+Nutrient_Models_Cabral_NP <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="NP") %>% 
+  filter(!is.infinite(umol.cm2.hr)) 
+
+## pH 
+pHbyNPplot <- Nutrient_Models_Cabral_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=new_pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+   coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "pH",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Cabral with pH") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "NetPhotosynthesis", "pH_plot.jpg"), 
+       width = 10, height = 7)
+
+
+## salinity 
+salbyNPplot <- Nutrient_Models_Cabral_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "salinity",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Cabral with salinity") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+salbyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "NetPhotosynthesis", "salinity_plot.jpg"), 
+       width = 10, height = 7)
+
+
+## phosphate 
+phosphatebyNPplot <- Nutrient_Models_Cabral_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr, 
+             color=new_colonynumber)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  coord_trans(x="log") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "phosphate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Cabral with phosphate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+phosphatebyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "NetPhotosynthesis", "phosphate_plot.jpg"), 
+       width = 10, height = 7)
+
+## ammonia 
+ammoniabyNPplot <- Nutrient_Models_Cabral_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "ammonia",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Cabral with ammonia") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ammoniabyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "NetPhotosynthesis", "ammonia_plot.jpg"), 
+       width = 10, height = 7)
+
+## NN 
+NNbyNPplot <- Nutrient_Models_Cabral_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "NN",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Cabral with NN") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "NetPhotosynthesis", "NN_plot.jpg"), 
+       width = 10, height = 7)
+
+## silicate 
+silicatebyNPplot <- Nutrient_Models_Cabral_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "silicate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Cabral with silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+silicatebyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "NetPhotosynthesis", "silicate_plot.jpg"), 
+       width = 10, height = 7)
+
+## TA 
+TAbyNPplot <- Nutrient_Models_Cabral_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Cabral with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TAbyNPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "NetPhotosynthesis", "TA_plot.jpg"), 
+       width = 10, height = 7)
+
+```
+
+### Cabral R plots 
+```{r}
+Nutrient_Models_Cabral_R <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr)) 
+
+## pH 
+pHbyRplot <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=new_pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "pH",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "R Rates for Cabral with pH") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyRplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Respiration", "pH_plot.jpg"), 
+       width = 10, height = 7)
+
+## TA 
+TAbyRplot <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "R Rates for Cabral with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TAbyRplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Respiration", "TA_plot.jpg"), 
+       width = 10, height = 7)
+
+
+## salinity 
+salinitybyRplot <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "salinity",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "R Rates for Cabral with salinity") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+salinitybyRplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Respiration", "salinity_plot.jpg"), 
+       width = 10, height = 7)
+
+
+## phosphate 
+phosphatebyRplot <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "phosphate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "R Rates for Cabral with phosphate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+phosphatebyRplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Respiration", "phosphate_plot.jpg"), 
+       width = 10, height = 7)
+
+
+
+## ammonia 
+ammoniabyRplot <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+ geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "ammonia",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "R Rates for Cabral with ammonia") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ammoniabyRplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Respiration", "ammonia_plot.jpg"), 
+       width = 10, height = 7)
+
+
+## NN 
+NNbyRplot <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "NN",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "R Rates for Cabral with NN") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyRplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Respiration", "NN_plot.jpg"), 
+       width = 10, height = 7)
+
+## silicate 
+silicatebyRplot <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "silicate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "R Rates for Cabral with silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+silicatebyRplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Respiration", "silicate_plot.jpg"), 
+       width = 10, height = 7)
+```
+
+### Cabral GP plots
+```{r}
+Nutrient_Models_Cabral_GP <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr)) 
+
+## pH 
+pHbyGPplot <- Nutrient_Models_Cabral_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=new_pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "pH",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with pH") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "GrossPhotosynthesis", "pH_plot.jpg"), 
+       width = 10, height = 7)
+
+
+### TA 
+TAbyGPplot <- Nutrient_Models_Cabral_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TAbyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "GrossPhotosynthesis", "TA_plot.jpg"), 
+       width = 10, height = 7)
+
+## salinity 
+salinitybyGPplot <- Nutrient_Models_Cabral_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr)) + 
+   geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "salinity",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with salinity") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+salinitybyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "GrossPhotosynthesis", "salinity_plot.jpg"), 
+       width = 10, height = 7)
+
+## phosphate 
+phosphatebyGPplot <- Nutrient_Models_Cabral_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+   geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "phosphate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with phosphate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+phosphatebyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "GrossPhotosynthesis", "phosphate_plot.jpg"), 
+       width = 10, height = 7)
+
+## ammonia 
+ammoniabyGPplot <- Nutrient_Models_Cabral_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+   geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "ammonia",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with ammonia") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ammoniabyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "GrossPhotosynthesis", "ammonia_plot.jpg"), 
+       width = 10, height = 7)
+
+## NN 
+NNbyGPplot <- Nutrient_Models_Cabral_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+   geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "NN",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with NN") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "GrossPhotosynthesis", "NN_plot.jpg"), 
+       width = 10, height = 7)
+
+## silicate 
+silicatebyGPplot <- Nutrient_Models_Cabral_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+   geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "silicate",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+silicatebyGPplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "GrossPhotosynthesis", "silicate_plot.jpg"), 
+       width = 10, height = 7)
+
+
+```
+
+### Cabral NEC plots 
+```{r}
+Nutrient_Models_Cabral_NEC <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+
+## just by SGD dilutions first 
+SGDdilsbyCplot <- Nutrient_Models_Cabral_NEC %>%
+  filter(umol.cm2.hr<1) %>% 
+  ggplot(aes(x=SGD_number+1, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  scale_color_manual(values=rev(pnw_palette("Bay", n=9)), 
+                     guide="none") +
+  theme_bw() + 
+  coord_trans(x="log") +
+  theme(strip.background = element_rect(fill = "white")) +
+  geom_smooth(method = "lm", color="black") +
+  geom_hline(yintercept = 0) +
+  labs(x = "log SGD Dils",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Cabral with SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDdilsbyCplot
+
+## ammonia 
+ammoniabyCplot <- Nutrient_Models_Cabral_NEC %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "ammonia",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Cabral with ammonia") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ammoniabyCplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Calcification", "NECbyAmmonia.jpg"), 
+       width = 10, height = 7)
+
+
+### silicate
+silicatebyCplot <- Nutrient_Models_Cabral_NEC %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(silicate_umolL+1), 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Silicate",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Cabral with Silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+silicatebyCplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Calcification", "NECbySilicate.jpg"), 
+       width = 10, height = 7)
+
+modelsilicate_NEC_C <- lmer(umol.cm2.hr ~ poly(silicate_umolL, degree=2) + (1|new_colonynumber), data=Nutrient_Models_Cabral_NEC)
+anova(modelsilicate_NEC_C)
+
+### NN
+NNbyCplot <- Nutrient_Models_Cabral_NEC %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "NN",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Cabral with NN") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyCplot
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Calcification", "NECbyNN.jpg"), 
+       width = 10, height = 7)
+
+### Phos
+PhosbyCplot <- Nutrient_Models_Cabral_NEC %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  geom_smooth(method="lm") +
+  theme_bw() + 
+  #facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "Phosphate",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Cabral with Phosphate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+PhosbyCplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Calcification", "NECbyPhosphate.jpg"), 
+       width = 10, height = 7)
+
+###### salinity 
+salinitybyCplot <- Nutrient_Models_Cabral_NEC %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=salinity, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "salinity",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Cabral with Salinity") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+salinitybyCplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Calcification", "NECbySalinity.jpg"), 
+       width = 10, height = 7)
+
+modelsalinity_NEC_C <- lmer(umol.cm2.hr ~ poly(salinity, degree=2) + (1|new_colonynumber), data=Nutrient_Models_Cabral_NEC)
+anova(modelsalinity_NEC_C)
+
+###### pH 
+pHbyCplot <- Nutrient_Models_Cabral_NEC %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=new_pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  theme_bw() + 
+  geom_smooth(method="lm", formula="y~poly(x,2)") +
+  #facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "Logged pH",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Cabral with pH") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyCplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Calcification", "NECbypH.jpg"), 
+       width = 10, height = 7)
+
+modelpH_NEC_C <- lmer(umol.cm2.hr ~ poly(new_pH, degree=2) + (1|new_colonynumber), data=Nutrient_Models_Cabral_NEC)
+anova(modelpH_NEC_C)
+
+
+
+## TA
+TAbyCplot <- Nutrient_Models_Cabral_NEC %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  geom_smooth(method="lm") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Cabral with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TAbyCplot
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "Calcification", "NECbyTA.jpg"), 
+       width = 10, height = 7)
+
+modelTA_NEC_C <- lmer(umol.cm2.hr ~ poly(TA_initial, degree=2) + (1|new_colonynumber), data=Nutrient_Models_Cabral_NEC)
+anova(modelTA_NEC_C)
+
+
+
+#############################
+## just the SGD dilution plots 
+#############################
+
+SGDdilsbyCplot + SGDdilsbyVplot2
+ggsave(here::here("Outputs", "NutrientAnalyses", "CabralandVarari_NEC_bySGDDils.jpg"), 
+       width=12, height=7)
+
+```
+
+### Take the average of all replicates per SGD treatment to get one value per treatment and plot - May 31st 
+```{r}
+
+NEC_wnuts_averaged <- RespoR_Normalized_Full_AllInfo %>%
+ # filter(sample_ID_edit!="Varari_Col4_Dil9_Light_Day2") %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  filter(umol.cm2.hr<1) %>% 
+  group_by(site, SGD_number) %>% 
+  summarize(avg_umol = mean(umol.cm2.hr))
+
+### plot for Varari and Cabral 
+NECby_avgSGDdils_plot <- NEC_wnuts_averaged %>%
+  #filter(site=="Varari") %>% 
+  ggplot(aes(x=log(SGD_number+1), 
+             y=avg_umol, 
+             color=as.factor(SGD_number))) + 
+  geom_point(size=4) +
+  scale_color_manual(values=rev(pnw_palette("Bay", n=9)), 
+                     guide="none") +
+  theme_bw() + 
+ # theme(strip.background = element_rect(fill = "white")) +
+  geom_smooth(method="lm", formula="y~poly(x,2)", color="black") +
+  geom_hline(yintercept = 0) +
+  facet_wrap(~site) +
+  labs(x = "log SGD Dils",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NEC Rates for averaged SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NECby_avgSGDdils_plot
+ggsave(here::here("Outputs", "NutrientAnalyses", "NEC_SGDavg_bothsites.jpg"))
+
+#########################################
+### run models on the averaged SGD dils bc Varari looks nonlinear
+#########################################
+NEC_wnuts_averaged_V <- NEC_wnuts_averaged %>% 
+  filter(site=="Varari")
+
+NEC_wnuts_averaged_C <- NEC_wnuts_averaged %>% 
+  filter(site=="Cabral")
+
+
+## varari 
+Varari_avgSGD_NEC <- lm(avg_umol ~ SGD_number, data = NEC_wnuts_averaged_V)
+summary(Varari_avgSGD_NEC)
+
+Varari_avgSGD_NEC2 <- lm(avg_umol ~ poly(SGD_number, degree=2), data = NEC_wnuts_averaged_V)
+summary(Varari_avgSGD_NEC2)
+
+## cabral 
+Cabral_avgSGD_NEC <- lm(avg_umol ~ SGD_number, data = NEC_wnuts_averaged_C)
+summary(Cabral_avgSGD_NEC)
+
+
+```
+
+## Creating plots for N:P (x axis) and Rates on y axis 
+- taking ratio of Nitrates to Phosphates at each dilution and then use that against R/GP/NP/NEC 
+
+```{r}
+
+## First make all new dfs 
+FULL_RespoNEC_allParams2 <- RespoR_Normalized_Full_AllInfo %>% 
+  group_by(P_R, SGD_number, date, site, new_colonynumber) %>% 
+  mutate(N_P = NN_umolL/phosphate_umolL, 
+         P_N = phosphate_umolL/NN_umolL)
+
+## Varari GP 
+Nutrient_Models_Varari_GP2 <- FULL_RespoNEC_allParams2 %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+### Varari NP 
+Nutrient_Models_Varari_NP2 <- FULL_RespoNEC_allParams2 %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="NP") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+### Varari R 
+Nutrient_Models_Varari_R2 <- FULL_RespoNEC_allParams2 %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+### Varari C 
+Nutrient_Models_Varari_C2 <- FULL_RespoNEC_allParams2 %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+### Cabral GP
+Nutrient_Models_Cabral_GP2 <- FULL_RespoNEC_allParams2 %>% 
+  filter(site=="Cabral") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+### Cabral NP
+Nutrient_Models_Cabral_NP2 <- FULL_RespoNEC_allParams2 %>% 
+  filter(site=="Cabral") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="NP") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+### Cabral R
+Nutrient_Models_Cabral_R2 <- FULL_RespoNEC_allParams2 %>% 
+  filter(site=="Cabral") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+### Cabral C
+Nutrient_Models_Cabral_C2 <- FULL_RespoNEC_allParams2 %>% 
+  filter(site=="Cabral") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+```
+
+Now make plots 
+
+```{r}
+#################################
+### VARARI FIRST 
+#################################
+
+##############
+## GP 
+##############
+N_PRatiobyGPplot_V <- Nutrient_Models_Varari_GP2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(N_P+1), 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  geom_smooth(method = "lm") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged N:P Ratio",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Varari with N:P Ratio") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+N_PRatiobyGPplot_V
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "N_P_Ratios", "GP_plot.jpg"), 
+       width = 10, height = 7)
+
+##############
+## NP
+##############
+N_PRatiobyNPplot_V <- Nutrient_Models_Varari_NP2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=N_P, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  geom_smooth(method="lm") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged N:P Ratio",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Varari with N:P Ratio") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+N_PRatiobyNPplot_V
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "N_P_Ratios", "NP_plot.jpg"), 
+       width = 10, height = 7)
+
+##############
+## R 
+##############
+N_PRatiobyRplot_V <- Nutrient_Models_Varari_R2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(N_P+1), 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  geom_smooth(method="lm") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged N:P Ratio",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "R Rates for Varari with N:P Ratio") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+N_PRatiobyRplot_V
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "N_P_Ratios", "R_plot.jpg"), 
+       width = 10, height = 7)
+
+#########################################
+## model to check if sig 
+#########################################
+
+model_V_NPratiobyR <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) , data=Nutrient_Models_Varari_R2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(model_V_NPratiobyR)
+summary(model_V_NPratiobyR)
+
+##############
+## NEC 
+##############
+N_PRatiobyNECplot_V <- Nutrient_Models_Varari_C2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(N_P+1), 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  geom_smooth(method="lm") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged N:P Ratio",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NEC Rates for Varari with N:P Ratio") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+N_PRatiobyNECplot_V
+
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "N_P_Ratios", "NEC_plot.jpg"), 
+       width = 10, height = 7)
+
+#######################################
+## now Cabral plots
+#######################################
+
+##################
+## GP
+##################
+N_PRatiobyGPplot_C <- Nutrient_Models_Cabral_GP2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(N_P+1), 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  geom_smooth(method = "lm") + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged N:P Ratio",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with N:P Ratio") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+N_PRatiobyGPplot_C
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "N_P_Ratios", "GP_plot.jpg"), 
+       width = 10, height = 7)
+
+#########################################
+## model to check if sig - it is not 
+#########################################
+
+model_C_NPratiobyGP <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Cabral_GP2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(model_C_NPratiobyGP)
+
+##################
+## NP
+##################
+N_PRatiobyNPplot_C <- Nutrient_Models_Cabral_NP2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(N_P+1), 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  geom_smooth(method="lm") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged N:P Ratio",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NP Rates for Cabral with N:P Ratio") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+N_PRatiobyNPplot_C
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "N_P_Ratios", "NP_plot.jpg"), 
+       width = 10, height = 7)
+
+##################
+## R 
+##################
+N_PRatiobyRplot_C <- Nutrient_Models_Cabral_R2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(N_P+1), 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  geom_smooth(method="lm") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged N:P Ratio",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "R Rates for Cabral with N:P Ratio") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+N_PRatiobyRplot_C
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "N_P_Ratios", "R_plot.jpg"), 
+       width = 10, height = 7)
+
+#########################################
+## model to check if sig 
+#########################################
+
+model_C_NPratiobyNEC <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Cabral_R2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(model_C_NPratiobyNEC)
+
+##################
+## NEC 
+##################
+N_PRatiobyNECplot_C <- Nutrient_Models_Cabral_C2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(N_P+1), 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  geom_smooth(method="lm") +
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "Logged N:P Ratio",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NEC Rates for Cabral with N:P Ratio") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+N_PRatiobyNECplot_C
+
+ggsave(here("Outputs", "NutrientAnalyses", "Cabral", "N_P_Ratios", "NEC_plot.jpg"), 
+       width = 10, height = 7)
+
+
+```
+
+
+### models for N:P to see if it is significant 
+```{r}
+
+## Varari GP 
+Nutrient_Models_Varari_GP2 
+
+### Varari R 
+Nutrient_Models_Varari_R2 
+
+### Varari C 
+Nutrient_Models_Varari_C2 
+
+### Cabral GP
+Nutrient_Models_Cabral_GP2 
+
+### Cabral R
+Nutrient_Models_Cabral_R2
+
+### Cabral C
+Nutrient_Models_Cabral_C2
+
+
+### models 
+
+##### Varari GP 
+NPvsGP_Varari <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Varari_GP2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsGP_Varari)
+
+##### Varari R  
+NPvsR_Varari <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Varari_R2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsR_Varari)
+
+##### Varari C -- SIGNIFICANT 
+NPvsC_Varari <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Varari_C2 %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsC_Varari)
+
+##### Cabral GP  
+NPvsGP_Cabral <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Cabral_GP2  %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsGP_Cabral)
+
+##### Cabral R  
+NPvsR_Cabral <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Cabral_R2  %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsR_Cabral)
+
+##### Cabral C  
+NPvsC_Cabral <- lmer(umol.cm2.hr ~ log(N_P+1) + (1|new_colonynumber) ,data=Nutrient_Models_Cabral_C2  %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(NPvsC_Cabral)
+
+```
+
+
+
+
+## Creating plots for GP:C at both sites 
+- Gross Photosynthesis has been shown to impact rates of calcification (include literature here)
+So look at the rates of GP on x and Calcif. on y to see if there is a relationship here at my sites with my rates 
+- Findings: 
+```{r}
+
+RespoR_Normalized_Full_AllInfo <- RespoR_Normalized_Full_AllInfo %>% 
+  mutate(Salinity=salinity)
+
+
+FULL_RespoNEC_allParams_GP_C_edit <- RespoR_Normalized_Full_AllInfo %>% 
+  select(!c("phosphate_umolL":"Salinity")) %>% 
+  filter(P_R!="R", P_R!="NP") %>% 
+  pivot_wider(names_from = P_R, values_from = umol.cm2.hr)
+  
+
+#######################################
+### Varari plot first 
+#######################################
+C_GP_Relationship_Varari <- FULL_RespoNEC_allParams_GP_C_edit %>% 
+  filter(site=="Varari", 
+         GP<1.3) %>% ## deleted one high GP rate of 1.4 to see if it made a difference in the slope 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=GP, 
+             y=C)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  geom_smooth(method="lm") +
+  labs(x = "Gross Photosynthesis Rates",
+       y = "Calcification Rates",
+       title = "GP:C Relationship for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+C_GP_Relationship_Varari
+
+#######################
+## test with model 
+#######################
+model_C_GPRelationship_Varari <- lmer(C ~ GP + (1|new_colonynumber), data = FULL_RespoNEC_allParams_GP_C_edit %>%
+                                        filter(site=="Varari") %>% 
+                                        drop_na(C, GP) %>% 
+                                        filter(!is.infinite(GP)) %>% 
+                                        mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(model_C_GPRelationship_Varari)
+
+#######################################
+### Cabral plot next 
+#######################################
+C_GP_Relationship_Cabral <- FULL_RespoNEC_allParams_GP_C_edit %>% 
+  filter(site=="Cabral") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=GP, 
+             y=C)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  geom_smooth(method="lm") +
+  theme_bw() + 
+  labs(x = "Gross Photosynthesis Rates",
+       y = "Calcification Rates",
+       title = "GP:C Relationship for Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+C_GP_Relationship_Cabral
+
+#######################
+## test with model 
+#######################
+model_C_GPRelationship_Cabral <- lmer(C ~ GP + (1|new_colonynumber), data = FULL_RespoNEC_allParams_GP_C_edit %>%
+                                        filter(site=="Cabral") %>% 
+                                        drop_na(C, GP) %>% 
+                                        filter(!is.infinite(GP)) %>% 
+                                        mutate(new_colonynumber= as.factor(new_colonynumber)))
+anova(model_C_GPRelationship_Cabral)
+
+C_GP_Relationship_Cabral + C_GP_Relationship_Varari
+ggsave(here("Outputs", "NutrientAnalyses", "Varari", "bothsites_GP_C_Relationship.jpg"), 
+       width = 15, height = 7)
+```
+
+
+## Creating plots for GP/R per env parameter 
+```{r}
+## First make all new dfs 
+FULL_RespoNEC_allParams_GP_R_EnvParams <- RespoR_Normalized_Full_AllInfo %>% 
+  dplyr::select(!"sample_ID") %>% 
+  group_by(P_R, SGD_number, date, site, new_colonynumber) %>% 
+  filter(P_R!="C", P_R!="NP") %>% 
+  #summarize(GP_R = GP/R)
+  pivot_wider(names_from = P_R, values_from = umol.cm2.hr) %>% 
+  mutate(GP_R = GP/R) 
+
+FULL_RespoNEC_allParams_GP_R_EnvParams_2 <- FULL_RespoNEC_allParams_GP_R_EnvParams %>% 
+  filter(phosphate_umolL<1, salinity >30) %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "EnvParams", values_to="EnvMeasurements") 
+
+FULL_RespoNEC_allParams_GP_R_EnvParams3 <- RespoR_Normalized_Full_AllInfo %>% 
+  dplyr::select(!"sample_ID") %>% 
+  group_by(P_R, SGD_number, date, site, new_colonynumber) %>% 
+  filter(P_R!="C", P_R!="NP") %>% 
+  #summarize(GP_R = GP/R)
+  pivot_wider(names_from = P_R, values_from = umol.cm2.hr) %>% 
+  mutate(GP_R = GP/R) %>% 
+  filter(phosphate_umolL<1, salinity >30) 
+
+###############################################
+## use FULL_RespoNEC_allParams_GP_R_EnvParams3 to run models to see if specific env parameters are significant 
+###############################################
+## Varari pH
+GP_R_Ratio_Varari_pH <- lmer(GP_R ~ new_pH + (1|new_colonynumber), FULL_RespoNEC_allParams_GP_R_EnvParams3 %>% 
+                               mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+                               filter(site=="Varari"))
+
+anova(GP_R_Ratio_Varari_pH)
+
+## Varari NN
+GP_R_Ratio_Varari_NN <- lmer(GP_R ~ NN_umolL + (1|new_colonynumber), FULL_RespoNEC_allParams_GP_R_EnvParams3 %>% 
+                               mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+                               filter(site=="Varari"))
+
+anova(GP_R_Ratio_Varari_NN)
+
+## Cabral Temp
+GP_R_Ratio_Cabral_Temp <- lmer(GP_R ~ temp_C + (1|new_colonynumber), FULL_RespoNEC_allParams_GP_R_EnvParams3 %>% 
+                               mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+                               filter(site=="Cabral"))
+
+anova(GP_R_Ratio_Cabral_Temp)
+
+## Cabral Phosphate
+GP_R_Ratio_Cabral_phosphate <- lmer(GP_R ~ phosphate_umolL + (1|new_colonynumber), FULL_RespoNEC_allParams_GP_R_EnvParams3 %>% 
+                               mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+                               filter(site=="Cabral"))
+
+anova(GP_R_Ratio_Cabral_phosphate)
+
+
+###############################################
+### make plots, facet by env parameter 
+###############################################
+
+#### Varari plots first 
+R_GP_byEnvParams_Varari <- FULL_RespoNEC_allParams_GP_R_EnvParams_2 %>% 
+  filter(site=="Varari") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(EnvMeasurements+1), 
+             y=GP_R)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  facet_wrap(~EnvParams, scales = "free_x") +
+  geom_smooth(method="lm") +
+  labs(x = "Environmental Parameters",
+       y = "Gross Photosynthesis/Respiration Rates",
+       title = "Env Params by GP:R Relationship for Varari") +
+   theme(axis.text.x=element_text(size=12), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+R_GP_byEnvParams_Varari
+
+#model_R_GPRelationship_Varari <- lmer(R ~ GP + (1|new_colonynumber), data = FULL_RespoNEC_allParams_GP_R_EnvParams_2 %>% 
+ # filter(site=="Varari"), 
+ # filter(!is.infinite(R)), 
+  #drop_na())
+
+#### Cabral plots first 
+R_GP_byEnvParams_Cabral <- FULL_RespoNEC_allParams_GP_R_EnvParams_2 %>% 
+  filter(site=="Cabral") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(EnvMeasurements+1), 
+             y=GP_R)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  facet_wrap(~EnvParams, scales = "free_x") +
+  geom_smooth(method="lm") +
+  labs(x = "Environmental Parameters",
+       y = "Gross Photosynthesis/Respiration Rates",
+       title = "Env Params by GP:R Relationship for Cabral") +
+   theme(axis.text.x=element_text(size=12), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+R_GP_byEnvParams_Cabral
+
+## doesn't look like much going on for relationships here
+
+
+
+```
+
+
+# TIMELINE UPDATES 
+
+### Results to share with Nyssa: (June 6th) 
+- after going through the data AGAIN in depth and resolving join issues -- with new NEC models, initial TA is significant 
+- NP Ratio for R at Cabral is signif with logged NP ratios, no other plot is 
+- logged all the models and the plots for Env Params on the x axis 
+- doesn't look like much happening with GP and C ratio or GP/R 
+
+### June 11th updates from Nyssa
+Look to see if TA and Salinity are correlated 
+
+```{r}
+
+### Varari TA and Salinity relationship 
+
+TAbySalinityplot_V <- RespoR_Normalized_Full_AllInfo  %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=TA_initial, 
+             y=Salinity)) + 
+  geom_point(aes(color=new_colonynumber), size=3) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #geom_smooth(method="lm") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+  #facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "TA",
+       y = "Salinty",
+       title = "Salinity vs TA Correlation for Varari (Logged Values)") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+TAbySalinityplot_V
+
+modelTA_Salinity_V <- lmer(Salinity ~ TA_initial + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo)
+anova(modelTA_Salinity_V)
+
+```
+
+Make geom_smooth lines based on models specifically
+- only with the top, significant models 
+
+```{r}
+
+############## 
+## quick model 
+###############
+modelPhos_NEC_V <- lmer(umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|new_colonynumber), data=Nutrient_Models_Varari_NEC)
+anova(modelPhos_NEC_V)
+
+
+### Phos
+PhosbyVplot <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(phosphate_umolL<0.7) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") + 
+  theme_bw() + 
+  geom_smooth(method="lmer", formula="umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|new_colonynumber)") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+# facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "Phosphate",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with Phosphate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+PhosbyVplot
+ggsave(here::here("Outputs", "NutrientAnalyses", "Varari", "Calcification", "NECbyPhosphate.jpg"))
+
+
+```
+
+
+### plotting salinity on the x and NEC on the y 
+```{r}
+
+NEC_Salinity_V <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+   ggplot(aes(x=salinity, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  #geom_smooth(method="lmer", formula="umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|new_colonynumber)") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+# facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "Salinity",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with Salinity") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NEC_Salinity_V
+
+NEC_TA_V <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date), 
+         SGD_number=as.factor(SGD_number)) %>% 
+   ggplot(aes(x=TA_initial, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #geom_smooth(method="lmer", formula="umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|new_colonynumber)") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+# facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "TA",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+
+NEC_TA_V
+
+NEC_Silicate_V <- Nutrient_Models_Varari_NEC  %>% 
+  drop_na(umol.cm2.hr) %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date), 
+         SGD_number=as.factor(SGD_number)) %>% 
+   ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  coord_trans(x="log") +
+  #geom_smooth(method="lmer", formula="umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|new_colonynumber)") +
+  #scale_color_manual(values=pnw_palette("Sailboat")) +
+# facet_wrap(~new_colonynumber, scales = "free_x") +
+  labs(x = "Silicate",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with Silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+
+NEC_Silicate_V
+
+
+
+NEC_TA_V + NEC_Silicate_V
+
+```
+
+
+### RESULTS SECTION as of June 13th 
+Currently: not really seeing results that make sense with isolating each nutrient/env parameter on the x-axis. Think about this more, but right now, keep SGD on the x-axis 
+
+-  Only include SGD dils as the x-axis and then GP, R, and C 
+
+#### Respiration 
+Results: No significant linear relationship of SGD level on either Cabral (0.99) or Varari (0.14) OR nonlinear 
+```{r}
+
+###########################
+### For Varari 
+###########################
+
+SGDdilsbyV_Resp <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=SGD_number+1, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=4, aes(color=new_colonynumber)) +
+  scale_color_manual(values=rev(pnw_palette("Bay", n=9)), 
+                     guide="none") +
+  theme_bw() + 
+  coord_trans(x ="log") +
+  theme(strip.background = element_rect(fill = "white")) +
+  geom_smooth(method = "lm", color="black") +
+  geom_hline(yintercept = 0) +
+  labs(x = "log SGD Dils",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Resp Rates for Varari with SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDdilsbyV_Resp
+
+### testing in a model 
+model_ex_RespoV <- lmer(umol.cm2.hr ~ log(SGD_number+1) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex_RespoV)
+
+### testing in a nonlinear model 
+model_ex_RespoV_nonlin <- lmer(umol.cm2.hr ~ poly(log(SGD_number+1),2) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex_RespoV_nonlin)
+
+
+###################
+## for Cabral
+####################
+
+SGDdilsbyC_Resp <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=SGD_number+1, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=4, aes(color=new_colonynumber)) +
+  scale_color_manual(values=rev(pnw_palette("Bay", n=9)), 
+                     guide="none") +
+  theme_bw() + 
+  coord_trans(x ="log") +
+  theme(strip.background = element_rect(fill = "white")) +
+  geom_smooth(method = "lm", color="black") +
+  geom_hline(yintercept = 0) +
+  labs(x = "log SGD Dils",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Respo Rates for Cabral with SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDdilsbyC_Resp
+
+### testing in a model 
+model_ex_RespoC <- lmer(umol.cm2.hr ~ log(SGD_number+1) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex_RespoC)
+
+### testing in a nonlinear model 
+model_ex_RespoC_nonlin <- lmer(umol.cm2.hr ~ poly(log(SGD_number+1),2) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex_RespoC_nonlin)
+
+```
+
+#### Gross Photosynthesis 
+Results: No significant linear relationship of SGD dils on GP rates for Varari (0.4) or Cabral, though Cabral is close at 0.077. 
+-  BUT, at Cabral, there is a nonlinear relationship to SGD dils (0.02) for GP
+```{r}
+###########################
+### For Varari 
+###########################
+
+SGDdilsbyV_GP2 <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=SGD_number+1, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=4, aes(color=new_colonynumber)) +
+  scale_color_manual(values=rev(pnw_palette("Bay", n=9)), 
+                     guide="none") +
+  theme_bw() + 
+  coord_trans(x ="log") +
+  theme(strip.background = element_rect(fill = "white")) +
+  geom_smooth(method="lm", formula = "y~poly(log(x),2)", color="black") +
+  geom_hline(yintercept = 0) +
+  labs(x = "log SGD Dils",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Varari with SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDdilsbyV_GP2
+
+### testing in a linear model 
+model_ex_GP_V <- lmer(umol.cm2.hr ~ log(SGD_number+1) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex_GP_V)
+
+### testing in a nonlinear model 
+model_ex_GP_V_nonlin <- lmer(umol.cm2.hr ~ poly(log(SGD_number+1),2) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex_GP_V_nonlin)
+
+
+###################
+## for Cabral
+####################
+
+SGDdilsbyC_GP2 <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=SGD_number+1, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=4, aes(color=new_colonynumber)) +
+  scale_color_manual(values=rev(pnw_palette("Bay", n=9)), 
+                     guide="none") +
+  theme_bw() + 
+  coord_trans(x ="log") +
+  theme(strip.background = element_rect(fill = "white")) +
+  geom_smooth(method="lm", formula = "y~poly(log(x),2)", color="black") +
+ # geom_hline(yintercept = 0) +
+  labs(x = "log SGD Dils",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDdilsbyC_GP2
+
+### testing in a linear model 
+model_ex_C_GP <- lmer(umol.cm2.hr ~ log(SGD_number+1) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex_C_GP)
+
+
+### testing in a nonlinear model 
+model_ex_C_GP_nonlin <- lmer(umol.cm2.hr ~ poly(log(SGD_number+1),2) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="GP") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex_C_GP_nonlin)
+
+```
+
+
+#### Calcification 
+Results: there is a significant linear relationship of SGD (0.008) on calcification rates at Varari (though average remains net calcifying). However, there is no significant relationship of SGD level on calcification at Cabral (0.15)
+-  there is also a nonlinear relationship with C at Varari - though, still nothing at Cabral 
+-  phopshate at Varari is significant 
+```{r}
+
+###################
+## for Varari
+####################
+
+SGDdilsbyVplot2 <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=SGD_number+1, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=4, aes(color=new_colonynumber)) +
+  scale_color_manual(values=rev(pnw_palette("Bay", n=9)), 
+                     guide="none") +
+  theme_bw() + 
+  coord_trans(x ="log") +
+  theme(strip.background = element_rect(fill = "white")) +
+  geom_smooth(method = "lm", color="black") +
+  geom_hline(yintercept = 0) +
+  labs(x = "log SGD Dils",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Varari with SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDdilsbyVplot2
+
+### testing in a model 
+model_ex <- lmer(umol.cm2.hr ~ log(SGD_number+1) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex)
+
+### testing in a nonlinear model 
+model_exC_nonlin_V <- lmer(umol.cm2.hr ~ poly(log(SGD_number+1),2) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_exC_nonlin_V)
+
+
+###################
+## for Cabral
+####################
+
+SGDdilsbyCplot2 <- RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=SGD_number+1, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=4, aes(color=new_colonynumber)) +
+  scale_color_manual(values=rev(pnw_palette("Bay", n=9)), 
+                     guide="none") +
+  theme_bw() + 
+  coord_trans(x ="log") +
+  theme(strip.background = element_rect(fill = "white")) +
+  geom_smooth(method = "lm", color="black") +
+  geom_hline(yintercept = 0) +
+  labs(x = "log SGD Dils",
+       y = "Rate (umol CaCO3 g-1 hr-1)",
+       title = "NEC Rates for Cabral with SGD Dils") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDdilsbyCplot2
+
+### testing in a model 
+model_ex2 <- lmer(umol.cm2.hr ~ log(SGD_number+1) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_ex2)
+
+### testing in a nonlinear model 
+model_exC_nonlin_C <- lmer(umol.cm2.hr ~ poly(log(SGD_number+1),2) + (1|new_colonynumber), data=RespoR_Normalized_Full_AllInfo %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+anova(model_exC_nonlin_C)
+
+
+```
+
+
+#### Plot GP:R Ratio as a function of SGD 
+Not completed yet 
+```{r}
+## First make all new dfs 
+FULL_RespoNEC_allParams_GP_R_EnvParams <- RespoR_Normalized_Full_AllInfo %>% 
+  dplyr::select(!"sample_ID") %>% 
+  group_by(P_R, SGD_number, date, site, new_colonynumber) %>% 
+  filter(P_R!="C", P_R!="NP") %>% 
+  #summarize(GP_R = GP/R)
+  pivot_wider(names_from = P_R, values_from = umol.cm2.hr) %>% 
+  mutate(GP_R = GP/R) 
+
+
+FULL_RespoNEC_allParams_GP_R_EnvParams_2 <- FULL_RespoNEC_allParams_GP_R_EnvParams %>% 
+  filter(phosphate_umolL<1, salinity >30) %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "EnvParams", values_to="EnvMeasurements") 
+
+###############################################
+### make plots, facet by env parameter 
+###############################################
+
+#### Varari plots first 
+R_GP_byEnvParams_Varari <- FULL_RespoNEC_allParams_GP_R_EnvParams_2 %>% 
+  filter(site=="Varari") %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  ggplot(aes(x=log(EnvMeasurements+1), 
+             y=GP_R)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  theme_bw() + 
+  facet_wrap(~EnvParams, scales = "free_x") +
+  geom_smooth(method="lm") +
+  labs(x = "Environmental Parameters",
+       y = "Gross Photosynthesis/Respiration Rates",
+       title = "Env Params by GP:R Relationship for Varari") +
+   theme(axis.text.x=element_text(size=12), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+R_GP_byEnvParams_Varari
+
+model_C_GPRelationship_Varari <- lmer(R ~ GP + (1|new_colonynumber), data = FULL_RespoNEC_allParams_GP_R_EnvParams_2 %>%
+                                        filter(site=="Varari") %>% 
+                                        drop_na(EnvMeasurements) %>% 
+                                        filter(!is.infinite(R)))
+
+
+#############################
+###### WITH NYSSA 
+#############################
+modelex2 <- lmer(umol.cm2.hr ~ poly(log(SGD_number+1),2) + (1|new_colonynumber), Nutrient_Models_Cabral_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber)) %>% 
+  filter(!is.infinite(umol.cm2.hr)))
+
+anova(modelex2)
+
+## SGD 
+SGDbyGPplot <- Nutrient_Models_Cabral_GP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=SGD_number+1, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3, aes(color=new_colonynumber)) +
+  coord_trans(x="log") +
+  geom_smooth(method="lm", formula = "y~poly(log(x),2)") +
+  theme_bw() + 
+#  facet_wrap(~date, scales = "free_x") +
+  labs(x = "SGD",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "GP Rates for Cabral with SGD") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SGDbyGPplot
+
+
+```
+
+
+
+
+

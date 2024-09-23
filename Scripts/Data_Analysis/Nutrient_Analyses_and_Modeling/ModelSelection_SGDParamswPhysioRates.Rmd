@@ -1,0 +1,419 @@
+---
+title: "Model Selection for Environmental Parameters in SGD that may affect Physiological Rates"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning=FALSE, 
+                      message=FALSE)
+```
+
+## Loading libraries 
+```{r, echo=FALSE}
+library(LoLinR)
+library(lubridate)
+library(patchwork)
+library(tidyverse)
+library(here)
+library(car)
+library(GGally)
+library(corrplot)
+library(PNWColors)
+library(seacarb)
+library(broom)
+library(agricolae)
+library(lme4)
+library(lmerTest)
+library(modelsummary)
+library(performance)
+library(emmeans)
+library(MuMIn)
+library(broom.mixed)
+```
+
+## Loading Data
+```{r, echo=FALSE}
+#RespoR_Normalized_Full_ExcelUpdates <- read_csv(here::here("Data","RespoFiles", "Respo_RNormalized_AllRates.csv"))
+#NEC_wnuts <- read_csv(here("Data", "NECnuts_withpH.csv"))
+#FULL_RespoNEC_allParams <- read_csv(here("Data", "RespoR_Normalized_Full_withNEC_ExcelUpdates.csv"))
+RespoR_Normalized_Full_withNEC_nutrients <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
+```
+
+### Tidy the data in a way that will be useful for model selection 
+separate by site (V/C) and by physio measurement (NP/R/GP/C)
+
+```{r}
+RespoR_Normalized_Full_withNEC_nutrients <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  #select(!c("pH","light_dark", "umol.cm2.hr_uncorr", "TrisCalDate":"temp_C", "salinity_insitu":"SGD_number_initial")) %>% 
+  mutate(Salinity=salinity)
+
+RespoR_Normalized_Full_withNEC_nutrients$phosphate_umolL <- as.numeric(RespoR_Normalized_Full_withNEC_nutrients$phosphate_umolL)
+RespoR_Normalized_Full_withNEC_nutrients$silicate_umolL <- as.numeric(RespoR_Normalized_Full_withNEC_nutrients$silicate_umolL)
+RespoR_Normalized_Full_withNEC_nutrients$NN_umolL <- as.numeric(RespoR_Normalized_Full_withNEC_nutrients$NN_umolL)
+RespoR_Normalized_Full_withNEC_nutrients$ammonia_umolL <- as.numeric(RespoR_Normalized_Full_withNEC_nutrients$ammonia_umolL)
+RespoR_Normalized_Full_withNEC_nutrients$Salinity <- as.numeric(RespoR_Normalized_Full_withNEC_nutrients$Salinity)
+RespoR_Normalized_Full_withNEC_nutrients$new_pH <- as.numeric(RespoR_Normalized_Full_withNEC_nutrients$new_pH)
+RespoR_Normalized_Full_withNEC_nutrients$TA_initial <- as.numeric(RespoR_Normalized_Full_withNEC_nutrients$TA_initial)
+RespoR_Normalized_Full_withNEC_nutrients$new_colonynumber <- as.character(RespoR_Normalized_Full_withNEC_nutrients$new_colonynumber)
+
+RespoR_Normalized_Full_ExcelUpdates_V_NP <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(site=="Varari", 
+         P_R=="NP") %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "Predictor_Variable", values_to = "Predictor_Values") %>% 
+  mutate(Response_Variable=umol.cm2.hr) %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+RespoR_Normalized_Full_ExcelUpdates_V_GP <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(site=="Varari", 
+         P_R=="GP") %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "Predictor_Variable", values_to = "Predictor_Values") %>% 
+  mutate(Response_Variable=umol.cm2.hr) %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+RespoR_Normalized_Full_ExcelUpdates_V_R <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+   filter(site=="Varari", 
+         P_R=="R") %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "Predictor_Variable", values_to = "Predictor_Values") %>% 
+  mutate(Response_Variable=umol.cm2.hr) %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+RespoR_Normalized_Full_ExcelUpdates_C_NP <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(site=="Cabral", 
+         P_R=="NP") %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "Predictor_Variable", values_to = "Predictor_Values") %>% 
+  mutate(Response_Variable=umol.cm2.hr) %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  drop_na(Predictor_Values)
+
+RespoR_Normalized_Full_ExcelUpdates_C_GP <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(site=="Cabral", 
+         P_R=="GP") %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "Predictor_Variable", values_to = "Predictor_Values") %>% 
+  mutate(Response_Variable=umol.cm2.hr) %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  drop_na(Predictor_Values)
+
+RespoR_Normalized_Full_ExcelUpdates_C_R <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(site=="Cabral", 
+         P_R=="R") %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "Predictor_Variable", values_to = "Predictor_Values") %>% 
+  mutate(Response_Variable=umol.cm2.hr) %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  drop_na(Predictor_Values)
+
+```
+
+### Make nonlienar models for each of these 
+
+```{r, echo=FALSE}
+## for Varari NP 
+MS_V_NP_nonlinear <- RespoR_Normalized_Full_ExcelUpdates_V_NP %>%
+  nest(data = -c(Predictor_Variable)) %>% # nest all the data measurement type
+  mutate(fit = map(data, ~lmer(Response_Variable~ poly(log(Predictor_Values+1), degree=2)  + (1|new_colonynumber), data = .))) #create models
+MS_V_NP_nonlinear
+
+MS_V_NP_nonlinear_fit <- MS_V_NP_nonlinear$fit # shows you each of the models
+
+MS_V_NP_nonlinear_fitresults <- MS_V_NP_nonlinear %>%
+  mutate(coeff = map(fit, tidy),
+         aic =  map(fit, glance)) %>% # R2 and others
+  select(Predictor_Variable, coeff, aic) %>% # only keep the results
+  unnest() %>%
+  write_csv(here::here("Outputs", "ModelSelection", "V_NP.csv"))
+
+## for Varari GP
+MS_V_GP_nonlinear <- RespoR_Normalized_Full_ExcelUpdates_V_GP %>%
+  nest(data = -c(Predictor_Variable)) %>% # nest all the data measurement type
+  mutate(fit = map(data, ~lmer(Response_Variable~ poly(log(Predictor_Values+1), degree=2)  + (1|new_colonynumber), data = .))) #create models
+MS_V_GP_nonlinear
+
+MS_V_GP_nonlinear_fit <- MS_V_GP_nonlinear$fit # shows you each of the models
+
+MS_V_GP_nonlinear_fitresults <- MS_V_GP_nonlinear %>%
+  mutate(coeff = map(fit, tidy),
+         aic =  map(fit, glance)) %>% # R2 and others
+  select(Predictor_Variable, coeff, aic) %>% # only keep the results
+  unnest() %>%
+  write_csv(here::here("Outputs", "ModelSelection", "V_GP.csv"))
+
+## for Varari R
+MS_V_R_nonlinear <- RespoR_Normalized_Full_ExcelUpdates_V_R %>%
+  nest(data = -c(Predictor_Variable)) %>% # nest all the data measurement type
+  mutate(fit = map(data, ~lmer(Response_Variable~ poly(log(Predictor_Values+1), degree=2)  + (1|new_colonynumber), data = .))) #create models
+MS_V_R_nonlinear
+
+MS_V_R_nonlinear_fit <- MS_V_R_nonlinear$fit # shows you each of the models
+
+MS_V_R_nonlinear_fitresults <- MS_V_R_nonlinear %>%
+  mutate(coeff = map(fit, tidy),
+         aic =  map(fit, glance)) %>% # R2 and others
+  select(Predictor_Variable, coeff, aic) %>% # only keep the results
+  unnest() %>%
+  write_csv(here::here("Outputs", "ModelSelection", "V_R.csv"))
+
+## for Cabral R
+MS_C_R_nonlinear <- RespoR_Normalized_Full_ExcelUpdates_C_R %>%
+  nest(data = -c(Predictor_Variable)) %>% # nest all the data measurement type
+  mutate(fit = map(data, ~lmer(Response_Variable~ poly(log(Predictor_Values+1), degree=2)  + (1|new_colonynumber), data = .))) #create models
+MS_C_R_nonlinear
+
+MS_C_R_nonlinear_fit <- MS_C_R_nonlinear$fit # shows you each of the models
+
+MS_C_R_nonlinear_fitresults <- MS_C_R_nonlinear %>%
+  mutate(coeff = map(fit, tidy),
+         aic =  map(fit, glance)) %>% # R2 and others
+  select(Predictor_Variable, coeff, aic) %>% # only keep the results
+  unnest() %>%
+  write_csv(here::here("Outputs", "ModelSelection", "C_R.csv"))
+
+## for Cabral NP
+MS_C_NP_nonlinear <- RespoR_Normalized_Full_ExcelUpdates_C_NP %>%
+  nest(data = -c(Predictor_Variable)) %>% # nest all the data measurement type
+  mutate(fit = map(data, ~lmer(Response_Variable~ poly(log(Predictor_Values+1), degree=2)  + (1|new_colonynumber), data = .))) #create models
+MS_C_NP_nonlinear
+
+MS_C_NP_nonlinear_fit <- MS_C_NP_nonlinear$fit # shows you each of the models
+
+MS_C_NP_nonlinear_fitresults <- MS_C_NP_nonlinear %>%
+  mutate(coeff = map(fit, tidy),
+         aic =  map(fit, glance)) %>% # R2 and others
+  select(Predictor_Variable, coeff, aic) %>% # only keep the results
+  unnest() %>%
+  write_csv(here::here("Outputs", "ModelSelection", "C_NP.csv"))
+
+
+## for Cabral GP #### THERE IS A SINGULAR BOUNDARY WARNING POPPING UP HERE 
+MS_C_GP_nonlinear <- RespoR_Normalized_Full_ExcelUpdates_C_GP %>%
+  nest(data = -c(Predictor_Variable)) %>% # nest all the data measurement type
+  mutate(fit = map(data, ~lmer(Response_Variable~ poly(log(Predictor_Values+1), degree=2)  + (1|new_colonynumber), data = .))) #create models
+MS_C_GP_nonlinear
+
+MS_C_GP_nonlinear_fit <- MS_C_GP_nonlinear$fit # shows you each of the models
+
+MS_C_GP_nonlinear_fitresults <- MS_C_GP_nonlinear %>%
+  mutate(coeff = map(fit, tidy),
+         aic =  map(fit, glance)) %>% # R2 and others
+  select(Predictor_Variable, coeff, aic) %>% # only keep the results
+  unnest() %>%
+  write_csv(here::here("Outputs", "ModelSelection", "C_GP.csv"))
+
+```
+
+### Clean Names 
+```{r}
+###########################################################
+### clean names and calculating delta AIC for params for each site and physio measurement 
+###########################################################
+
+### Cabral GP 
+MS_C_GP_nonlinear_fitresults_cleannames <- MS_C_GP_nonlinear_fitresults %>%
+  mutate(Predictor = dplyr::recode(Predictor_Variable,
+                            "NN_umolL" = "Nitrite + Nitrate",
+                            "phosphate_umolL" = "Phosphate",
+                            "silicate_umolL" = "Silicate",
+                            "ammonia_umolL" = "Ammonia", 
+                            "new_pH" = "pH", 
+                            "TA_initial" = "Initial TA")) %>%
+  mutate(delAIC = AIC - min(AIC)) %>%
+  arrange(delAIC)
+MS_C_GP_nonlinear_fitresults_cleannames
+## result: Silicate is strongest driver (sig p-value), rest are more than 2 AIC 
+## WHEN LOGGED: Silicate is lowest AIC, ammonia jsut over 2 (both have sig pvals)
+
+### Cabral NP 
+MS_C_NP_nonlinear_fitresults_cleannames <- MS_C_NP_nonlinear_fitresults %>%
+  mutate(Predictor = dplyr::recode(Predictor_Variable,
+                            "NN_umolL" = "Nitrite + Nitrate",
+                            "phosphate_umolL" = "Phosphate",
+                            "silicate_umolL" = "Silicate",
+                            "ammonia_umolL" = "Ammonia", 
+                            "new_pH" = "pH", 
+                            "TA_initial" = "Initial TA")) %>%
+  mutate(delAIC = AIC - min(AIC)) %>%
+  arrange(delAIC)
+MS_C_NP_nonlinear_fitresults_cleannames
+## result: Salinity is strongest driver with silicate behind by <1 AIC (both sig p values)
+## WHEN LOGGED: Salinity is strongest driver with silicate within 2 AIC (both sig p values)
+
+### Cabral R 
+MS_C_R_nonlinear_fitresults_cleannames <- MS_C_R_nonlinear_fitresults %>%
+  mutate(Predictor = dplyr::recode(Predictor_Variable,
+                            "NN_umolL" = "Nitrite + Nitrate",
+                            "phosphate_umolL" = "Phosphate",
+                            "silicate_umolL" = "Silicate",
+                            "ammonia_umolL" = "Ammonia", 
+                            "new_pH" = "pH", 
+                            "TA_initial" = "Initial TA")) %>%
+  mutate(delAIC = AIC - min(AIC)) %>%
+  arrange(delAIC)
+MS_C_R_nonlinear_fitresults_cleannames
+## result: NN is strongest driver (sig p value), Ammonia less than 2 AIC , phosphate just over 2
+## WHEN LOGGED: Ammonia is lowest AIC and NN is just over 2 (both are signif)
+
+
+### Varari R 
+MS_V_R_nonlinear_fitresults_cleannames <- MS_V_R_nonlinear_fitresults %>%
+  mutate(Predictor = dplyr::recode(Predictor_Variable,
+                            "NN_umolL" = "Nitrite + Nitrate",
+                            "phosphate_umolL" = "Phosphate",
+                            "silicate_umolL" = "Silicate",
+                            "ammonia_umolL" = "Ammonia", 
+                            "new_pH" = "pH", 
+                            "TA_initial" = "Initial TA")) %>%
+  mutate(delAIC = AIC - min(AIC)) %>%
+  arrange(delAIC)
+MS_V_R_nonlinear_fitresults_cleannames
+## result: pH is strongest driver (sig pval) - TA under 2 and Phosphate 
+## WHEN LOGGED Silicate is lowest AIC then pH is within 2 AIC. Both are signif
+
+### Varari NP 
+MS_V_NP_nonlinear_fitresults_cleannames <- MS_V_NP_nonlinear_fitresults %>%
+  mutate(Predictor = dplyr::recode(Predictor_Variable,
+                            "NN_umolL" = "Nitrite + Nitrate",
+                            "phosphate_umolL" = "Phosphate",
+                            "silicate_umolL" = "Silicate",
+                            "ammonia_umolL" = "Ammonia", 
+                            "new_pH" = "pH", 
+                            "TA_initial" = "Initial TA")) %>%
+  mutate(delAIC = AIC - min(AIC)) %>%
+  arrange(delAIC)
+MS_V_NP_nonlinear_fitresults_cleannames
+## result: Nitrate is lowest AIC (not sig p value) - silicate within 2 AIC 
+### when LOGGED: silicate and NN flip and NN within 2 aIC (both are sig)
+
+
+### Varari GP 
+MS_V_GP_nonlinear_fitresults_cleannames <- MS_V_GP_nonlinear_fitresults %>%
+  mutate(Predictor = dplyr::recode(Predictor_Variable,
+                            "NN_umolL" = "Nitrite + Nitrate",
+                            "phosphate_umolL" = "Phosphate",
+                            "silicate_umolL" = "Silicate",
+                            "ammonia_umolL" = "Ammonia", 
+                            "new_pH" = "pH", 
+                            "TA_initial" = "Initial TA")) %>%
+  mutate(delAIC = AIC - min(AIC)) %>%
+  arrange(delAIC)
+MS_V_GP_nonlinear_fitresults_cleannames
+## result: Nitrate is lowest AIC , ph and silicate within 2 AIC (no sig p vals)
+### when LOGGED: silicate and NN flip and NN is just over 2 aIC (silicates is sig)
+
+
+```
+
+
+### Tidy df for the NEC measurements from different df 
+```{r, echo=FALSE}
+
+NEC_wnuts_V <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(site=="Varari", 
+         P_R=="C") %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "Predictor_Variable", values_to = "Predictor_Values") %>% 
+  mutate(Response_Variable=umol.cm2.hr) %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  drop_na(Predictor_Values)
+
+NEC_wnuts_C <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(site=="Cabral", 
+         P_R=="C") %>% 
+  pivot_longer(cols = phosphate_umolL:Salinity, names_to = "Predictor_Variable", values_to = "Predictor_Values") %>% 
+  mutate(Response_Variable=umol.cm2.hr) %>% 
+  drop_na(umol.cm2.hr) %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  drop_na(Predictor_Values)
+```
+
+### Make nonlinear models for NEC 
+use new colony number as random factor - includes day automatically 
+```{r, echo=FALSE}
+## for Varari 
+MS_V_NEC_linear <- NEC_wnuts_V %>%
+  nest(data = -c(Predictor_Variable)) %>% # nest all the data measurement type
+   mutate(fit = map(data, ~lmer(Response_Variable~ poly(log(Predictor_Values+1), degree=2)  + (1|new_colonynumber), data = .))) #create models
+MS_V_NEC_linear
+
+MS_V_NEC_linear_fit <- MS_V_NEC_linear$fit # shows you each of the models
+
+#MS_V_NEC_linear_fitresults <- MS_V_NEC_linear %>%
+ # mutate(#coeff = map(fit, tidy),
+    #     aic =  map(fit, glance)) %>% # R2 and others
+ # select(Predictor_Variable, coeff, aic) %>% # only keep the results
+ # unnest() %>%
+ # write_csv(here::here("Outputs", "ModelSelection", "V_NEC.csv"))
+
+MS_V_NEC_linear_fitresults_lmer <- MS_V_NEC_linear %>%
+  mutate(coeff = map(fit, tidy),
+         aic =  map(fit, glance)) %>% # R2 and others
+  select(Predictor_Variable, coeff, aic) %>% # only keep the results
+  unnest() %>%
+  write_csv(here::here("Outputs", "ModelSelection", "V_NEC.csv"))
+
+## for Cabral 
+MS_C_NEC_linear <- NEC_wnuts_C %>%
+  nest(data = -c(Predictor_Variable)) %>% # nest all the data measurement type
+   mutate(fit = map(data, ~lmer(Response_Variable~ poly(log(Predictor_Values+1), degree=2)  + (1|new_colonynumber), data = .))) #create models ### KEEP NEW COLONY AS RANDOM 
+MS_C_NEC_linear
+
+MS_C_NEC_linear_fit <- MS_C_NEC_linear$fit # shows you each of the models
+
+MS_C_NEC_linear_fitresults <- MS_C_NEC_linear %>%
+  mutate(coeff = map(fit, tidy),
+         aic =  map(fit, glance)) %>% # R2 and others
+  select(Predictor_Variable, coeff, aic) %>% # only keep the results
+  unnest() %>%
+  write_csv(here::here("Outputs", "ModelSelection", "C_NEC.csv"))
+
+```
+
+### Clean Names 
+```{r}
+###########################################################
+### clean names and calculating delta AIC for params for each site and for NEC 
+###########################################################
+
+### Cabral NEC
+MS_C_NEC_linear_fitresults_cleannames <- MS_C_NEC_linear_fitresults %>%
+  mutate(Predictor = dplyr::recode(Predictor_Variable,
+                            "NN_umolL" = "Nitrite + Nitrate",
+                            "phosphate_umolL" = "Phosphate",
+                            "silicate_umolL" = "Silicate",
+                            "ammonia_umolL" = "Ammonia", 
+                            "salinity" = "Salinity", 
+                            "new_pH" = "pH", 
+                            "TA_initial" = "Initial TA")) %>%
+  mutate(delAIC = AIC - min(AIC)) %>%
+  arrange(delAIC)
+## result: pH is lowest AIC, with sig p-val - rest are more tan 2 AIC 
+## WHEN LOGGED:  same result 
+MS_C_NEC_linear_fitresults_cleannames
+
+### Varari NEC
+MS_V_NEC_linear_fitresults_cleannames <- MS_V_NEC_linear_fitresults_lmer %>%
+  mutate(Predictor = dplyr::recode(Predictor_Variable,
+                            "NN_umolL" = "Nitrite + Nitrate",
+                            "phosphate_umolL" = "Phosphate",
+                            "silicate_umolL" = "Silicate",
+                            "ammonia_umolL" = "Ammonia", 
+                            "salinity" = "Salinity", 
+                            "new_pH" = "pH", 
+                            "TA_initial" = "Initial TA")) %>%
+  mutate(delAIC = AIC - min(AIC)) %>%
+  arrange(delAIC)
+## result: pH is lowest AIC but no sig p-value. Others are more than 2 AIC 
+## WHEN LOGGED: Phopshate is lowest AIC (with sig p-val)
+MS_V_NEC_linear_fitresults_cleannames
+```
+
+
+
+### Results: 
+

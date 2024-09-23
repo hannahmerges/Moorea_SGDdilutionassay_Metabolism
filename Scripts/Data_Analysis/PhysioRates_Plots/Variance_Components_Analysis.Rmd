@@ -1,0 +1,175 @@
+---
+title: "Variance_Components_Analysis"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# What is variance component analysis (VCA)? 
+-  A VCA is a statistical method used to determine how much of the **total** variance in a **dependent** variable can be attributed to different sources of _random variation_
+-  Typically within a mixed effects model 
+-  Breaks down the total variance into components related to different random effects in the study design
+-  VCA are a way to assess how the variability of a dependent variable is structured taking into account its association with one or multiple random-effects variables
+-  For example in my study: random factors that may wanted to be analyzed in this method include site, coral ID/replicate, date, and also SGD dilution/treatment 
+-  Credit to [Siegfried Erhardt & Andre Schuetzenmeister](https://cran.r-project.org/web/packages/VCA/vignettes/VCA_package_vignette.html#:~:text=VCA%20are%20a%20way%20to,or%20multiple%20random%2Deffects%20variables.&text=Thus%2C%20VCA%20is%20the%20procedure,variability%20in%20the%20dependent%20variable.&text=Outlier%20Detection%20Using%20Studentized%20Residuals,-Studentization%20of%20residuals&text=This%20is%20a%20known%20problem%20of%20ANOVA%2Destimation%20for%20variance%20components.) for their Markdown explanation 
+
+# How is a VCA different from a PCA? 
+-  PCA focuses on reducing dimensionality by identifying linear combinations of variables that capture the most variance in the data
+-  VCA aims to quantify how much variance is attributable to different sources of variation within a hierarchical structure
+-  PCA is about finding patterns in the data while VCA is about understanding the sources of variability within that data
+
+## Load packages
+```{r, echo=FALSE}
+library(tidyverse)
+library(vegan)
+library(ggplot2)
+library(VCA)
+library(lme4)
+library(broom.mixed)
+```
+ 
+ 
+## Bring in datasets 
+```{r, echo=FALSE, message=FALSE}
+RespoR_Normalized_Full_withNEC_nutrients2 <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
+```
+
+
+## To create a variability chart by varPlot(), it is necessary to state the model formula as well as the data set as function parameters. 
+-  Note that in varPlot() the real model is not relevant but rather the order of the variables which determines the layout of the table depicted at the bottom of the variability chart.
+
+####  Start with Respiration 
+```{r}
+### streamline dataset 
+RespoR_Normalized_Full_withNEC_nutrients2 <- RespoR_Normalized_Full_withNEC_nutrients2 %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+Resp_df <- RespoR_Normalized_Full_withNEC_nutrients2 %>% 
+  filter(P_R=="R") %>% 
+  mutate(SGD_number=as.factor(SGD_number))
+
+### working off this model from stats 
+modeltest_R <- lmer(umol.cm2.hr ~ log_silicate*site + I(log_silicate^2) + (1|date/new_colonynumber), data=Resp_df)
+
+
+modeltest_R_allrandom <- lmer(umol.cm2.hr ~ (1|site/date/SGD_number), data=Resp_df)
+
+r.squaredGLMM(modeltest_R_allrandom)
+
+
+######################################### everything needs to be a factor to be run in VCA anova 
+Resp_df <- Resp_df %>%
+  mutate(SGD_letter = case_when(
+    SGD_number == 0 ~ "A",
+    SGD_number == 0.01 ~ "B",
+    SGD_number == 0.03 ~ "C",
+    SGD_number == 0.05 ~ "D",
+    SGD_number == 0.1 ~ "E",
+    SGD_number == 0.5 ~ "F",
+    SGD_number == 1 ~ "G",
+    SGD_number == 2 ~ "H",
+    SGD_number == 4 ~ "I"))
+
+
+Resp_df$SGD_number <- as.factor(Resp_df$SGD_number)
+Resp_df$SGD_letter <- as.factor(Resp_df$SGD_letter)
+
+#modeltest_allrandom <- lmer(umol.cm2.hr ~ 1 + (1|site/date/new_colonynumber/SGD_letter), Resp_df)
+#summary(vca_modeltest)
+
+Resp_df$date <- as.factor(Resp_df$date)
+Resp_df$new_colonynumber <- as.factor(Resp_df$new_colonynumber)
+Resp_df$site <- as.factor(Resp_df$site)
+
+Resp_df <- as.data.frame(Resp_df)
+
+vca_model <- anovaVCA(umol.cm2.hr ~ site/date/new_colonynumber/SGD_letter, Resp_df)
+print(vca_model)
+
+
+
+
+
+```
+
+### try with GP 
+```{r}
+GP_df <- RespoR_Normalized_Full_withNEC_nutrients2 %>% 
+  filter(P_R=="GP") 
+
+######################################### everything needs to be a factor to be run in VCA anova 
+GP_df$SGD_number <- as.factor(GP_df$SGD_number)
+GP_df$date <- as.factor(GP_df$date)
+GP_df$new_colonynumber <- as.factor(GP_df$new_colonynumber)
+GP_df$site <- as.factor(GP_df$site)
+
+GP_df <- as.data.frame(GP_df)
+
+vca_model_GP <- anovaVCA(umol.cm2.hr ~ site/date/new_colonynumber/SGD_number, GP_df)
+print(vca_model_GP)
+
+
+
+
+
+
+```
+
+
+### try with C 
+
+```{r}
+C_df <- RespoR_Normalized_Full_withNEC_nutrients2 %>% 
+  filter(P_R=="C") 
+
+######################################### everything needs to be a factor to be run in VCA anova 
+C_df$SGD_number <- as.factor(C_df$SGD_number)
+C_df$date <- as.factor(C_df$date)
+C_df$new_colonynumber <- as.factor(C_df$new_colonynumber)
+C_df$site <- as.factor(C_df$site)
+
+C_df <- as.data.frame(C_df)
+
+vca_model_C <- anovaVCA(umol.cm2.hr ~ site/date/new_colonynumber/SGD_number, C_df)
+print(vca_model_C)
+
+
+```
+
+
+
+
+
+### Extra code that is not working rn 
+```{r}
+##########################################
+## extract variance components
+vc_R <- VarCorr(modeltest_R)
+print(vc_R)
+
+## summarize the variance components 
+
+tidy_vc_R <- tidy(modeltest_R, effects = "ran_vals")
+print(tidy_vc_R)
+
+
+### run variance plot 
+varPlot_R <- varPlot(form=umol.cm2.hr~SGD_number/site/date/new_colonynumber, Data=Resp_df) ## getting an error here
+
+#########################################
+modeltest_vca <- lmer(umol.cm2.hr ~ (1|log_silicate) + (1|date) + (1|new_colonynumber) + (1|site), data = Resp_df)
+
+vc2 <- VarCorr(modeltest_vca)
+print(vc2)
+
+vc_df <- as.data.frame(VarCorr(modeltest_vca))
+vc_df <- vc_df %>% 
+  mutate(percentage = vcov / sum(vcov) * 100)
+print(vc_df)
+```
+
+

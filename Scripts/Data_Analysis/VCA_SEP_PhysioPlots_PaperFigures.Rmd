@@ -1,0 +1,659 @@
+---
+title: "VCA and Respo Plots"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: 
+  rmdformats::readthedown
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Information on Paper Figures 
+-  **Figure 1:** Background figure showing Moorea, field sites, and experimental design - (created in ppt and Biorender)
+-  **Figure 2:** Results of raw groundwater samples between Cabral and Varari compared to ambient seawater for six parameters (salinity, pH, temperature, TA, nitrates, phosphates, and silicate) - (see script: "Plots_Based_on_Model_Selection" for code, line 1505)
+-  **Figure 3:** Results for respiration, photosynthesis, and calcification along with standardized effect plot (see below)
+-  **Figure 4:** Variance Component Analysis plot showing percent of variance explained by random effects for R, GP, and C (see below)
+-  **Supplementary Figure 1:** Correlation matrix showing differences between correlation of silicate to other parameters at Cabral vs Varari (see script: "Plots_Based_on_Model_Selection" for code, line 1373)
+-  **Supplementary Figure 2:** Stacked bar plot showing the dissolution of fragments at Cabral vs Varari for calcification (see script: "Plots_Based_on_Model_Selection" for code, line 916) 
+
+### Load libraries
+```{r, echo=FALSE}
+library(here)
+library(tidyverse) 
+library(lme4)
+library(lmerTest)
+library(VCA)
+library(performance)
+library(sjPlot)
+```
+
+### Read in your data 
+-  See "Initial_DF_construction" markdown file to reference calculations for "RespoR_Normalized_Full_withNEC_nutrients" datafile 
+-  Includes normalization to blanks, calculations of NEC, merging nutrient data
+
+```{r, echo=FALSE}
+RespoR_Normalized_Full_withNEC_nutrients <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
+```
+
+## Tidy dataset and organize to separate R, GP, and C 
+-  Did this to make sure there are no typos in the colonyID etc and also to be explicit about the column names
+-  Eventually will reorder and join together 
+```{r}
+R1<-RespoR_Normalized_Full_withNEC_nutrients %>%
+  filter(P_R=="R") %>%
+  filter(!is.infinite(umol.cm2.hr)) %>%
+  filter(sample_ID!="Varari_Col4_Dil9_Light") %>%
+  rename(Resp = umol.cm2.hr)%>%
+  dplyr::select(new_colonynumber, SGD_number, site, date, log_silicate, log_silicate2,silicate_umolL, Resp)
+
+GP1<-RespoR_Normalized_Full_withNEC_nutrients %>%
+  filter(P_R=="GP") %>%
+  filter(!is.infinite(umol.cm2.hr)) %>%
+  filter(sample_ID!="Varari_Col4_Dil9_Light")%>%
+  rename(GP = umol.cm2.hr)%>%
+  dplyr::select(new_colonynumber, SGD_number, site, date, log_silicate, log_silicate2,silicate_umolL, GP)
+
+C1<-RespoR_Normalized_Full_withNEC_nutrients %>%
+  filter(P_R=="C") %>%
+  filter(!is.infinite(umol.cm2.hr)) %>%
+  filter(sample_ID!="Varari_Col4_Dil9_Light")%>%
+  rename(C = umol.cm2.hr)%>%
+  dplyr::select(new_colonynumber, SGD_number, site, date, log_silicate, log_silicate2,silicate_umolL, C)
+
+
+# bring it together into a wide dataset
+PhysioRates_Wide<-left_join(R1,GP1)
+
+PhysioRates_Wide<-PhysioRates_Wide %>% left_join(C1)%>%
+  mutate(SGD_number = as.factor(SGD_number)) %>%
+  drop_na()
+```
+
+## Create models
+-  model breakdown: 
+-  Fixed Effects = **log_silicate**: represents the linear relationship between the natural log of silicate and the response variable (Resp or umol) and **I(log_silicate^2)**: a quadratic effect of the log_silicate variable. By adding the square of log_silicate, you are testing whether there is a non-linear relationship between log_silicate and the response (Resp).
+-  Random Effects **new_colonynumber**: This is a random intercept for each new_colonynumber. Allows each colony to have its own baseline (intercept) while assuming that the slope of log_silicate and its quadratic term are the same across colonies. *The 1 signifies that only the intercept varies across levels of new_colonynumber* **date**: This term accounts for random variation by date. Each date can have its own random intercept to account for variation that occurs across different dates. **site**: This allows the model to account for site-specific differences by letting each site have its own random intercept.
+
+-  Also controlling for convergence behavior in the model fitting process
+-  **lmerControl** allows the model to ignore warnings about singular fits, which often arise when the random effects structure is too complex relative to the data (e.g., when there is insufficient variability among random effects). Basically don't want the model to be overly sensitive 
+
+-  Calculating the **R-squared value*: r-squared shows how well the data fit the regression model (the goodness of fit).
+-  Want to bootstrap WITH replacement 
+-  Bootstrapping allows you to account for the variability in both fixed and random effects in a more nuanced way. This is especially important when random effects introduce a lot of variability into the model, as a single R-squared estimate may not fully capture how much variance each component explains. Also can help detect overfitting, have better generalization, and improve estimates of uncertainty. 
+
+```{r}
+############################
+# Respiration models
+############################
+## here the "tol = 1e-1000" extends the normal tolerance from its default of ~1000 to 10000000... which is dramatic, but wide enough to catch the smallest effect of site 
+modeltest_R <- lmer(Resp ~ log_silicate + I(log_silicate^2) + (1|new_colonynumber) + (1|date) + (1|site), data=PhysioRates_Wide,
+                    control=lmerControl(check.conv.singular = .makeCC(action = "ignore",  tol = 1e-1000)))
+
+
+anova(modeltest_R)                      
+summary(modeltest_R)                      
+#check_model(modeltest_R) ## can uncomment if want to check model but when running markdown file, the plot screen is not big enough and prevents full knitting of script 
+
+## bootstrap to get the R2 values 
+r2_nakagawa(modeltest_R,iterations = 1000)
+
+############################
+# GP models
+############################
+modeltest_GP <- lmer(GP ~ log_silicate + I(log_silicate^2)+ (1|date) + (1|site)+(1|new_colonynumber), data=PhysioRates_Wide,
+                     control=lmerControl(check.conv.singular = .makeCC(action = "ignore",  tol = 1e-1000)))
+
+anova(modeltest_GP)                      
+summary(modeltest_GP) 
+#check_model(modeltest_GP)
+r2_nakagawa(modeltest_GP,iterations = 1000)
+
+############################
+# C models
+############################
+modeltest_C <- lmer(C ~ log_silicate  + (1|new_colonynumber) + (1|date) + (1|site), data=PhysioRates_Wide,
+                    control=lmerControl(check.conv.singular = .makeCC(action = "ignore",  tol = 1e-1000)))
+
+anova(modeltest_C)                      
+summary(modeltest_C) 
+#check_model(modeltest_C)
+r2_nakagawa(modeltest_C,iterations = 1000)
+```
+
+
+## Create VCAs
+
+### What is variance component analysis (VCA)? 
+-  A VCA is a statistical method used to determine how much of the **total** variance in a **dependent** variable can be attributed to different sources of _random variation_
+-  Typically within a mixed effects model 
+-  Breaks down the total variance into components related to different random effects in the study design
+-  VCA are a way to assess how the variability of a dependent variable is structured taking into account its association with one or multiple random-effects variables
+
+```{r}
+# get the variance components manually for respiration 
+R_var<-as_tibble(summary(modeltest_R)$varcor) # extract the variance 
+
+R_var<-R_var %>% 
+  mutate(percentvar_R = 100*sdcor/sum(sdcor)) %>% # calculate variance explained by each random effect and label in own column
+  dplyr::select(grp, percentvar_R) # only select what I need
+
+# get the variance components manually for gross photosynthesis  
+GP_var<-as_tibble(summary(modeltest_GP)$varcor) 
+
+GP_var<-GP_var %>% 
+  mutate(percentvar_GP = 100*sdcor/sum(sdcor))%>% # 
+  dplyr::select(grp, percentvar_GP) 
+
+# get the variance components manually for calcification 
+C_var<-as_tibble(summary(modeltest_C)$varcor) 
+
+C_var<-C_var %>% 
+  mutate(percentvar_Cr = 100*sdcor/sum(sdcor)) %>% 
+  dplyr::select(grp, percentvar_Cr) 
+
+#################
+# bring them all together
+# plot the VCA results 
+#################
+
+variance_plot <- R_var %>%
+  left_join(GP_var)%>%
+  left_join(C_var) %>% 
+  pivot_longer(cols = percentvar_R:percentvar_Cr) %>% # pivot to orient for a barplot
+  mutate(nicenames = case_when(name == "percentvar_R" ~ "Respiration",
+                               name == "percentvar_GP" ~ "Gross Photosynthesis",
+                               name == "percentvar_Cr" ~ "Calcification"))%>%
+  mutate(grp = case_when(grp == "new_colonynumber"~ "Putative Genotype",
+                          grp == "date"~ "Date",
+                          grp == "site"~ "Site",
+                         grp == "Residual"~ "Residual")) %>%
+  mutate(grp = factor(grp, levels = c("Site","Residual","Putative Genotype","Date"))) %>% # put the levels in an order I want for plotting
+  ggplot(aes(x = nicenames, 
+             y = value, 
+             fill = grp))+
+  geom_bar(stat = "identity") +
+  labs(x = "",
+       y = "Percent Variance Explained (%)",
+       fill = "Group") +
+  theme(axis.text.x = element_text(size = 16, face="bold", color="black"),
+        axis.title.y = element_text(size = 16, face="bold", color="black"), 
+        axis.text.y = element_text(size = 16, face="bold", color="black")) +
+  theme_minimal() + 
+  scale_x_discrete(limits = c("Respiration", "Gross Photosynthesis", "Calcification")) +
+  scale_fill_manual(values=c("deepskyblue2", "gray", "coral3", "burlywood"))
+
+variance_plot
+
+ggsave(here::here("Outputs", "PaperFigures", "VCA.jpg"), 
+       width=12, height=10)
+```
+
+
+# New R, GP, and C plots based on updated models 
+-  Random effect of site 
+
+## Standardized effect plots 
+-  **what is a standardized effect plot?**
+-  visually compare which predictors have the strongest and weakest effects on the response variable, regardless of the units or scales of the predictors
+-  In regression, predictors may have different units. To compare their relative impact, we standardize both the predictors and response. This is done by converting them to z-scores, meaning that they have a mean of 0 and a standard deviation of 1. The resulting coefficients (effect sizes) are then expressed in terms of standard deviations, allowing for direct comparison.
+
+-  None of the effects cross 0 so they are all significant, BUT not from each other because the error bars overlap. The linear effect of silicate is negative on all three physio rates, with the smallest effect on calcification. Although, there is no statistical significant difference between the effect of silicate on C, GP, and R. But the quadratic effect of silicate is positive on GP and R, though the intercept is virtually the same for both. 
+```{r}
+
+###############################
+# standardized effect size plots
+###############################
+plot_model(modeltest_GP, type = "std") # gives standardized effect sizes
+plot_model(modeltest_R, type = "std")
+plot_model(modeltest_C, type = "std")
+
+###############################
+## testing withOUT standardized effect sizes to see comparison 
+###############################
+plot_model(modeltest_GP) 
+plot_model(modeltest_R)
+plot_model(modeltest_C)
+
+
+
+### Put it all on the same plot though for comparison
+### First need to extract the data from plot_model
+
+R_std<-tibble(plot_model(modeltest_R, type = "std")$data) %>%
+  mutate(Rate = "Respiration")
+
+GP_std<-tibble(plot_model(modeltest_GP, type = "std")$data) %>%
+  mutate(Rate = "Gross Photosynthesis")
+
+C_std<-tibble(plot_model(modeltest_C, type = "std")$data) %>%
+  mutate(Rate = "Calcification")
+
+### Bind it all
+all_std<-GP_std %>%
+  bind_rows(R_std)%>%
+  bind_rows(C_std)
+
+### Plot a standardized effects with all three together
+standardized_effects <- all_std %>%
+  mutate(term = case_when(term == "log_silicate"~ "Log Silicate",
+                          term == "I(log_silicate^2)"~ "Quadratic Log Silicate")) %>% 
+  ggplot(aes(x = estimate, 
+             y = term, 
+             color = Rate, 
+             shape = Rate))+
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_point(size = 4, 
+             position = position_dodge(0.9)) + # dodge the points so not on top of each other
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0, position = position_dodge(0.9)) +
+  scale_color_manual(values=c("#b8b5b5", "#838282", "#484747")) +
+  labs(x = "Standardized effect",
+       y = "Term") +
+  theme_classic() +
+  theme(legend.position = c(0.3, 0.85), 
+        legend.text = element_text(size = 14)) 
+  
+
+standardized_effects 
+
+```
+
+## Respiration plot
+
+```{r}
+###############################
+## create tibble for R data  
+###############################
+
+R_newdata<-tibble(umol.cm2.hr = rep(seq(0,0.5,0.01),14), # min to max ranges from ~ 0 - 0.5. There are 14 colonies so repeat this sequence 14 times
+                  log_silicate =rep(seq(0.5,3.5,0.06),14), # the min log Si is ~1 and the max is ~ 3.3- make a a sequence that is within that range that is the same length as the sequence for R
+                  silicate = exp(log_silicate), # take the exponent of the log Si to get raw Si
+                  new_colonynumber = c(rep(1,51),rep(2,51),rep(3,51),rep(4,51), # repeat each colony number the same size as the new silicate and umol data
+                                       rep(5,51),rep(6,51),rep(7,51),rep(8,51),
+                                       rep(13,51),rep(14,51),rep(15,51),rep(16,51),
+                                       rep(17,51),rep(18,51)),
+                  date = c(rep("6/17/23",51),rep("6/17/23",51),rep("6/17/23",51),rep("6/18/23",51), # make a date vector that alignes with each colony vector that is als the same length
+                           rep("6/21/23",51),rep("6/21/23",51),rep("6/22/23",51),rep("6/22/23",51),
+                           rep("6/10/23",51),rep("6/10/23",51),rep("6/11/23",51),rep("6/11/23",51),
+                           rep("6/12/23",51),rep("6/12/23",51)),
+                  site  = ifelse(new_colonynumber %in% 1:8, "Varari","Cabral")) # but in the site names
+
+# create a color gradient for Varari
+colfunc_V <- colorRampPalette(c("firebrick1", "firebrick4"))
+Vcolors<-colfunc_V(8) # create 8 colors between the lightest and darkest firebrick
+
+# create a color gradient for cabral
+colfunc_c <- colorRampPalette(c("goldenrod1", "goldenrod4"))
+Ccolors<-colfunc_c(6) # create 8 colors between the lightest and darkest goldenrod. There are only 6 Cabral corals
+
+
+color_values<-c(Vcolors,Ccolors) # make a color value for everything together
+
+##########################################
+# create a new data frame that is the size of the prediction data frame
+##########################################
+plot_df_R <- tibble(silicate = R_newdata$silicate,
+                    log_silicate = R_newdata$log_silicate,
+                    pred_umol = predict(modeltest_R, newdata = R_newdata),
+                    new_colonynumber = as.factor(R_newdata$new_colonynumber))
+
+##########################################
+# edits based on errors in simple predict function 
+##########################################
+
+# Define a function for prediction
+pred_fun <- function(fit) {
+  predict(fit, newdata = PhysioRates_Wide, re.form = ~0)
+}
+
+# Bootstrapping to get standard errors (adjust 'nsim' for more precision)
+boot_res <- bootMer(modeltest_R, pred_fun, nsim = 100) # Set nsim as needed
+
+# Predictions from the original model
+predictions <- predict(modeltest_R, newdata = PhysioRates_Wide, re.form = ~0)
+
+# Standard errors from bootstrapping
+se_fit <- apply(boot_res$t, 2, sd)
+
+# Combine predictions and SEs into a tibble
+predict_r <- tibble(fit = predictions, se = se_fit, silicate = PhysioRates_Wide$silicate_umolL)
+
+# Output the tibble
+predict_r
+
+
+##########################################
+# make the plot
+##########################################
+
+Rplot<-ggplot() + # first plot the original data in the background and make it a bit transparent
+  geom_point(data = R1, 
+             alpha = 0.5, 
+             aes(x= silicate_umolL,
+                 y= Resp,
+                 color = factor(new_colonynumber),
+                 fill = site), # I added fill = site so that I can remove the colony number legend and just have one for site for ease of interpretation
+             shape = 21 # this shape makes the color the border and fill the middle
+  ) + # bring in the raw data first.  Because I wanted to show this on the raw scale I used raw silicate and then transformed it
+  
+   geom_line(data = plot_df_R, aes(x = silicate, # Make prediction lines this needs to be spelled the same as the plot dataframe with new data.. not your original one. 
+                                  y = pred_umol,
+                                  color = new_colonynumber), 
+             linetype = 1, size = 0.7, show.legend = "FALSE", alpha=0.5) +
+  coord_trans(x ="log") + # transform the axes
+  scale_color_manual(values = color_values) + # add in the color values
+  scale_fill_manual(values = c("goldenrod","firebrick"))+ # add in fill values for site
+  scale_x_continuous(breaks = c(2,10,20,30)) +
+  guides(color = "none") + # delete the guide for color
+  geom_line(data = predict_r, aes(x = silicate, y = fit), color = "black", linewidth = 1.5) + # prediction for just fixed effect
+ # geom_ribbon(data = predict_r, aes(x = silicate, ymin = fit-se, ymax = fit+se), alpha = 0.2, color = "grey")+
+   labs(linetype = NULL, 
+       color = " ",
+       fill = " ",
+       x = expression(Silicate~(mu*mol~L^-1)),
+       y = expression(Respiration~(mu*mol~O[2]~cm[2]^-1~hr^-1))) +
+  theme_bw()+
+  theme(legend.position = "top",
+        legend.text = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        plot.title = element_text(face = 2, hjust = 0.5),
+        panel.border = element_rect(fill = NA, linewidth = 0.2))
+
+
+Rplot
+
+# if you want to see what your random effects are
+lme4::ranef(modeltest_R,condVar = TRUE)
+```
+
+
+## Gross Photosynthesis plot 
+
+```{r}
+
+###############################
+## create tibble for GP data  
+## if have questions, see above section on Respiration for comments 
+###############################
+
+GP_newdata <- tibble(umol.cm2.hr = rep(seq(0,1.5,0.01), each = 1, length.out = 714), # min to max ranges from ~ 0.18 - 1.4. 
+                  log_silicate =rep(seq(0.5,3.5,0.06),14), 
+                  silicate = exp(log_silicate), 
+                  new_colonynumber = c(rep(1,51),rep(2,51),rep(3,51),rep(4,51), 
+                                       rep(5,51),rep(6,51),rep(7,51),rep(8,51),
+                                       rep(13,51),rep(14,51),rep(15,51),rep(16,51),
+                                       rep(17,51),rep(18,51)),
+                  date = c(rep("6/17/23",51),rep("6/17/23",51),rep("6/17/23",51),rep("6/18/23",51), 
+                             rep("6/21/23",51),rep("6/21/23",51),rep("6/22/23",51),rep("6/22/23",51),
+                             rep("6/10/23",51),rep("6/10/23",51),rep("6/11/23",51),rep("6/11/23",51),
+                             rep("6/12/23",51),rep("6/12/23",51)),
+                  site  = ifelse(new_colonynumber %in% 1:8, "Varari","Cabral"))
+
+# create a color gradient for Varari
+colfunc_V <- colorRampPalette(c("firebrick1", "firebrick4"))
+Vcolors<-colfunc_V(8) 
+
+# create a color gradient for cabral
+colfunc_c <- colorRampPalette(c("goldenrod1", "goldenrod4"))
+Ccolors<-colfunc_c(6) 
+
+
+color_values<-c(Vcolors,Ccolors) 
+
+##########################################
+# create a new data frame that is the size of the prediction data frame
+##########################################
+plot_df_GP <- tibble(silicate = GP_newdata$silicate,
+                    log_silicate = GP_newdata$log_silicate,
+                    pred_umol = predict(modeltest_GP, newdata = GP_newdata),
+                    new_colonynumber = as.factor(GP_newdata$new_colonynumber))
+
+##########################################
+# edits based on errors in simple predict function 
+##########################################
+
+# Define a function for prediction
+pred_funGP <- function(fit) {
+  predict(fit, newdata = PhysioRates_Wide, re.form = ~0)
+}
+
+# Bootstrapping to get standard errors (adjust 'nsim' for more precision)
+boot_resGP <- bootMer(modeltest_GP, pred_funGP, nsim = 100) # Set nsim as needed
+
+# Predictions from the original model
+predictionsGP <- predict(modeltest_GP, newdata = PhysioRates_Wide, re.form = ~0)
+
+# Standard errors from bootstrapping
+se_fitGP <- apply(boot_resGP$t, 2, sd)
+
+# Combine predictions and SEs into a tibble
+predict_GP <- tibble(fitGP = predictionsGP, se = se_fitGP, silicate = PhysioRates_Wide$silicate_umolL)
+
+# Output the tibble
+predict_GP
+
+
+##########################################
+# make the plot
+##########################################
+
+GPplot <- ggplot() + 
+  geom_point(data = GP1, 
+             alpha = 0.5, 
+             aes(x= silicate_umolL,
+                 y= GP,
+                 color = factor(new_colonynumber),
+                 fill = site), 
+             shape = 21) + # bring in the raw data first.  
+  geom_line(data = plot_df_GP, aes(x = silicate,
+                                  y = pred_umol,
+                                  color = new_colonynumber), 
+             linetype = 1, size = 0.7, show.legend = "FALSE", alpha=0.5) + ## made these prediction lines more transparent so main black line sticks out more 
+  coord_trans(x ="log") +
+  scale_color_manual(values = color_values) + 
+  scale_fill_manual(values = c("goldenrod","firebrick"))+ 
+  scale_x_continuous(breaks = c(2,10,20,30))+
+  guides(color = "none") + 
+  geom_line(data = predict_GP, aes(x = silicate, y = fitGP), color = "black", linewidth = 1.5) + #moved here so that black line is ON TOP of raw data and predicted lines 
+  labs(linetype = NULL, 
+       color = " ",
+       fill = " ",
+       x = expression(Silicate~(mu*mol~L^-1)),
+       y = expression(Gross~Photosynthesis~(mu*mol~O[2]~cm[2]^-1~hr^-1)) )+
+  theme_bw()+
+  theme(legend.position = "top",
+        legend.text = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        plot.title = element_text(face = 2, hjust = 0.5),
+        panel.border = element_rect(fill = NA, linewidth = 0.2))
+
+
+GPplot
+
+# if you want to see what your random effects are
+lme4::ranef(modeltest_GP,condVar = TRUE)
+```
+
+
+## Calcification plot 
+
+```{r}
+###############################
+## create tibble for C data  
+###############################
+
+C_newdata <- tibble(umol.cm2.hr = rep(seq(0,1.5,0.01), each = 1, length.out = 714),
+  log_silicate = rep(seq(0.5,3.5,0.06), 14),
+  silicate = exp(log_silicate),
+  new_colonynumber = c(rep(1,51),rep(2,51),rep(3,51),rep(4,51),
+                              rep(5,51),rep(6,51),rep(7,51),rep(8,51),
+                              rep(13,51),rep(14,51),rep(15,51),rep(16,51),
+                              rep(17,51),rep(18,51)),
+  date = c(rep("6/17/23",51),rep("6/17/23",51),rep("6/17/23",51),rep("6/18/23",51),
+           rep("6/21/23",51),rep("6/21/23",51),rep("6/22/23",51),rep("6/22/23",51),
+           rep("6/10/23",51),rep("6/10/23",51),rep("6/11/23",51),rep("6/11/23",51),
+           rep("6/12/23",51),rep("6/12/23",51)),
+  site = ifelse(new_colonynumber %in% 1:8, "Varari", "Cabral"))
+
+# create a color gradient for Varari
+colfunc_V <- colorRampPalette(c("firebrick1", "firebrick4"))
+Vcolors<-colfunc_V(8) # create 8 colors between the lightest and darkest firebrick
+
+# create a color gradient for cabral
+colfunc_c <- colorRampPalette(c("goldenrod1", "goldenrod4"))
+Ccolors<-colfunc_c(6) # create 8 colors between the lightest and darkest goldenrod. There are only 6 Cabral corals
+
+
+color_values<-c(Vcolors,Ccolors) # make a color value for everything together
+
+##########################################
+# create a new data frame that is the size of the prediction data frame
+##########################################
+plot_df_C <- tibble(silicate = C_newdata$silicate,
+                    log_silicate = C_newdata$log_silicate,
+                    pred_umol = predict(modeltest_C, newdata = C_newdata),
+                    new_colonynumber = as.factor(C_newdata$new_colonynumber))
+
+##########################################
+# edits based on errors in simple predict function 
+##########################################
+
+# Define a function for prediction
+pred_funC <- function(fit) {
+  predict(fit, newdata = PhysioRates_Wide, re.form = ~0)
+}
+
+# Bootstrapping to get standard errors (adjust 'nsim' for more precision)
+boot_resC <- bootMer(modeltest_C, pred_funC, nsim = 100) # Set nsim as needed
+
+# Predictions from the original model
+predictionsC <- predict(modeltest_C, newdata = PhysioRates_Wide, re.form = ~0)
+
+# Standard errors from bootstrapping
+se_fitC <- apply(boot_resC$t, 2, sd)
+
+# Combine predictions and SEs into a tibble
+predict_C <- tibble(fitC = predictionsC, se = se_fitC, silicate = PhysioRates_Wide$silicate_umolL)
+
+# Output the tibble
+predict_C
+
+
+##########################################
+# make the plot
+##########################################
+
+Cplot<-ggplot() + # first plot the original data in the background and make it a bit transparent
+  geom_point(data = C1, 
+             alpha = 0.5, 
+             aes(x= silicate_umolL,
+                 y= C,
+                 color = factor(new_colonynumber),
+                 fill = site), 
+             shape = 21) + # bring in the raw data first.  
+  geom_line(data = plot_df_C, aes(x = silicate, # Make prediction lines, this should be with new data.. not original one. 
+                                  y = pred_umol,
+                                  color = new_colonynumber), 
+             linetype = 1, size = 0.7, show.legend = "FALSE", alpha=0.5) +
+  coord_trans(x ="log") + # transform the axes
+  scale_color_manual(values = color_values) +
+  scale_fill_manual(values = c("goldenrod","firebrick")) + 
+  scale_x_continuous(breaks = c(2,10,20,30))+
+  guides(color = "none") + # delete the guide for color
+  geom_line(data = predict_C, aes(x = silicate, y = fitC), color = "black", linewidth = 1.5) + # prediction for just fixed effect
+  labs(linetype = NULL, 
+       color = " ",
+       fill = " ",
+       x = expression(Silicate~(mu*mol~L^-1)),
+       y = expression(Calcification~(mu*mol~CaCO[3]~g^-1~hr^-1))) +
+  theme_bw()+
+  theme(legend.position = "top",
+        legend.text = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        plot.title = element_text(face = 2, hjust = 0.5),
+        panel.border = element_rect(fill = NA, linewidth = 0.2))
+
+
+Cplot
+
+
+# if you want to see what your random effects are
+lme4::ranef(modeltest_C,condVar = TRUE)
+
+```
+
+## Bring three plots together 
+-  uncommented because does not knit otherwise
+```{r}
+#combined_plots <- (Rplot + GPplot)/(Cplot + standardized_effects)
+
+#combined_plots
+#ggsave(here::here("Outputs", "PaperFigures", "Figure2_Physio_SEP.jpg"), 
+      # width=12, height=10)
+```
+
+## Supplementary Figure 2 
+
+### Plot how many corals are net calcifying vs net dissolving  
+-  this is supplementary figure used as additional evidence to show difference in Varari gw vs Cabral 
+-  Results: more fragments in Varari were net dissolving compared to Cabral (and at lower dilutions)
+
+```{r}
+dissolv_calcifplot <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(P_R=="C") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>%
+  dplyr::select(!c("phosphate_umolL":"TA_initial", "salinity", "date")) %>%
+  mutate(rate_category = ifelse(umol.cm2.hr > 0, "positive", "negative")) %>% 
+  group_by(SGD_number, site) %>% 
+  dplyr::summarize(positive_count = sum(rate_category == "positive"),
+            negative_count = sum(rate_category == "negative"))
+
+dissolv_calcifplot2 <- dissolv_calcifplot %>% 
+  pivot_longer(cols = c(positive_count, negative_count),
+               names_to = "rate_category",
+               values_to = "count") %>% 
+  mutate(total_count = sum(count),
+         proportion = count / total_count)
+
+## plot 
+Net_CalcvsDissolution2 <- dissolv_calcifplot2 %>% 
+  ggplot(aes(x=as.factor(SGD_number), 
+             y=proportion,
+             fill=rate_category)) +
+  geom_bar(stat = "identity", position = "fill", width=0.4) +
+  scale_fill_manual(values=c("red2", "black"), 
+                    labels = c("positive_count" = "Net Calcifying", "negative_count" = "Net Dissolving")) +
+  theme_bw() + 
+  facet_wrap(~site) +
+  labs(x = "% SGD by Volume",
+       y = "Proportion of Corals",
+       fill = "Calcification State") +
+   theme(axis.text.x=element_text(size=14), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20)) 
+
+Net_CalcvsDissolution2
+ggsave(here::here("Outputs", "PaperFigures", "NetCalcifying_NetDissolving.jpg"), 
+       width = 11, height=7)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

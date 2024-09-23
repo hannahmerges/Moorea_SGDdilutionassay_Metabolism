@@ -1,0 +1,809 @@
+---
+title: "Nutrient_Analyses"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load libraries 
+```{r}
+library(segmented)
+library(plotrix)
+library(gridExtra)
+library(LoLinR)
+library(lubridate)
+library(chron)
+library(patchwork)
+library(tidyverse)
+library(here)
+library(PNWColors)
+library(ggrepel)
+#library(PerformanceAnalytics)
+library(reshape2)
+library(viridis)
+library(car)
+library(GGally)
+library(corrplot)
+library(PNWColors)
+library(seacarb)
+library(broom)
+library(calecopal)
+library(ggridges)
+library(agricolae)
+library(lme4)
+library(lmerTest)
+library(modelsummary)
+library(tidymodels)
+library(flextable)
+library(performance)
+library(agricolae)
+library(ggeffects)
+library(sjPlot)
+library(patchwork)
+library(broom)
+library(purrr)
+library(nlstools)
+library(stringr)
+library(emmeans)
+library(MuMIn)
+```
+
+
+
+# Bring in processed respo data 
+## note: having error with calculating "new_pH" in dataset 
+## note: run from WSN Pots and Models script
+```{r}
+RespoR_Normalized_Full
+```
+
+
+# Original plots for R, GP, and C - for Varari and Cabral 
+## edit: try without jitter (to see if salinity problem is fixed and if data looks any better?)
+## note: report marginal and conditional R2 value 
+## note: report non-significant p-values
+
+```{r}
+
+##############################
+## R for Varari 
+##############################
+
+
+##############################
+## R for Cabral 
+##############################
+
+
+##############################
+## GP for Varari 
+##############################
+
+
+
+##############################
+## GP for Cabral 
+##############################
+
+
+##############################
+## NEC for Varari 
+##############################
+
+
+
+
+##############################
+## NEC for Cabral 
+##############################
+
+# with jitter
+NEC_C <- full.calc.data %>%
+  filter(site=="Cabral") %>% 
+  filter(new_colonynumber!="20") %>% 
+  filter(new_colonynumber!="BLANK") %>%
+  mutate(salinity_insitu=as.factor(salinity_insitu)) %>% 
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr, 
+             color=salinity_insitu)) + 
+  geom_point(size=4, 
+             position = position_jitterdodge()) +
+  scale_color_manual(values=rev(pnw_palette("Sunset2", n=16)), 
+                     guide="none") +
+  theme_classic() + 
+ # facet_wrap(~new_colonynumber)+
+  theme(strip.background = element_rect(fill = "white"))+
+  #geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  geom_hline(yintercept = 0)+
+  labs(x = "SGD Dilutions (% by volume)",
+       color = "Salinity (ppt)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Net Calcification Rates at Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20)) 
+
+NEC_C
+
+# without jitter 
+NEC_C2 <- full.calc.data %>%
+  filter(site=="Cabral") %>% 
+  filter(new_colonynumber!="20") %>% 
+  filter(new_colonynumber!="BLANK") %>%
+  mutate(salinity_insitu=as.factor(salinity_insitu)) %>% 
+  ggplot(aes(x=SGD_number, 
+             y=umol.cm2.hr, 
+             color=salinity_insitu)) + 
+  geom_point(size=4) +
+  scale_color_manual(values=rev(pnw_palette("Sunset2", n=16)), 
+                     guide="none") +
+  theme_classic() + 
+ # facet_wrap(~new_colonynumber)+
+  theme(strip.background = element_rect(fill = "white"))+
+  #geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  geom_hline(yintercept = 0)+
+  labs(x = "SGD Dilutions (% by volume)",
+       color = "Salinity (ppt)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Net Calcification Rates at Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20)) 
+NEC_C2
+
+NEC_C2 + NEC_C
+```
+
+
+# Nutrient analyses for GP, R, and C using parameters of NN, PO4, NH4, SiO4, TA, and pH at both Varari and Cabral 
+## plot and model for R with all parameters for Varari 
+```{r}
+# creating new dataset for models 
+Nutrient_Models_Varari_R <- RespoR_Normalized_Full %>% 
+  filter(site=="Varari") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+Nutrient_Models_Varari_R<-Nutrient_Models_Varari_R[-c(24),]  
+
+
+#######################
+## NN ## 
+########################
+NNbyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with N+N (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "N+N for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyRplot
+
+## normal model with full nesting and random effects 
+Varari_NN_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(NN_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_NN_resp) 
+summary(Varari_NN_resp)
+
+#######################
+## NH4 ## 
+########################
+NH4byRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with NH4 (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NH4 for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+
+NH4byRplot
+
+### model 
+Varari_NH4_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(ammonia_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_NH4_resp) 
+summary(Varari_NH4_resp)
+
+#######################
+## PO4 ## 
+########################
+PhosbyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with Phosphate (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Phosphate for Varari") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+PhosbyRplot
+
+Varari_PO4_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_PO4_resp) 
+summary(Varari_PO4_resp)
+
+
+#######################
+## SiO3 ## 
+########################
+SilicatebyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Silicate (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Respiration Rates for Varari with Silicate") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SilicatebyRplot
+
+Varari_SiO4_resp <- lmer(data = Nutrient_Models_Varar_R, 
+             umol.cm2.hr ~ poly(silicateate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_SiO4_resp) 
+summary(Varari_SiO4_resp)
+
+#######################
+## pH ## 
+########################
+pHbyRplot <- Nutrient_Models_Varari_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "pH",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Respiration Rates for Varari with pH") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyRplot
+
+Varari_pH_resp <- lmer(data = Nutrient_Models_Varari_R, 
+             umol.cm2.hr ~ poly(pH, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_pH_resp) 
+summary(Varari_pH_resp)
+
+
+#######################
+## TA ???? ## 
+########################
+```
+
+## plot and model for R with all parameters for Cabral  
+
+```{r}
+Nutrient_Models_Cabral_R <- RespoR_Normalized_Full %>% 
+  filter(site=="Cabral") %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="R") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+
+#######################
+## NN ## 
+########################
+NNbyRplot_Cabral <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with N+N (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "N+N for Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NNbyRplot_Cabral
+
+## normal model with full nesting and random effects 
+Cabral_NN_resp <- lmer(data = Nutrient_Models_Cabral_R, 
+             umol.cm2.hr ~ poly(NN_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_NN_resp) 
+summary(Cabral_NN_resp)
+
+#######################
+## NH4 ## 
+########################
+NH4byRplot_Cabral <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with NH4 (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "NH4 for Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+NH4byRplot_Cabral
+
+## normal model with full nesting and random effects 
+Cabral_NH4_resp <- lmer(data = Nutrient_Models_Cabral_R, 
+             umol.cm2.hr ~ poly(ammonia_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_NH4_resp) 
+summary(Cabral_NH4_resp)
+
+#######################
+## PO4 ## 
+########################
+PhosbyRplot_Cabral <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with PO4 (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "PO4 for Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+PhosbyRplot_Cabral
+
+## normal model with full nesting and random effects 
+Cabral_PO4_resp <- lmer(data = Nutrient_Models_Cabral_R, 
+             umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_PO4_resp) 
+summary(Cabral_PO4_resp)
+
+#######################
+## SiO3 ## 
+########################
+SiO4byRplot_Cabral <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with SiO4 (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "SiO4 for Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+SiO4byRplot_Cabral
+
+## normal model with full nesting and random effects 
+Cabral_SiO4_resp <- lmer(data = Nutrient_Models_Cabral_R, 
+             umol.cm2.hr ~ poly(silicate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_SiO4_resp) 
+summary(Cabral_SiO4_resp)
+
+#######################
+## pH ## 
+########################
+pHbyRplot_Cabral <- Nutrient_Models_Cabral_R %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  theme_bw() + 
+  labs(x = "Respiration Rates with pH",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "pH for Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+pHbyRplot_Cabral
+
+## normal model with full nesting and random effects 
+Cabral_pH_resp <- lmer(data = Nutrient_Models_Cabral_R, 
+             umol.cm2.hr ~ poly(pH, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_pH_resp) 
+summary(Cabral_pH_resp)
+
+
+#######################
+## TA ???? ## 
+########################
+```
+
+
+## plots and models for NP with all parameters for Varari AND Cabral 
+## note: NP data does not contain any of the nutrient values 
+```{r}
+Nutrient_Models_NP <- RespoR_Normalized_Full %>% 
+  drop_na(NN_umolL) %>% 
+  filter(P_R=="NP") %>% 
+  filter(!is.infinite(umol.cm2.hr))
+Nutrient_Models_NP<-Nutrient_Models_NP[-c(36),]  ## drop the outlier from varari 
+
+#######################
+## NN ## 
+########################
+
+NNbyNPplot <- Nutrient_Models_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=NN_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  facet_wrap(~site) +
+  theme_bw() + 
+  labs(x = "N+N (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "N+N for NP Rates by Site") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ggsave(here("Outputs", "NutrientAnalyses", "NN_NP_plot.jpg"), 
+       width = 10, height = 7)
+
+NNbyNPplot
+
+## models 
+## separate by site 
+Nutrient_Models_NP_V <- Nutrient_Models_NP %>% 
+  filter(site=="Varari")
+
+Nutrient_Models_NP_C <- Nutrient_Models_NP %>% 
+  filter(site== "Cabral")
+
+# actual model set up 
+Varari_NN_NP <- lmer(data = Nutrient_Models_NP_V, 
+             umol.cm2.hr ~ poly(NN_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_NN_NP) 
+summary(Varari_NN_NP)
+
+Cabral_NN_NP <- lmer(data = Nutrient_Models_NP_C, 
+             umol.cm2.hr ~ poly(NN_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_NN_NP) 
+summary(Cabral_NN_NP)
+
+
+#######################
+## NH4 ## 
+########################
+
+NH4byNPplot <- Nutrient_Models_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=ammonia_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  facet_wrap(~site) +
+  theme_bw() + 
+  labs(x = "Ammonia (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Ammonia for NP Rates by Site") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ggsave(here("Outputs", "NutrientAnalyses", "NH4_NP_plot.jpg"), 
+       width = 10, height = 7)
+
+NH4byNPplot
+
+## full models 
+Varari_NH4_NP <- lmer(data = Nutrient_Models_NP_V, 
+             umol.cm2.hr ~ poly(ammonia_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_NH4_NP) 
+summary(Varari_NH4_NP)
+
+Cabral_NH4_NP <- lmer(data = Nutrient_Models_NP_C, 
+             umol.cm2.hr ~ poly(ammonia_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_NH4_NP) 
+summary(Cabral_NH4_NP)
+
+
+#######################
+## PO4 ## 
+########################
+
+PhosphatesbyNPplot <- Nutrient_Models_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=phosphate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  facet_wrap(~site) +
+  theme_bw() + 
+  labs(x ="Phosphates (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Phosphates for NP Rates by site") + 
+  theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ggsave(here("Outputs", "NutrientAnalyses", "PO4_NP_plot.jpg"), 
+       width = 10, height = 7)
+
+PhosphatesbyNPplot
+
+#models 
+Varari_PO4_NP <- lmer(data = Nutrient_Models_NP_V, 
+             umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_PO4_NP) 
+summary(Varari_PO4_NP)
+
+Cabral_PO4_NP <- lmer(data = Nutrient_Models_NP_C, 
+             umol.cm2.hr ~ poly(phosphate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_PO4_NP) 
+summary(Cabral_PO4_NP)
+
+#######################
+## SiO4 ## 
+########################
+SiO4byNPplot <- Nutrient_Models_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  facet_wrap(~site) +
+  theme_bw() + 
+  labs(x ="Silicate (umolL)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Silicate for NP Rates by site") + 
+  theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ggsave(here("Outputs", "NutrientAnalyses", "SiO4_NP_plot.jpg"), 
+       width = 10, height = 7)
+
+SiO4byNPplot
+
+## models 
+Varari_SiO4_NP <- lmer(data = Nutrient_Models_NP_V, 
+             umol.cm2.hr ~ poly(silicate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_SiO4_NP) 
+summary(Varari_SiO4_NP)
+
+Cabral_SiO4_NP <- lmer(data = Nutrient_Models_NP_C, 
+             umol.cm2.hr ~ poly(silicate_umolL, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_SiO4_NP) 
+summary(Cabral_SiO4_NP)
+
+
+#######################
+## pH ## 
+########################
+pHbyNPplot <- Nutrient_Models_NP %>% 
+  mutate(new_colonynumber= as.factor(new_colonynumber), 
+         date=as.factor(date)) %>% 
+  ggplot(aes(x=pH, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=3) +
+  facet_wrap(~site) +
+  theme_bw() + 
+  labs(x ="pH",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "pH for NP Rates by site") + 
+  theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20))
+ggsave(here("Outputs", "NutrientAnalyses", "pH_NP_plot.jpg"), 
+       width = 10, height = 7)
+
+
+pHbyNPplot
+
+#models
+Varari_pH_NP <- lmer(data = Nutrient_Models_NP_V, 
+             umol.cm2.hr ~ poly(pH, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_pH_NP) 
+summary(Varari_pH_NP)
+
+Cabral_pH_NP <- lmer(data = Nutrient_Models_NP_C, 
+             umol.cm2.hr ~ poly(pH, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_pH_NP) 
+summary(Cabral_pH_NP)
+
+#######################
+## TA ??? ## 
+########################
+```
+
+## note: try to join calc.data with respo data to get TA for NP and R?? 
+## make new datasets for calc data 
+
+```{r}
+## dataset for TA and Calcification data 
+full.calc.data <- full.calc.data %>% 
+  mutate(deltaTA_2 = deltaTA/2,
+         deltaTA_L = deltaTA_2*1.025, 
+         umol.cm2.s = deltaTA_L*(.650-(volume_mL/1000))/(SA_cm2*timediff), 
+         umol.cm2.hr = umol.cm2.s*3600) 
+
+CalcData_wNutrients <- full.calc.data %>% 
+  full_join(RespoR_Normalized_Full)
+## ^^ this isn't working yet 
+  
+NEC_Varari <- full.calc.data %>% 
+  filter(site=="Varari")
+
+NEC_Cabral <- full.calc.data %>% 
+  filter(site=="Cabral")
+
+
+```
+
+## plots and models for Varari 
+```{r}
+
+## TA plots 
+TA_NEC_V <- NEC_Varari %>%
+  filter(site=="Varari") %>% 
+ # filter(new_colonynumber!="BLANK") %>%
+  mutate(salinity_insitu=as.factor(salinity_insitu)) %>% 
+  ggplot(aes(x=TA, 
+             y=umol.cm2.hr, 
+             color=salinity_insitu)) + 
+  geom_point(size=4) +
+  scale_color_manual(values=rev(pnw_palette("Sunset2", n=16)), 
+                     guide="none") +
+  theme_classic() + 
+  theme(strip.background = element_rect(fill = "white"))+
+  geom_smooth(method = "lm", se=TRUE, color="lightpink") +
+  geom_hline(yintercept = 0)+
+  labs(x = "TA",
+       color = "Salinity (ppt)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Net Calcification Rates at Varari for TA") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20)) 
+ggsave(here("Outputs", "NutrientAnalyses", "TA_NEC_plot_V.jpg"), 
+       width = 10, height = 7)
+
+TA_NEC_V
+
+
+Varari_TA_NEC <- lmer(data = NEC_Varari, 
+             umol.cm2.hr ~ poly(TA, degree=2) + (1|date/new_colonynumber))
+
+anova(Varari_TA_NEC) 
+summary(Varari_TA_NEC)
+```
+
+
+## plot and model for C with all parameters for Cabral 
+
+```{r}
+
+## original plot with SGD - in WSN plots and models 
+
+##plot for TA 
+TA_NEC_C <- NEC_Cabral %>%
+  #filter(new_colonynumber!="20") %>% 
+ # filter(new_colonynumber!="BLANK") %>%
+  mutate(salinity_insitu=as.factor(salinity_insitu)) %>% 
+  ggplot(aes(x=TA, 
+             y=umol.cm2.hr, 
+             color=salinity_insitu)) + 
+  geom_point(size=4) +
+  scale_color_manual(values=rev(pnw_palette("Sunset2", n=16)), 
+                     guide="none") +
+  theme_classic() + 
+  theme(strip.background = element_rect(fill = "white"))+
+  geom_hline(yintercept = 0) +
+  labs(x = "TA",
+       color = "Salinity (ppt)",
+       y = "Rate (umol O2 cm2 hr-1)",
+       title = "Net Calcification Rates at Cabral") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20)) 
+ggsave(here("Outputs", "NutrientAnalyses", "TA_NEC_plot.jpg"), 
+       width = 10, height = 7)
+
+##model for TA 
+
+Cabral_TA_NEC <- lmer(data = NEC_Cabral, 
+             umol.cm2.hr ~ poly(TA, degree=2) + (1|date/new_colonynumber))
+
+anova(Cabral_TA_NEC) 
+summary(Cabral_TA_NEC)
