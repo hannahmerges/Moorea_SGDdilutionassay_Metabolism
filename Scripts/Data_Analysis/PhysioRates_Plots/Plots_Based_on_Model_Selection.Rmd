@@ -13,34 +13,33 @@ knitr::opts_chunk$set(echo = TRUE,
 
 ### Loading libraries 
 ```{r, echo=FALSE}
-library(LoLinR)
 library(lubridate)
 library(patchwork)
 library(tidyverse)
 library(here)
 library(car)
 library(GGally)
-library(corrplot)
-library(ggcorrplot)
-library(corrr)
-library(PNWColors)
-library(seacarb)
+library(corrplot) 
+library(ggcorrplot) 
+library(corrr) 
+library(PNWColors) 
+library(seacarb) 
 library(broom)
-library(agricolae)
+library(agricolae) 
 library(lme4)
-library(ggsci)
-library(see)
+library(ggsci) 
+library(see) 
 library(cowplot)
 library(lmerTest)
-library(modelsummary)
+library(modelsummary) 
 library(performance)
 library(emmeans)
 library(MuMIn)
-library(broom.mixed)
-library(kableExtra)
-library(reshape2)
+library(broom.mixed) 
+library(kableExtra) 
+library(reshape2) 
 theme_set(theme_classic()) ### This sets the default ggplot theme
-library(Hmisc)
+library(Hmisc) 
 require(effects)
 ```
 
@@ -49,10 +48,10 @@ require(effects)
 RespoR_Normalized_Full_withNEC_nutrients <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
 ## full datasheet with GP, R, and C rates along with all env data 
 
-ActualvsPredicted_Nutrients <- read_csv(here::here("Data", "ActualvsPredicted_Values.csv"))
+ActualvsPredicted_Nutrients <- read_csv(here::here("Data", "NutrientAnalysis_ActualvsPred",  "ActualvsPredicted_Values.csv"))
 ## actual vs predicted nutrient levels- excel calculations 
 
-RawGWData <- read_csv(here::here("Data", "RespoFiles", "Fragment_MeasurementSampling_Cabral_Varari2.csv")) 
+RawGWData <- read_csv(here::here("Data", "RespoFiles", "Fragment_Sample_Info", "Fragment_MeasurementSampling_Cabral_Varari2.csv")) 
 ## all background data on fragments and dilutions 
 
 MooreaMarch_full <- read_csv("https://raw.githubusercontent.com/njsilbiger/MooreaSGD_site-selection/main/Data/March2022/Allbiogeochemdata_QC_march_fdom2.csv")
@@ -974,6 +973,21 @@ CalcVsDissol <- lm(proportion ~ SGD_number*site, data = RespoR_Normalized_Full_w
 
 anova(CalcVsDissol)
 
+########################
+## calculate percentage that are dissolving 
+#######################
+
+
+
+percentDissolve <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(P_R=="C", 
+         site=="Cabral") %>% 
+  dplyr::mutate(percent_dissolved = (sum(umol.cm2.hr < 0) / n()) * 100)
+  
+
+
+
+
 ##############################################
 ## look at raw data to see why dissolving is occurring at 0.01 
 ##############################################
@@ -1379,7 +1393,7 @@ ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"),
 ## data 
 corr_matrix_Varari_silicateonly <- RespoR_Normalized_Full_withNEC_nutrients %>% 
   mutate(N_P = NN_umolL/phosphate_umolL) %>% 
-  filter(P_R=="R") %>% 
+  filter(P_R=="C") %>% 
   mutate("Salinity"=salinity, 
          "TA" = TA_initial, 
          "pH" = new_pH, 
@@ -1430,7 +1444,7 @@ ggsave(here::here("Outputs", "Results", "Final", "Vsilicate_corrmatrix.jpg"),
 ## data 
 corr_matrix_Cabral <- RespoR_Normalized_Full_withNEC_nutrients %>% 
   mutate(N_P = NN_umolL/phosphate_umolL) %>% 
-  filter(P_R=="R") %>% 
+  filter(P_R=="C") %>% 
   mutate("Salinity"=salinity, 
          "TA" = TA_initial, 
          "pH" = new_pH, 
@@ -1501,6 +1515,119 @@ ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"),
 
 
 ```
+
+### Getting p-values and r-squared coefficients for Spearman correlation plots 
+
+```{r}
+#################################
+## Varari 
+#################################
+
+# Calculate the Spearman correlation and p-values matrix
+res_Varari_spearman <- rcorr(as.matrix(corr_matrix_Varari_silicateonly), type = "spearman")
+
+# Extract the correlation matrix
+corr_Varari_spearman <- res_Varari_spearman$r
+
+corr_Varari_spearman
+
+# Extract the p-values matrix
+p.mat_Varari_spearman <- res_Varari_spearman$P
+
+p.mat_Varari_spearman
+
+# Calculate approximate r-squared by squaring the correlation coefficients
+r_squared_Varari_spearman <- corr_Varari_spearman^2
+
+r_squared_Varari_spearman
+
+##########################
+## only for silicate
+
+# Extract correlations involving Silicate
+corr_silicate_V <- corr_Varari_spearman[, "Silicate", drop = FALSE]
+
+# Extract p-values involving Silicate
+p_values_silicate_V <- p.mat_Varari_spearman[, "Silicate", drop = FALSE]
+
+# Extract r-squared values involving Silicate
+r_squared_silicate_V <- r_squared_Varari_spearman[, "Silicate", drop = FALSE]
+
+# Print results for Silicate
+print(corr_silicate_V)
+print(p_values_silicate_V)
+print(r_squared_silicate_V)
+
+
+# Identify significant correlations (p-value < 0.05)
+significant_correlations <- p_values_silicate_V < 0.05
+
+# Extract significant correlations
+significant_corrs <- corr_silicate_V[significant_correlations]
+
+# Extract the corresponding r-squared values
+significant_r_squared <- r_squared_silicate_V[significant_correlations]
+
+# Print significant correlations and their r-squared values
+print(significant_corrs)
+print(significant_r_squared)
+
+
+#################################
+## Cabral 
+#################################
+
+# Calculate the Spearman correlation and p-values matrix
+res_Cabral_spearman <- rcorr(as.matrix(corr_matrix_Cabral), type = "spearman")
+
+# Extract the correlation matrix
+corr_Cabral_spearman <- res_Cabral_spearman$r
+
+corr_Cabral_spearman
+
+# Extract the p-values matrix
+p.mat_Cabral_spearman <- res_Cabral_spearman$P
+
+p.mat_Cabral_spearman
+
+# Calculate approximate r-squared by squaring the correlation coefficients
+r_squared_Cabral_spearman <- corr_Cabral_spearman^2
+
+r_squared_Cabral_spearman
+
+##########################
+## only for silicate
+
+# Extract correlations involving Silicate
+corr_silicate_C <- corr_Cabral_spearman[, "Silicate", drop = FALSE]
+
+# Extract p-values involving Silicate
+p_values_silicate_C <- p.mat_Cabral_spearman[, "Silicate", drop = FALSE]
+
+# Extract r-squared values involving Silicate
+r_squared_silicate_C <- r_squared_Cabral_spearman[, "Silicate", drop = FALSE]
+
+# Print results for Silicate
+print(corr_silicate_C)
+print(p_values_silicate_C)
+print(r_squared_silicate_C)
+
+
+# Identify significant correlations (p-value < 0.05)
+significant_correlations <- p.mat_Cabral_spearman < 0.05
+
+# Extract significant correlations
+significant_corrs <- corr_Cabral_spearman[significant_correlations]
+
+# Extract the corresponding r-squared values
+significant_r_squared <- r_squared_Cabral_spearman[significant_correlations]
+
+# Print significant correlations and their r-squared values
+print(significant_corrs)
+print(significant_r_squared)
+```
+
+
 
 ### Figure 2a (part2): Barplots for GW endmember data 
 - making bar graphs to illustrate differences between sites and from sites to offshore ambient SW 

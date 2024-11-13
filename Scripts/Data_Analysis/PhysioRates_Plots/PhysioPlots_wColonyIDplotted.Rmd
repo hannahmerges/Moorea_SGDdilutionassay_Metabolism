@@ -23,6 +23,14 @@ library(MuMIn)
 #RespoR_Normalized_Full_withNEC_nutrients <- read_csv("R_only.csv")
 ```
 
+# Understanding concentrations of treatments: 
+```{r}
+nutrient_conc <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  group_by()
+```
+
+
+
 # Respiration 
 
 ### Create model 

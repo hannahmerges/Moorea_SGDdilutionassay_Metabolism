@@ -4,7 +4,7 @@
 
 ## Load libraries 
 library(tidyverse)
-library(janitor)
+#library(janitor)
 
 
 
@@ -27,17 +27,21 @@ CarbonateChem <- read_csv("https://raw.githubusercontent.com/njsilbiger/MooreaSG
 #### ONLY HAVE OFFSHORE DATA FROM MARCH 
 AmbSW <- MooreaMarch_full %>% 
   filter(Plate_Seep == "Offshore")
+
 max(AmbSW$TA, na.rm=TRUE)
 min(AmbSW$TA, na.rm=TRUE)
 mean(AmbSW$TA, na.rm=TRUE)
+sd(AmbSW$TA) / sqrt(length(AmbSW$TA))
 
 max(AmbSW$NN_umolL, na.rm=TRUE)
 min(AmbSW$NN_umolL, na.rm=TRUE)
 mean(AmbSW$NN_umolL, na.rm=TRUE)
+sd(AmbSW$NN_umolL) / sqrt(length(AmbSW$NN_umolL))
 
 max(AmbSW$pH, na.rm=TRUE)
 min(AmbSW$pH, na.rm=TRUE)
 mean(AmbSW$pH, na.rm=TRUE)
+sd(AmbSW$pH) / sqrt(length(AmbSW$pH))
 
 max(AmbSW$Phosphate_umolL, na.rm=TRUE)
 min(AmbSW$Phosphate_umolL, na.rm=TRUE)
@@ -154,6 +158,7 @@ NNgraph
 # can change color by site 
 # sclae_ color_ manual - values=c()
 
+
 ############################## 
 ### plots for CSUNposium 
 ###############################
@@ -177,7 +182,7 @@ SiteComparisons_Nitrates <- sitecomparison_maxdata %>%
              fill=Site)) + 
   geom_col()  + 
   scale_x_discrete(limits = c("Offshore", "Cabral", "Varari")) + 
-  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+  scale_fill_manual(values=c("deepskyblue3", "darkgoldenrod2", "firebrick4"), 
                     limits=c("Offshore", "Cabral", "Varari")) +
   theme_classic() + 
   labs(x="Location", 
@@ -230,3 +235,111 @@ SiteComparisons_TA <- sitecomparison_maxdata %>%
 
 SiteComparisons_TA
 
+
+
+############################## 
+### df for thesis defense plots 
+###############################
+SiteData_MinMaxMean <- tribble(~Site, ~Parameter, ~Min, ~Max, ~Mean, ~SE,
+                               "Varari", "pH", "7.73", "NA", "NA", "NA",  
+                               "Cabral", "pH", "6.89", "NA", "NA", "NA",
+                               "Offshore", "pH", "7.92", "8.08", "8.01", "0.0098",
+                               "Varari", "salinity (psu)", "7.73", "NA", "NA", "NA",
+                               "Cabral", "salinity (psu)", "6.89", "NA", "NA", "NA", 
+                               "Offshore", "salinity (psu)", "7.9", "NA", "NA", "NA", 
+                               "Varari", "Nitrates (umol/L)", "279.15", "NA", "NA", "NA",
+                               "Cabral", "Nitrates (umol/L)", "18.24", "NA", "NA", "NA",
+                               "Offshore", "Nitrates (umol/L)","0.23", "0.58", "0.39", "NA", 
+                               "Varari", "TA (umol/kg-1)", "5393.3", "NA", "NA", "NA",
+                               "Cabral", "TA (umol/kg-1)", "1755.18", "NA", "NA", "NA",
+                               "Offshore", "TA (umol/kg-1)", "2342.51", "2386.84", "2366.54", "2.66", 
+                               "Varari", "Silicate (umol/L)", "5393.3", "NA", "NA", "NA",
+                               "Cabral", "Silicate (umol/L)", "1755.18", "NA", "NA", "NA",
+                               "Offshore", "Silicate (umol/L)", "0.85", "3.68", "2.00", "NA") %>% 
+  mutate(Site= as.factor(Site))
+
+View(SiteData_MinMaxMean)
+
+############################## 
+### plots for thesis defense plots 
+###############################
+
+TA_scatterplot <- SiteData_MinMaxMean %>% 
+  filter(Parameter=="TA (umol/kg-1)")  %>% 
+  ggplot(aes(x=Site,
+             y=Min, 
+             fill=Site)) + 
+  geom_boxplot() + 
+  scale_x_discrete(limits = c("Offshore", "Cabral", "Varari")) + 
+  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+                    limits=c("Offshore", "Cabral", "Varari")) +
+ # scale_y_log10() + 
+  theme_classic() + 
+  labs(x="Location", 
+       y="TA (umol/kg-1)") + 
+  theme(axis.text.x=element_text(size=25), 
+        axis.text.y=element_text(size=25), 
+        axis.title.x=element_text(size=25), 
+        axis.title.y=element_text(size=25))
+
+TA_scatterplot
+
+
+###
+###
+
+Varari_March <- MooreaMarch_full %>% 
+  filter(Location== "Varari") %>% 
+  filter(Plate_Seep!= "Offshore")
+
+V_August <- MooreaAugust2 %>% 
+  filter(Location=="Varari") 
+
+### 
+max(Varari_March$TA, na.rm=TRUE)
+min(Varari_March$TA, na.rm=TRUE)
+mean(Varari_March$TA, na.rm=TRUE)
+
+max(Varari_March$NN_umolL, na.rm=TRUE)
+min(Varari_March$NN_umolL, na.rm=TRUE)
+mean(Varari_March$NN_umolL, na.rm=TRUE)
+
+max(Varari_March$pH, na.rm=TRUE)
+min(Varari_March$pH, na.rm=TRUE)
+mean(Varari_March$pH, na.rm=TRUE)
+#
+max(V_August$NN_umolL, na.rm=TRUE)
+max(V_August$TA, na.rm=TRUE)
+max(V_August$pH, na.rm=TRUE)
+min(V_August$pH, na.rm=TRUE)
+
+###
+###
+
+Cabral_March <- MooreaMarch_full %>% 
+  filter(Location== "Cabral") %>% 
+  filter(Plate_Seep!= "Offshore")
+#
+C_August <- MooreaAugust2 %>% 
+  filter(Location=="Cabral")
+
+max(Cabral_March$TA, na.rm=TRUE)
+min(Cabral_March$TA, na.rm=TRUE)
+mean(Cabral_March$TA, na.rm=TRUE)
+
+max(Cabral_March$NN_umolL, na.rm=TRUE)
+min(Cabral_March$NN_umolL, na.rm=TRUE)
+mean(Cabral_March$NN_umolL, na.rm=TRUE)
+
+max(Cabral_March$pH, na.rm=TRUE)
+min(Cabral_March$pH, na.rm=TRUE)
+mean(Cabral_March$pH, na.rm=TRUE)
+
+#
+max(C_August$TA, na.rm=TRUE)
+max(C_August$NN_umolL, na.rm=TRUE)
+max(C_August$pH, na.rm=TRUE)
+min(C_August$pH, na.rm=TRUE)
+
+
+sd(AmbSW$Silicate_umolL) / sqrt(length(AmbSW$Silicate_umolL))

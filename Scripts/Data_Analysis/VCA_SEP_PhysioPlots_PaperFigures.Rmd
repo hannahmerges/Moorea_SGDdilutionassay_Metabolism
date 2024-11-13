@@ -24,7 +24,7 @@ library(here)
 library(tidyverse) 
 library(lme4)
 library(lmerTest)
-library(VCA)
+#library(VCA)
 library(performance)
 library(sjPlot)
 ```
@@ -33,7 +33,7 @@ library(sjPlot)
 -  See "Initial_DF_construction" markdown file to reference calculations for "RespoR_Normalized_Full_withNEC_nutrients" datafile 
 -  Includes normalization to blanks, calculations of NEC, merging nutrient data
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE}
 RespoR_Normalized_Full_withNEC_nutrients <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
 ```
 
@@ -167,22 +167,21 @@ variance_plot <- R_var %>%
                                name == "percentvar_Cr" ~ "Calcification"))%>%
   mutate(grp = case_when(grp == "new_colonynumber"~ "Putative Genotype",
                           grp == "date"~ "Date",
-                          grp == "site"~ "Site",
+                          grp == "site"~ "Source Water",
                          grp == "Residual"~ "Residual")) %>%
-  mutate(grp = factor(grp, levels = c("Site","Residual","Putative Genotype","Date"))) %>% # put the levels in an order I want for plotting
+  mutate(grp = factor(grp, levels = c("Site","Date","Putative Genotype","Residual"))) %>% # put the levels in an order I want for plotting
   ggplot(aes(x = nicenames, 
              y = value, 
              fill = grp))+
   geom_bar(stat = "identity") +
   labs(x = "",
-       y = "Percent Variance Explained (%)",
-       fill = "Group") +
-  theme(axis.text.x = element_text(size = 16, face="bold", color="black"),
-        axis.title.y = element_text(size = 16, face="bold", color="black"), 
-        axis.text.y = element_text(size = 16, face="bold", color="black")) +
+       y = "Percent Variance Explained (%)") +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14, color="black"), 
+        legend.text = element_text(size = 14, color="black")) +
   theme_minimal() + 
   scale_x_discrete(limits = c("Respiration", "Gross Photosynthesis", "Calcification")) +
-  scale_fill_manual(values=c("deepskyblue2", "gray", "coral3", "burlywood"))
+  scale_fill_manual(values=c("deepskyblue2", "burlywood", "coral3", "gray"))
 
 variance_plot
 
@@ -248,11 +247,13 @@ standardized_effects <- all_std %>%
              position = position_dodge(0.9)) + # dodge the points so not on top of each other
   geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0, position = position_dodge(0.9)) +
   scale_color_manual(values=c("#b8b5b5", "#838282", "#484747")) +
-  labs(x = "Standardized effect",
-       y = "Term") +
+  labs(x = "Standardized Effect",
+       y = "") +
   theme_classic() +
   theme(legend.position = c(0.3, 0.85), 
-        legend.text = element_text(size = 14)) 
+        legend.text = element_text(size = 14),
+        axis.text = element_text(size = 14), 
+        axis.title = element_text(size = 14)) 
   
 
 standardized_effects 
@@ -589,12 +590,13 @@ lme4::ranef(modeltest_C,condVar = TRUE)
 ## Bring three plots together 
 -  uncommented because does not knit otherwise
 ```{r}
-#combined_plots <- (Rplot + GPplot)/(Cplot + standardized_effects)
+combined_plots <- (Rplot + GPplot)/(Cplot + standardized_effects)
 
-#combined_plots
-#ggsave(here::here("Outputs", "PaperFigures", "Figure2_Physio_SEP.jpg"), 
-      # width=12, height=10)
+combined_plots
+ggsave(here::here("Outputs", "PaperFigures", "Figure2_Physio_SEP.jpg"), 
+       width=13, height=10)
 ```
+
 
 ## Supplementary Figure 2 
 
