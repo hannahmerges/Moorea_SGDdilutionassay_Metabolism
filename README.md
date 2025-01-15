@@ -1,5 +1,16 @@
-# Moorea_SGDdilutionassay_Metabolism
+# Acute submarine groundwater discharge exposure XXXX affects the metabolism of a nearshore tropical coral
 
-This repo will contain data and information for my thesis chapter about metabolic changes across various dilutions of SGD.
-Primary folders will include Data, Scripts, and Outputs, with additional folders for other information as needed. 
-Scripts and outputs will be broken down into subsections for the different steps of this chapter (ie. pre and post processing, respirometry runs per dilution, sites, etc) 
+Hannah E. Merges1, Nyssa J. Silbiger1,2
+
+1. California State University Northridge, Department of Biology, Northridge, CA, United States 
+2. University of Hawai’i at Mānoa, Uehiro Center for the Advancement of Oceanography, Department of Oceanography, Honolulu, HI, United States
+
+Keywords: submarine groundwater discharge, corals, metabolism, Pocillopora, nutrients
+
+Abstract: 
+
+
+
+Processed and raw data can be found in "Data" folder.
+Scripts for data processing, analysis, and figures can be found in "Scripts", "XXX", "XXX" folders.
+Output figures and tables can be found in "Outputs", "XXX", folders.
