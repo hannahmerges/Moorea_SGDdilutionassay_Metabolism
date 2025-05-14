@@ -1,7 +1,6 @@
 # Submarine groundwater discharge drives coral metabolism in a nearshore tropical coral, Pocillopora acuta
 
-****Hannah E. Merges 1*, Maya Zeff 2, and Nyssa J. Silbiger 3**
-**
+**Hannah E. Merges(1), Maya Zeff(2), and Nyssa J. Silbiger(3)**
 
 1 Department of Biology, California State University, Northridge, CA, USA 
 2 Department of Ecology and Evolutionary Biology, University of California, Santa Cruz, CA, USA mayazeff@ucsc.edu (M.Z.)
