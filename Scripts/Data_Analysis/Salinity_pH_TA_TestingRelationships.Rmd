@@ -149,7 +149,7 @@ Salinity_inlab <- Salinity_from_TA %>%
   filter(sample_info != "seawater", 
          site != "Cabral") %>% 
   group_by(date, SGD_number) %>% 
-  summarize(mean_sal = mean(salinity_psu_calibr0915))
+  dplyr::summarize(mean_sal = mean(salinity_psu_calibr0915))
 
 
 ### join with other dataset to compare Varari salinities 
@@ -555,6 +555,7 @@ ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"),
 # Try again, but make a standardized effects plot 
 -  Used the code from Figure 3 
 
+- when rendering: does not like function plot_model, so commented out 
 ```{r}
 
 ############################################
@@ -565,18 +566,18 @@ ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"),
 ### get standardized effect sizes 
 
 ## For Varari 
-plot_model(salinity_V_zscores, type = "std") 
-plot_model(pH_V_zscores, type = "std")
-plot_model(NN_V_zscores, type = "std")
-plot_model(Phos_V_zscores, type = "std")
-plot_model(TA_V_zscores, type = "std")
+#plot_model(salinity_V_zscores, type = "std") 
+#plot_model(pH_V_zscores, type = "std")
+#plot_model(NN_V_zscores, type = "std")
+#plot_model(Phos_V_zscores, type = "std")
+#plot_model(TA_V_zscores, type = "std")
 
 ## For Cabral 
-plot_model(salinity_C_zscores, type = "std") 
-plot_model(pH_C_zscores, type = "std")
-plot_model(NN_C_zscores, type = "std")
-plot_model(Phos_C_zscores, type = "std")
-plot_model(TA_C_zscores, type = "std")
+#plot_model(salinity_C_zscores, type = "std") 
+#plot_model(pH_C_zscores, type = "std")
+#plot_model(NN_C_zscores, type = "std")
+#plot_model(Phos_C_zscores, type = "std")
+#plot_model(TA_C_zscores, type = "std")
 
 ###########
 ### Put it all on the same plot though for comparison
