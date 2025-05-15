@@ -44,7 +44,7 @@ require(effects)
 ```
 
 ### Loading Data
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE}
 RespoR_Normalized_Full_withNEC_nutrients <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
 ## full datasheet with GP, R, and C rates along with all env data 
 
@@ -61,6 +61,8 @@ MooreaAugust <- read_csv("https://raw.githubusercontent.com/njsilbiger/MooreaSGD
 MooreaAugust2 <- read_csv("https://raw.githubusercontent.com/njsilbiger/MooreaSGD_site-selection/main/Data/August2021/Allbiogeochemdata_QC2.csv")
 
 ```
+
+# Reviewed May 15th, 2025: 
 
 ### Plots for Gross Photosynthesis - Cabral: 
 -  Cabral is significant for silicate at linear (0.04) and nonlinear (0.02)
@@ -928,7 +930,7 @@ RespoR_Normalized_Full_withNEC_nutrients_calcifplot <- RespoR_Normalized_Full_wi
   select(!c("phosphate_umolL":"TA_initial", "salinity", "date")) %>%
   mutate(rate_category = ifelse(umol.cm2.hr > 0, "positive", "negative")) %>% 
   group_by(SGD_number, site) %>% 
-  summarize(positive_count = sum(rate_category == "positive"),
+  dplyr::summarize(positive_count = sum(rate_category == "positive"),
             negative_count = sum(rate_category == "negative"))
 
 RespoR_Normalized_Full_withNEC_nutrients_calcifplot2 <- RespoR_Normalized_Full_withNEC_nutrients_calcifplot %>% 
@@ -1118,7 +1120,7 @@ anova(model_GP_R_SGD_Cabral)
 ```
 
 
-# NEW UPDATES FROM JUNE 19TH MEETING WITH NYSSA: 
+# NEW UPDATES FROM JUNE 19TH (MEETING WITH NYSSA): 
 Three main figures for publication will include: 
 
 -  Figure 1: Experimental Design, showing methods and set up 
@@ -1141,61 +1143,61 @@ Three main figures for publication will include:
 ###################################
 
 ## data 
-corr_matrix_Varari <- RespoR_Normalized_Full_withNEC_nutrients %>% 
-  mutate(N_P = NN_umolL/phosphate_umolL) %>% 
-  filter(P_R=="R") %>% 
-  mutate("Salinity"=salinity, 
-         "TA" = TA_initial, 
-         "pH" = new_pH, 
-         "N+N" = NN_umolL, 
-         "Phosphate" = phosphate_umolL,
-         "Silicate" = silicate_umolL) %>% 
+#corr_matrix_Varari <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+ # mutate(N_P = NN_umolL/phosphate_umolL) %>% 
+ # filter(P_R=="R") %>% 
+ # mutate("Salinity"=salinity, 
+      #   "TA" = TA_initial, 
+      #   "pH" = new_pH, 
+      #   "N+N" = NN_umolL, 
+       #  "Phosphate" = phosphate_umolL,
+       #  "Silicate" = silicate_umolL) %>% 
          #"N+N:P" = N_P) %>% 
-  filter(site=="Varari") %>% 
-  select(!c("salinity", "silicate_umolL", "TA_initial", "new_pH", "N_P", "phosphate_umolL", "NN_umolL", "umol.cm2.hr", "SGD_number", "temp_C", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL")) 
+ # filter(site=="Varari") %>% 
+ # select(!c("salinity", "silicate_umolL", "TA_initial", "new_pH", "N_P", "phosphate_umolL", "NN_umolL", #"umol.cm2.hr", "SGD_number", "temp_C", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL")) 
 
 # Compute a correlation matrix
-corr_Varari <- round(cor(corr_matrix_Varari, 
-                         method="spearman"), 1)
+#corr_Varari <- round(cor(corr_matrix_Varari, 
+                  #       method="spearman"), 1)
 
 # Compute a matrix of correlation p-values
-p.mat_Varari <- cor_pmat(corr_Varari)
+#p.mat_Varari <- cor_pmat(corr_Varari)
 
 # Visualize the correlation matrix
-ggcorrplot(corr_Varari, method = "circle")
+#ggcorrplot(corr_Varari, method = "circle")
 
 # Reordering the correlation matrix using hierarchical clustering
-ggcorrplot(corr_Varari, hc.order = TRUE, outline.col = "white", method = "circle")
+#ggcorrplot(corr_Varari, hc.order = TRUE, outline.col = "white", method = "circle")
 
 # Types of correlogram layout - Get the lower triangle
-ggcorrplot(corr_Varari, hc.order = TRUE, type = "lower", outline.col = "white", method = "circle")
+#ggcorrplot(corr_Varari, hc.order = TRUE, type = "lower", outline.col = "white", method = "circle")
 
 # Change colors and theme
 # Argument colors
-Varari_corr_matrix_plot <- ggcorrplot(corr_Varari, 
-                                      hc.order = TRUE, ## reordering the correlation matrix with hierarchial clustering
-                                      type = "lower", ## correlogram layout - for the lower triangle
-                                      outline.col = "white",
-                                      # method = "circle", ## determines the shape
-                                      ggtheme = ggplot2::theme_classic, ## changes the theme 
-                                      colors = c("steelblue3", "white", "tomato3"), ## determines color scheme
-                                      sig.level = 0.05, ## default p-value
-                                      lab = TRUE, ## adds correlation coefficient
-                                      p.mat = p.mat_Varari, ## adds significance
+#Varari_corr_matrix_plot <- ggcorrplot(corr_Varari, 
+                                #      hc.order = TRUE, ## reordering the correlation matrix with hierarchial clustering
+                                  #    type = "lower", ## correlogram layout - for the lower triangle
+                                   #   outline.col = "white",
+                                   #   # method = "circle", ## determines the shape
+                                  #    ggtheme = ggplot2::theme_classic, ## changes the theme 
+                                  #    colors = c("steelblue3", "white", "tomato3"), ## determines color scheme
+                                   #   sig.level = 0.05, ## default p-value
+                                   #   lab = TRUE, ## adds correlation coefficient
+                                   #   p.mat = p.mat_Varari, ## adds significance
                                     #  insig = "blank", ## makes insig values blank
-                                      title = "Pearson Correlation Matrix for Environmental Parameters at Varari",
-                                      legend.title = "Correlation", 
-                                      tl.srt = 45, ## slant of x axis 
-                                      tl.cex = 15, ## size of text axes  
-                                      lab_size = 5)  + 
-  theme(plot.title = element_text(hjust = 0.5, size=15, face="bold"), 
-        legend.title = element_text(size = 10, face="bold"),
-        axis.text.x = element_text(size = 12, face="bold", color="black"),
-        axis.text.y = element_text(size = 12, face="bold", color="black"))
+                                    #  title = "Pearson Correlation Matrix for Environmental Parameters at Varari",
+                                #      legend.title = "Correlation", 
+                                 #     tl.srt = 45, ## slant of x axis 
+                                 #     tl.cex = 15, ## size of text axes  
+                                 #     lab_size = 5)  + 
+  #theme(plot.title = element_text(hjust = 0.5, size=15, face="bold"), 
+      #  legend.title = element_text(size = 10, face="bold"),
+      #  axis.text.x = element_text(size = 12, face="bold", color="black"),
+      #  axis.text.y = element_text(size = 12, face="bold", color="black"))
 
-Varari_corr_matrix_plot
-ggsave(here::here("Outputs", "Results", "REDO_VarariCorrelation.jpg"), 
-       width=10, height=7)
+#Varari_corr_matrix_plot
+#ggsave(here::here("Outputs", "Results", "REDO_VarariCorrelation.jpg"), 
+     #  width=10, height=7)
 
 
 ###################################
@@ -1203,58 +1205,58 @@ ggsave(here::here("Outputs", "Results", "REDO_VarariCorrelation.jpg"),
 ###################################
 
 ## data 
-corr_matrix_Cabral <- RespoR_Normalized_Full_withNEC_nutrients %>% 
-  mutate(N_P = NN_umolL/phosphate_umolL) %>% 
-  filter(P_R=="R") %>% 
-  mutate("Salinity"=salinity, 
-         "TA" = TA_initial, 
-         "pH" = new_pH, 
-         "N+N" = NN_umolL, 
-         "Phosphate" = phosphate_umolL,
-         "Silicate" = silicate_umolL) %>%  
+#corr_matrix_Cabral <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+ # mutate(N_P = NN_umolL/phosphate_umolL) %>% 
+ # filter(P_R=="R") %>% 
+#  mutate("Salinity"=salinity, 
+      #   "TA" = TA_initial, 
+      #   "pH" = new_pH, 
+       #  "N+N" = NN_umolL, 
+        #  "Phosphate" = phosphate_umolL,
+       #   "Silicate" = silicate_umolL) %>%  
         # "N:P" = N_P) %>% 
-  filter(site=="Cabral") %>% 
-  select(!c("salinity", "silicate_umolL", "TA_initial", "new_pH", "N_P", "phosphate_umolL", "NN_umolL", "umol.cm2.hr", "SGD_number", "temp_C", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL")) 
+ #  filter(site=="Cabral") %>% 
+ #  select(!c("salinity", "silicate_umolL", "TA_initial", "new_pH", "N_P", "phosphate_umolL", "NN_umolL", "umol.cm2.hr", # "SGD_number", "temp_C", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL")) 
 
 # Compute a correlation matrix
-corr_Cabral <- round(cor(corr_matrix_Cabral, 
-                         method="spearman"), 1)
+# corr_Cabral <- round(cor(corr_matrix_Cabral, 
+                  #        method="spearman"), 1)
 
 
 # Compute a matrix of correlation p-values
-p.mat_Cabral <- cor_pmat(corr_Cabral)
+# p.mat_Cabral <- cor_pmat(corr_Cabral)
 
 # Visualize the correlation matrix
-ggcorrplot(corr_Cabral, method = "circle")
-
+# ggcorrplot(corr_Cabral, method = "circle")
+# 
 # Change colors and theme
 # Argument colors
-Cabral_corr_matrix_plot <- ggcorrplot(corr_Cabral, 
-                                      hc.order = TRUE, ## reordering the correlation matrix with hierarchial clustering
-                                      type = "lower", ## correlogram layout - for the lower triangle
-                                      outline.col = "white",
+# Cabral_corr_matrix_plot <- ggcorrplot(corr_Cabral, 
+                                 #      hc.order = TRUE, ## reordering the correlation matrix with hierarchial clustering
+                                #       type = "lower", ## correlogram layout - for the lower triangle
+                                 #      outline.col = "white",
                                       # method = "circle", ## determines the shape
-                                      ggtheme = ggplot2::theme_classic, ## changes the theme 
-                                      colors = c("steelblue3", "white", "tomato3"), ## determines color scheme
+                                 #      ggtheme = ggplot2::theme_classic, ## changes the theme 
+                                 #      colors = c("steelblue3", "white", "tomato3"), ## determines color scheme
                                       #sig.level = 0.05, ## default p-value
-                                      lab = TRUE, ## adds correlation coefficient
-                                      p.mat = p.mat_Cabral, ## adds significance
+                                  #     lab = TRUE, ## adds correlation coefficient
+                                  #     p.mat = p.mat_Cabral, ## adds significance
                                     #  insig = "blank", ## makes insig values blank
-                                      title = "Pearson Correlation Matrix for Environmental Parameters at Cabral",
-                                      legend.title = "Correlation", 
-                                      tl.srt = 45, ## slant of x axis 
-                                      tl.cex = 15, ## size of text axes  
-                                      lab_size = 5)  + 
-  theme(plot.title = element_text(hjust = 0.5, size=15, face="bold"), 
-        legend.title = element_text(size = 10, face="bold"),
-        axis.text.x = element_text(size = 12, face="bold", color="black"),
-        axis.text.y = element_text(size = 12, face="bold", color="black")) + 
-  labs(x="Location", 
-       y = expression(Phosphate~(mu*mol~L^-1))) 
+                                  #     title = "Pearson Correlation Matrix for Environmental Parameters at Cabral",
+                                  #     legend.title = "Correlation", 
+                                  #     tl.srt = 45, ## slant of x axis 
+                                  #     tl.cex = 15, ## size of text axes  
+                                   #    lab_size = 5)  + 
+ #  theme(plot.title = element_text(hjust = 0.5, size=15, face="bold"), 
+ # #        legend.title = element_text(size = 10, face="bold"),
+      #   axis.text.x = element_text(size = 12, face="bold", color="black"),
+      #   axis.text.y = element_text(size = 12, face="bold", color="black")) + 
+ #  labs(x="Location", 
+   #     y = expression(Phosphate~(mu*mol~L^-1))) 
 
-Cabral_corr_matrix_plot
-ggsave(here::here("Outputs", "Results", "REDO_CabralCorrelation.jpg"), 
-       width=10, height=7)
+# Cabral_corr_matrix_plot
+# ggsave(here::here("Outputs", "Results", "REDO_CabralCorrelation.jpg"), 
+       # width=10, height=7)
 ```
 
 ##### Figure 2: ReVamp'd again (ignore these)
@@ -1267,10 +1269,10 @@ ggsave(here::here("Outputs", "Results", "REDO_CabralCorrelation.jpg"),
 ## data from above 
 
 # Compute a correlation matrix
-corr_Varari2 <- round(cor(corr_matrix_Varari), 1)
+# corr_Varari2 <- round(cor(corr_matrix_Varari), 1)
 
 # Compute a matrix of correlation p-values
-p.mat_Varari2 <- cor_pmat(corr_Varari2)
+# p.mat_Varari2 <- cor_pmat(corr_Varari2)
 
 # Specify the desired order of parameters
 #param_orderV <- c("Salinity", "TA", "pH", "N+N", "Phosphate", "Silicate") # Replace with your actual parameter names
@@ -1279,45 +1281,45 @@ p.mat_Varari2 <- cor_pmat(corr_Varari2)
 #corr_Varari <- corr_Varari[param_orderV, param_orderV]
 
 # Visualize the correlation matrix
-ggcorrplot(corr_Varari, method = "circle")
+# ggcorrplot(corr_Varari, method = "circle")
 
 
-Varari_corr_matrix_plot2 <- ggcorrplot(corr_Varari, 
+# Varari_corr_matrix_plot2 <- ggcorrplot(corr_Varari, 
                                      # hc.order = TRUE, ## reordering the correlation matrix with hierarchial clustering
-                                      type = "lower", ## correlogram layout - for the lower triangle
-                                      outline.col = "white",
+                                  #     type = "lower", ## correlogram layout - for the lower triangle
+                                  #     outline.col = "white",
                                       # method = "circle", ## determines the shape
-                                      ggtheme = ggplot2::theme_classic, ## changes the theme 
-                                      colors = c("steelblue3", "white", "tomato3"), ## determines color scheme
+                                  #     ggtheme = ggplot2::theme_classic, ## changes the theme 
+                                  #     colors = c("steelblue3", "white", "tomato3"), ## determines color scheme
                                       #sig.level = 0.05, ## default p-value
-                                      lab = TRUE, ## adds correlation coefficient
+                                  #     lab = TRUE, ## adds correlation coefficient
                                      #p.mat = p.mat_Varari, ## puts an X on the insignificant ones 
                                     #  insig = "pch", ## makes insig values blank
                                      #insig = label_sig, 
                                   #    title = "Pearson Correlation Matrix for Environmental Parameters at Varari",
-                                      legend.title = "Correlation", 
-                                      tl.srt = 45, ## slant of x axis 
-                                      tl.cex = 15, ## size of text axes  
-                                      lab_size = 5) +
+                                  #     legend.title = "Correlation", 
+                                  #     tl.srt = 45, ## slant of x axis 
+                                  # # #     tl.cex = 15, ## size of text axes  
+                                   #    lab_size = 5) +
   #labs(y="Varari") +
-  theme(legend.title = element_text(size = 10, face="bold"),
-        axis.text.x = element_text(size = 12, face="bold", color="black"),
-        axis.text.y = element_text(size = 12, face="bold", color="black"))
+ #  theme(legend.title = element_text(size = 10, face="bold"),
+   #      axis.text.x = element_text(size = 12, face="bold", color="black"),
+   #      axis.text.y = element_text(size = 12, face="bold", color="black"))
 
-Varari_corr_matrix_plot2
-ggsave(here::here("Outputs", "Results", "REDO_VarariCorrelation_extended.jpg"), 
-       width=10, height=7)
-
+# Varari_corr_matrix_plot2
+# ggsave(here::here("Outputs", "Results", "REDO_VarariCorrelation_extended.jpg"), 
+     #   width=10, height=7)
+# # 
 
 ###################################
 ## Cabral 
 ###################################
 
 # Compute a correlation matrix
-corr_Cabral2 <- round(cor(corr_matrix_Cabral), 1)
+# corr_Cabral2 <- round(cor(corr_matrix_Cabral), 1)
 
 # Compute a matrix of correlation p-values
-p.mat_Cabral2 <- cor_pmat(corr_Cabral2)
+# p.mat_Cabral2 <- cor_pmat(corr_Cabral2)
 
 # convert to long format so can add asterisk 
 #cor_long_Cabral <- melt(corr_Cabral2)
@@ -1327,42 +1329,42 @@ p.mat_Cabral2 <- cor_pmat(corr_Cabral2)
 #cor_long_Cabral$signif <- ifelse(p_long_Cabral$value < 0.05, "bold", "plain")
 
 # Specify the desired order of parameters
-param_orderC <- c("Salinity", "TA", "pH", "N+N", "Phosphate", "Silicate") # Replace with your actual parameter names
+# param_orderC <- c("Salinity", "TA", "pH", "N+N", "Phosphate", "Silicate") # Replace with your actual parameter names
 
 # Reorder the correlation matrix
-corr_Cabral2 <- corr_Cabral2[param_orderC, param_orderC]
+# corr_Cabral2 <- corr_Cabral2[param_orderC, param_orderC]
 
-ggcorrplot(corr_Cabral2, method = "circle")
+# ggcorrplot(corr_Cabral2, method = "circle")
 
 
 # Change colors and theme
 # Argument colors
-Cabral_corr_matrix_plot2 <- ggcorrplot(corr_Cabral2, 
+# Cabral_corr_matrix_plot2 <- ggcorrplot(corr_Cabral2, 
                                      # hc.order = TRUE, ## reordering the correlation matrix with hierarchial clustering
-                                      type = "lower", ## correlogram layout - for the lower triangle
-                                      outline.col = "white",
+                                     #  type = "lower", ## correlogram layout - for the lower triangle
+                                     #  outline.col = "white",
                                       # method = "circle", ## determines the shape
-                                      ggtheme = ggplot2::theme_classic, ## changes the theme 
-                                      colors = c("steelblue3", "white", "tomato3"), ## determines color scheme
+                                    #   ggtheme = ggplot2::theme_classic, ## changes the theme 
+                                  #     colors = c("steelblue3", "white", "tomato3"), ## determines color scheme
                                       #sig.level = 0.05, ## default p-value
-                                      lab = TRUE, ## adds correlation coefficient
+                             #         lab = TRUE, ## adds correlation coefficient
                                      # p.mat = p.mat_Cabral2, ## adds significance
                                       #insig = "blank", ## makes insig values blank
                                      # title = "Pearson Correlation Matrix for Environmental Parameters at Cabral",
-                                      legend.title = "Correlation", 
-                                      tl.srt = 45, ## slant of x axis 
-                                      tl.cex = 15, ## size of text axes  
-                                      lab_size = 5)  + 
-  theme(plot.title = element_text(hjust = 0.5, size=15, face="bold"), 
-        legend.title = element_text(size = 10, face="bold"),
-        axis.text.x = element_text(size = 12, face="bold", color="black"),
-        axis.text.y = element_text(size = 12, face="bold", color="black")) #+ 
+                                   #    legend.title = "Correlation", 
+                                   #    tl.srt = 45, ## slant of x axis 
+                                    #   tl.cex = 15, ## size of text axes  
+                                    #   lab_size = 5)  + 
+  # theme(plot.title = element_text(hjust = 0.5, size=15, face="bold"), 
+       #  legend.title = element_text(size = 10, face="bold"),
+       #  axis.text.x = element_text(size = 12, face="bold", color="black"),
+       #  axis.text.y = element_text(size = 12, face="bold", color="black")) #+ 
   #geom_text(data = cor_long_Cabral, aes(x = Var1, y = Var2, label = signif), color = "black", size = 5, inherit.aes = FALSE)
 
 
-Cabral_corr_matrix_plot2
-ggsave(here::here("Outputs", "Results", "REDO_CabralCorrelation_extended.jpg"), 
-       width=10, height=7)
+# Cabral_corr_matrix_plot2
+# ggsave(here::here("Outputs", "Results", "REDO_CabralCorrelation_extended.jpg"), 
+      #  width=10, height=7)
 
 
 ########################### 
@@ -1370,18 +1372,18 @@ ggsave(here::here("Outputs", "Results", "REDO_CabralCorrelation_extended.jpg"),
 ###########################
 
 #### remove x-axis labels 
-p_Ccorr <- Cabral_corr_matrix_plot2 
-p_Vcorr <- Varari_corr_matrix_plot2 
+# p_Ccorr <- Cabral_corr_matrix_plot2 
+# p_Vcorr <- Varari_corr_matrix_plot2 
  
-combined_corr_plot <- p_Ccorr/p_Vcorr + plot_layout(guides = 'collect')
+# combined_corr_plot <- p_Ccorr/p_Vcorr + plot_layout(guides = 'collect')
 
-combined_corr_plot + 
-  plot_annotation(tag_levels = 'A') &
-  theme(plot.margin = unit(c(1, 1, 1, 1), "cm"), 
-        plot.tag = element_text(size = 18, face = "bold"))
+# combined_corr_plot + 
+#   plot_annotation(tag_levels = 'A') &
+#   theme(plot.margin = unit(c(1, 1, 1, 1), "cm"), 
+ #        plot.tag = element_text(size = 18, face = "bold"))
 
-ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"), 
-       width=12, height=15)
+# ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"), 
+     #   width=12, height=15)
 ```
 
 ### Figure 2a: correlation matrix ONLY with silicate AND spearman correlation - THIS IS THE ONE TO USE
@@ -1836,7 +1838,7 @@ ggsave(here::here("Outputs", "Results", "Final", "rawGW_barplots.jpg"),
 ##########################
 background_site_plots <- RespoR_Normalized_Full_withNEC_nutrients %>% 
  # mutate(N_P = NN_umolL/phosphate_umolL) %>% 
-  filter(P_R=="R") %>% 
+  filter(P_R=="C") %>% 
   mutate("Salinity"=salinity, 
          "TA" = TA_initial, 
          "pH" = new_pH, 
@@ -2167,8 +2169,8 @@ anova(R_silicate_nonlinearmodel2)
 summary(R_silicate_nonlinearmodel2)
 check_model(R_silicate_nonlinearmodel2)
 
-AIC(R_silicate_nonlinearmodel)
-r.squaredGLMM(R_silicate_nonlinearmodel)
+AIC(R_silicate_nonlinearmodel2)
+r.squaredGLMM(R_silicate_nonlinearmodel2)
 
 
 ### linear model 
@@ -2182,8 +2184,8 @@ R_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + (1|ne
                                             filter(!is.infinite(umol.cm2.hr)))
 anova(R_bothsites_silicate_linearmodel)
 
-summary(R_silicate_linearmodel)
-AIC(R_silicate_linearmodel)
+summary(R_bothsites_silicate_linearmodel)
+AIC(R_bothsites_silicate_linearmodel)
 
 ########################
 ## GP
@@ -2205,9 +2207,9 @@ r.squaredGLMM(GP_silicate_nonlinearmodel)
  # filter(P_R=="GP") %>% 
   #filter(!is.infinite(umol.cm2.hr)))
 
-anova(GP_silicate_linearmodel)
-summary(GP_silicate_linearmodel)
-AIC(GP_silicate_linearmodel)
+#anova(GP_silicate_linearmodel)
+#summary(GP_silicate_linearmodel)
+#AIC(GP_silicate_linearmodel)
 
 ########################
 ## Calcification 
@@ -2218,9 +2220,9 @@ AIC(GP_silicate_linearmodel)
 #  filter(P_R=="C") %>% 
 #  filter(!is.infinite(umol.cm2.hr)))
 
-anova(C_Varari_silicate_nonlinearmodel)
-summary(C_Varari_silicate_nonlinearmodel)
-AIC(C_Varari_silicate_nonlinearmodel)
+#anova(C_Varari_silicate_nonlinearmodel)
+#summary(C_Varari_silicate_nonlinearmodel)
+#AIC(C_Varari_silicate_nonlinearmodel)
 
 ### linear model 
 C_silicate_linearmodel <- lmer(umol.cm2.hr ~ log_silicate*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>% 
@@ -2264,7 +2266,7 @@ summary(modeltest_GP)
 
 
 
-### FINAL PLOTS BASED ON MODELS: RESPIRATION
+###  PLOTS BASED ON MODELS: RESPIRATION
 ```{r}
 ###################
 ### R 
@@ -2335,7 +2337,7 @@ Rplot
 
 ```
 
-### FINAL PLOTS BASED ON MODELS: PHOTOSYNTHESIS
+###  PLOTS BASED ON MODELS: PHOTOSYNTHESIS
 
 ```{r}
 
@@ -2397,7 +2399,7 @@ GPplot
 ```
 
 
-### FINAL PLOTS BASED ON MODELS: CALCIFICATION
+###  PLOTS BASED ON MODELS: CALCIFICATION
 
 ```{r}
 C_silicate2 <- RespoR_Normalized_Full_withNEC_nutrients %>% 
@@ -2470,6 +2472,7 @@ ggsave(here::here("Outputs", "Results", "Final", "CombinedRates.jpg"),
 
 ### Plots using pred() function 
 -  as of August 2024, still need to figure out how to do properly 
+-  as of May 15th, 2025, ignore because did not use in paper 
 ```{r}
 #####################################
 ## New attempt: July 29th, 2024
@@ -2501,7 +2504,7 @@ new_data <- expand.grid(
   new_colonynumber = unique(RespoR_Normalized_Full_withNEC_nutrients_Conly_sorted$new_colonynumber))
 
 # Predict values using the model
-new_data$predicted <- predict(C_bothsites_silicate_linearmodel, newdata = new_data, re.form = NA)
+#new_data$predicted <- predict(C_bothsites_silicate_linearmodel, newdata = new_data, re.form = NA)
 
 riley_pred_plot <- new_data %>% 
   ggplot(aes(x = silicate_umolL, 
@@ -2519,7 +2522,7 @@ riley_pred_plot <- new_data %>%
   theme_minimal() +
   theme(legend.title = element_text(face = "bold"))
 
-riley_pred_plot
+#riley_pred_plot
 
 ###############################
 ## tidyverse code
@@ -2572,11 +2575,11 @@ ActualvsPredicted_Nutrients_edit_Phosphate <- ActualvsPredicted_Nutrients %>%
 #### averaging the values across days per SGD dil to get just one value 
 ActualvsPredicted_Nutrients_edit_Nitrate_averaged <- ActualvsPredicted_Nutrients_edit_Nitrate %>% 
   group_by(SGD_number, Site, Parameter, Value_Type) %>% 
-  summarize(meanN = mean(Value))
+  dplyr::summarize(meanN = mean(Value))
 
 ActualvsPredicted_Nutrients_edit_Phosphate_averaged <- ActualvsPredicted_Nutrients_edit_Phosphate %>% 
   group_by(SGD_number, Site, Value_Type) %>% 
-  summarize(meanN = mean(Value))
+  dplyr::summarize(meanN = mean(Value))
   
 #########################
 ## nitrate 
@@ -2859,56 +2862,56 @@ ggsave(here::here("Outputs", "Results", "C_silicate_ECRS.jpg"),
 -  not really using and not commented but saving as back up 
 ```{r}
 
-RespoR_Normalized_Full_withNEC_nutrients_Cabral_GP <- RespoR_Normalized_Full_withNEC_nutrients %>% 
-  filter(site=="Cabral") %>% 
-  filter(P_R=="C") %>% 
-  filter(!is.infinite(umol.cm2.hr))
+#RespoR_Normalized_Full_withNEC_nutrients_Cabral_GP <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+#  filter(site=="Cabral") %>% 
+ # filter(P_R=="C") %>% 
+#  filter(!is.infinite(umol.cm2.hr))
 
-min(RespoR_Normalized_Full_withNEC_nutrients_Cabral_GP$umol.cm2.hr)
-max(RespoR_Normalized_Full_withNEC_nutrients_Cabral_GP$umol.cm2.hr)
-
-
+#min(RespoR_Normalized_Full_withNEC_nutrients_Cabral_GP$umol.cm2.hr)
+#max(RespoR_Normalized_Full_withNEC_nutrients_Cabral_GP$umol.cm2.hr)
 
 
-RespoR_Normalized_Full_withNEC_nutrients_Varari_GP <- RespoR_Normalized_Full_withNEC_nutrients %>% 
-  filter(site=="Varari") %>% 
-   filter(P_R=="C") %>% 
-  filter(!is.infinite(umol.cm2.hr))
 
-min(RespoR_Normalized_Full_withNEC_nutrients_Varari_GP$umol.cm2.hr)
-max(RespoR_Normalized_Full_withNEC_nutrients_Varari_GP$umol.cm2.hr)
+
+#RespoR_Normalized_Full_withNEC_nutrients_Varari_GP <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+ # filter(site=="Varari") %>% 
+ #  filter(P_R=="C") %>% 
+ # filter(!is.infinite(umol.cm2.hr))
+
+#min(RespoR_Normalized_Full_withNEC_nutrients_Varari_GP$umol.cm2.hr)
+#max(RespoR_Normalized_Full_withNEC_nutrients_Varari_GP$umol.cm2.hr)
 
 
 ### plot 
 
- C_silicate_edit <- RespoR_Normalized_Full_withNEC_nutrients %>% 
-  filter(P_R=="C") %>% 
-  filter(!is.infinite(umol.cm2.hr)) %>% 
-  ggplot(aes(x=silicate_umolL, 
-             y=umol.cm2.hr)) + 
-  geom_point(size=4, aes(color=site)) +
-  scale_color_manual(values=pnw_palette("Bay", n=2)) +
-  theme_classic() + 
-  coord_trans(x ="log") +
-  geom_abline(slope = -0.02219, intercept = 0.15352, color = "black") +
+ #C_silicate_edit <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  #filter(P_R=="C") %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+  #ggplot(aes(x=silicate_umolL, 
+          #   y=umol.cm2.hr)) + 
+ # geom_point(size=4, aes(color=site)) +
+ # scale_color_manual(values=pnw_palette("Bay", n=2)) +
+  #theme_classic() + 
+  #coord_trans(x ="log") +
+  #geom_abline(slope = -0.02219, intercept = 0.15352, color = "black") +
  # geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper), alpha = 0.2)
   #geom_smooth(data = RespoR_Normalized_Full_withNEC_nutrients %>% 
               #  filter(P_R == "C", site == "Varari", !is.infinite(umol.cm2.hr)), 
             #  aes(x = silicate_umolL, y = umol.cm2.hr), 
              # method = "lm", formula = y ~ log(x), color = "red3") 
-  labs(x = "logged Silicate (umolL)",
-       y = "Rate (umol CaCO3 g-1 hr-1)",
-       title = "Calcification Rates as a Function of Silicate",
-       color = "Site") +
-   theme(axis.text.x=element_text(size=18), 
-        axis.text.y=element_text(size=18), 
-        axis.title.x=element_text(size=20),
-        axis.title.y=element_text(size=20),
-        legend.title = element_text(size=18), 
-        legend.text = element_text(size=18), 
-        plot.title=element_text(hjust=0.5, ## centers title 
-                                size=20))
-C_silicate_edit
+ # labs(x = "logged Silicate (umolL)",
+ #      y = "Rate (umol CaCO3 g-1 hr-1)",
+     #  title = "Calcification Rates as a Function of Silicate",
+    #   color = "Site") +
+  # theme(axis.text.x=element_text(size=18), 
+      #  axis.text.y=element_text(size=18), 
+     #   axis.title.x=element_text(size=20),
+     #   axis.title.y=element_text(size=20),
+     ##   legend.title = element_text(size=18), 
+      #  legend.text = element_text(size=18), 
+      #  plot.title=element_text(hjust=0.5, ## centers title 
+                  #              size=20))
+#C_silicate_edit
 
 
 
@@ -2922,48 +2925,48 @@ C_silicate_edit
 ###############################
 
 ### mixed model 
-C_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
-                                            filter(P_R=="C") %>% 
-                                            filter(!is.infinite(umol.cm2.hr)))
+#C_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients %>%
+                                         #   filter(P_R=="C") %>% 
+                                          #  filter(!is.infinite(umol.cm2.hr)))
 
-C_silicate2 <- RespoR_Normalized_Full_withNEC_nutrients %>%
-  filter(P_R=="C") %>% 
-  filter(!is.infinite(umol.cm2.hr)) %>% 
-  mutate(fit.m = predict(C_bothsites_silicate_linearmodel),
-         fit.c = predict(C_bothsites_silicate_linearmodel)) #+ 
+#C_silicate2 <- RespoR_Normalized_Full_withNEC_nutrients %>%
+ # filter(P_R=="C") %>% 
+ # filter(!is.infinite(umol.cm2.hr)) %>% 
+ # mutate(fit.m = predict(C_bothsites_silicate_linearmodel),
+        # fit.c = predict(C_bothsites_silicate_linearmodel)) #+ 
  # mutate(resid = resid(C_bothsites_silicate_linearmodel)) ### getting an error here
 
 
-C_silicate2.1 <- C_silicate2 %>% 
-  ggplot(aes(x=silicate_umolL, 
-             y=umol.cm2.hr)) + 
-  geom_point(pch = 16, col = "grey") +
- geom_line(aes(y = fit.c), col = 1, size = 2) 
+#C_silicate2.1 <- C_silicate2 %>% 
+ # ggplot(aes(x=silicate_umolL, 
+ #            y=umol.cm2.hr)) + 
+#  geom_point(pch = 16, col = "grey") +
+ #geom_line(aes(y = fit.c), col = 1, size = 2) 
   
-C_silicate2.1  
+##C_silicate2.1  
   
-  geom_point(size=4, aes(color=site)) +
-  scale_color_manual(values=pnw_palette("Bay", n=2)) +
-  theme_bw() + 
-  coord_trans(x ="log") +
-  theme(strip.background = element_rect(fill = "white")) +
+ # geom_point(size=4, aes(color=site)) +
+ # scale_color_manual(values=pnw_palette("Bay", n=2)) +
+  #theme_bw() + 
+ # coord_trans(x ="log") +
+ # theme(strip.background = element_rect(fill = "white")) +
 #  geom_hline(yintercept = 0) +
-  geom_line(aes(y = fit.c), col = 1, size = 2) +
+ # geom_line(aes(y = fit.c), col = 1, size = 2) +
 #  coord_cartesian(ylim = c(-40, 100)) +
   #geom_smooth(method="lm", formula = "y~log(x)", color="black") +
-  labs(x = "logged Silicate (umolL)",
-       y = "Rate (umol O2 cm2 hr-1)",
-       title = "Calcification Rates as a Function of Silicate",
-       color = "Site") +
-   theme(axis.text.x=element_text(size=18), 
-        axis.text.y=element_text(size=18), 
-        axis.title.x=element_text(size=18),
-        axis.title.y=element_text(size=18), 
-        plot.title=element_text(hjust=0.5, ## centers title 
-                                size=20))
-C_silicate2.1
+#  labs(x = "logged Silicate (umolL)",
+  #     y = "Rate (umol O2 cm2 hr-1)",
+   #    title = "Calcification Rates as a Function of Silicate",
+   #    color = "Site") +
+ #  theme(axis.text.x=element_text(size=18), 
+     #   axis.text.y=element_text(size=18), 
+     #   axis.title.x=element_text(size=18),
+    #    axis.title.y=element_text(size=18), 
+    #    plot.title=element_text(hjust=0.5, ## centers title 
+                          #      size=20))
+#C_silicate2.1#
 
-ggsave(here::here("Outputs", "Results", "C_silicate.jpg"))
+#ggsave(here::here("Outputs", "Results", "C_silicate.jpg"))
 
 
 
@@ -2971,95 +2974,95 @@ ggsave(here::here("Outputs", "Results", "C_silicate.jpg"))
 ###############################
 ## for Calcification 
 ###############################
-RespoR_Normalized_Full_withNEC_nutrients2<- RespoR_Normalized_Full_withNEC_nutrients %>%
-  filter(P_R=="C") %>% 
-  filter(!is.infinite(umol.cm2.hr)) %>% 
-  arrange(RespoR_Normalized_Full_withNEC_nutrients2$umol.cm2.hr) 
+#RespoR_Normalized_Full_withNEC_nutrients2<- RespoR_Normalized_Full_withNEC_nutrients %>%
+  #filter(P_R=="C") %>% 
+#  filter(!is.infinite(umol.cm2.hr)) %>% 
+#  arrange(RespoR_Normalized_Full_withNEC_nutrients2$umol.cm2.hr) 
 
-C_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients2)
+#C_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL)*site + (1|new_colonynumber), #data=RespoR_Normalized_Full_withNEC_nutrients2)
 
 ### ^^ look for slope and intercept 
-summary(C_bothsites_silicate_linearmodel)
+#summary(C_bothsites_silicate_linearmodel)
 
 
 ### use predict function to get info for confidence intervals - use cbind to create a new df and use that 
 
-predC <- predict(C_bothsites_silicate_linearmodel) # Gets the predicted values from the regression lines in the ANOVA
+#predC <- predict(C_bothsites_silicate_linearmodel) # Gets the predicted values from the regression lines in the ANOVA
 
-graphdata_C <- cbind(RespoR_Normalized_Full_withNEC_nutrients2, predC) # attaches those predictions to the dataset
+#graphdata_C <- cbind(RespoR_Normalized_Full_withNEC_nutrients2, predC) # attaches those predictions to the dataset
 
-graphdata_C <- graphdata_C %>% 
-  arrange(graphdata_C$silicate_umolL)
+#graphdata_C <- graphdata_C %>% 
+  #arrange(graphdata_C$silicate_umolL)
 
 
 # We'll plot the original data as points, and the regression predictions as lines 
-C_silicate_pred <- new_data %>% 
-  ggplot(aes(x=silicate_umolL, 
-             y=umol.cm2.hr, 
-             color=site)) +
-  geom_point(size=4) + 
+#C_silicate_pred <- new_data %>% 
+ # ggplot(aes(x=silicate_umolL, 
+    #         y=umol.cm2.hr, 
+       #      color=site)) +
+ # geom_point(size=4) + 
  # geom_line(aes(y=(predC))) +
-  geom_line(data = new_data, aes(x = log(silicate_umolL), y = predictions, color = site)) +
-  scale_color_manual(values=pnw_palette("Bay", n=2)) +
-  theme_classic() + 
-  coord_trans(x ="log") +
-  labs(x = "logged Silicate (umolL)",
-       y = "Rate (umol CaCO3 g-1 hr-1)",
-       title = "Calcification Rates as a Function of Silicate",
-       color = "Site") +
-   theme(axis.text.x=element_text(size=18), 
-        axis.text.y=element_text(size=18), 
-        axis.title.x=element_text(size=20),
-        axis.title.y=element_text(size=20),
-        legend.title = element_text(size=18), 
-        legend.text = element_text(size=18), 
-        plot.title=element_text(hjust=0.5, ## centers title 
-                                size=20))
-C_silicate_pred
+#  geom_line(data = new_data, aes(x = log(silicate_umolL), y = predictions, color = site)) +
+#  scale_color_manual(values=pnw_palette("Bay", n=2)) +
+#  theme_classic() + 
+#  coord_trans(x ="log") +
+#  labs(x = "logged Silicate (umolL)",
+    #   y = "Rate (umol CaCO3 g-1 hr-1)",
+    #   title = "Calcification Rates as a Function of Silicate",
+    #   color = "Site") +
+ #  theme(axis.text.x=element_text(size=18), 
+    #    axis.text.y=element_text(size=18), 
+    #    axis.title.x=element_text(size=20),
+    #    axis.title.y=element_text(size=20),
+    #    legend.title = element_text(size=18), 
+    #    legend.text = element_text(size=18), 
+     #   plot.title=element_text(hjust=0.5, ## centers title 
+                           #     size=20))
+#C_silicate_pred
 
 
 ###############################
 ## for Gross Photosynthesis  
 ###############################
-RespoR_Normalized_Full_withNEC_nutrients3 <- RespoR_Normalized_Full_withNEC_nutrients %>% 
-   filter(P_R=="GP") %>% 
-  filter(!is.infinite(umol.cm2.hr))
+#RespoR_Normalized_Full_withNEC_nutrients3 <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+ # # filter(P_R=="GP") %>% 
+ # filter(!is.infinite(umol.cm2.hr))
 
-GP_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL)*site + (1|new_colonynumber), data=RespoR_Normalized_Full_withNEC_nutrients3)
+#GP_bothsites_silicate_linearmodel <- lmer(umol.cm2.hr ~ log(silicate_umolL)*site + (1|new_colonynumber), #data=RespoR_Normalized_Full_withNEC_nutrients3)
 
 ### ^^ look for slope and intercept 
-summary(GP_bothsites_silicate_linearmodel)
+#summary(GP_bothsites_silicate_linearmodel)
 
 ############################
 ### attemot 1 -- something is off with the pred function, this is for a simpler model, mine is too complex 
 ############################
 
-Cpred <- predict(C_bothsites_silicate_linearmodel)
+#Cpred <- predict(C_bothsites_silicate_linearmodel)
 
-graph_Cpred_data <- cbind(RespoR_Normalized_Full_withNEC_nutrients_Conly_sorted, Cpred) 
+#graph_Cpred_data <- cbind(RespoR_Normalized_Full_withNEC_nutrients_Conly_sorted, Cpred) 
 
-Cpred_plot <- ggplot(data=graph_Cpred_data,
-       aes(x=log(silicate_umolL), 
-           y=umol.cm2.hr, 
-           color=site)) +
-  geom_point(size=4) + 
-  geom_line(aes(y=Cpred)) +
-  labs(x="silicate_umolL", y="umol.cm2.hr", fill="site") +
-  theme_bw() 
+#Cpred_plot <- ggplot(data=graph_Cpred_data,
+    #   aes(x=log(silicate_umolL), 
+     #      y=umol.cm2.hr, 
+     #      color=site)) +
+ # geom_point(size=4) + 
+ # geom_line(aes(y=Cpred)) +
+ # labs(x="silicate_umolL", y="umol.cm2.hr", fill="site") +
+ # theme_bw() 
 
-Cpred_plot
+#Cpred_plot
 
-Cpred_plot2 <- ggplot(data=graph_Cpred_data,
-       aes(x=log(silicate_umolL), 
-           y=Cpred, 
-           color=site)) +
-  geom_point(size=4) + 
-  geom_line(aes(y=Cpred)) +
-  labs(x="silicate_umolL", y="Cpred", fill="site") +
-  theme_bw() 
+#Cpred_plot2 <- ggplot(data=graph_Cpred_data,
+#       aes(x=log(silicate_umolL), 
+ #          y=Cpred, 
+ #          color=site)) +
+#  geom_point(size=4) + 
+#  geom_line(aes(y=Cpred)) +
+ # labs(x="silicate_umolL", y="Cpred", fill="site") +
+ # theme_bw() 
 
 
-Cpred_plot2
+#Cpred_plot2
 
 
 
@@ -3069,25 +3072,25 @@ Cpred_plot2
 ###########################
 ## get basic correlations with p-values 
 ##########################
-res.cor.Varari <- correlate(corr_matrix_Varari, method = "spearman", diagonal = 1)
+#res.cor.Varari <- correlate(corr_matrix_Varari, method = "spearman", diagonal = 1)
 
 ###########################
 ## edit correlation matrix and plot 
 ##########################
-res.cor.Varari %>% 
-  rearrange(method = "MDS", absolute = FALSE) %>% 
-  shave(upper=TRUE) %>% 
-  filter(!Salinity = 1) %>% 
-  rplot() ## make correlologram 
+#res.cor.Varari %>% 
+  #rearrange(method = "MDS", absolute = FALSE) %>% 
+ # shave(upper=TRUE) %>% 
+ # filter(!Salinity = 1) %>% 
+ # rplot() ## make correlologram 
   
 
 ###########################
-res.cor.Varari %>% 
-  filter(!"Salinity" = 1)
+#res.cor.Varari %>% 
+  #filter(!"Salinity" = 1)
 
 
-  rearrange(method = "MDS", absolute = FALSE) %>% 
-  shave(upper=TRUE) %>% 
+ # rearrange(method = "MDS", absolute = FALSE) %>% 
+ # shave(upper=TRUE) %>% 
   
 ##########################
 
@@ -3449,24 +3452,8 @@ ggsave(here::here("Outputs", "Results", "Cabral_correlation_matrix.jpg"),
 Essentially found that the predicted values were too low to be useful for 
 
 
-
-## silicate vs blanks 
-```{r}
-
-silicate_blanks <- blanks_deltaTA %>% 
-  filter(Sample_Collection!="Initial") %>% 
-  ggplot(aes(x=as.numeric(SGD_number+1), 
-             y=delta_TA_blank, 
-             color=date)) + 
-  geom_point() + 
-  facet_wrap(date~site) + 
-  coord_trans(x="log")
-
-silicate_blanks
-
-```
-
 ### take average of Varari Days 2-4 to fill in for ambient day 1 
+-  Did not end up doing, May 15th, 2025 
 ```{r}
 
 C_only <- RespoR_Normalized_Full_withNEC_nutrients %>%

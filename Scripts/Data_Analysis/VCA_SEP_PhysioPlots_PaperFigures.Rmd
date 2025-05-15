@@ -17,11 +17,11 @@ knitr::opts_chunk$set(echo = TRUE)
 -  **Figure 2:** Results of raw groundwater samples between Cabral and Varari compared to ambient seawater for six parameters (salinity, pH, temperature, TA, nitrates, phosphates, and silicate) - (see script: "ThesisDefense_RawGW_SW_plots" for code)
 -  **Figure 3:** Results for respiration, photosynthesis, and calcification along with standardized effect plot (see below)
 -  **Figure 4:** Variance Component Analysis plot showing percent of variance explained by random effects for R, GP, and C (see below)
--  **Supplementary Figure 1:** Correlation matrix showing differences between correlation of silicate to other parameters at Cabral vs Varari (see script: "Plots_Based_on_Model_Selection" for code, line 1389)
+-  **Supplementary Figure 1:** Correlation matrix showing differences between correlation of silicate to other parameters at Cabral vs Varari (see script: "Plots_Based_on_Model_Selection" for code (found in PhysioRates_Plots folder), line 1389)
 -  **Supplementary Figure 2:** Stacked bar plot showing the dissolution of fragments at Cabral vs Varari for calcification (see script: "Plots_Based_on_Model_Selection" for code, line 916) 
 
 ### Load libraries
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE}
 library(here)
 library(tidyverse) 
 library(lme4)
@@ -596,13 +596,14 @@ lme4::ranef(modeltest_C,condVar = TRUE)
 ```
 
 ## Bring three plots together 
--  uncommented because does not knit otherwise
+-  commented because does not knit otherwise
+-  on 5/14/2025, some R Studio update no longer works with code below... need to use "ggplot_add()" function? 
 ```{r}
-combined_plots <- (Rplot + GPplot)/(Cplot + standardized_effects)
+#combined_plots <- (Rplot + GPplot)/(Cplot + standardized_effects)
 
-combined_plots
-ggsave(here::here("Outputs", "PaperFigures", "Figure2_Physio_SEP.jpg"), 
-       width=13, height=10)
+#combined_plots
+#ggsave(here::here("Outputs", "PaperFigures", "Figure2_Physio_SEP.jpg"), 
+     #  width=13, height=10)
 ```
 
 
