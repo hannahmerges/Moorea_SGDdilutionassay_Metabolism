@@ -30,26 +30,11 @@ AmbSW <- MooreaMarch_full %>%
 
 max(AmbSW$TA, na.rm=TRUE)
 min(AmbSW$TA, na.rm=TRUE)
-mean(AmbSW$TA, na.rm=TRUE)
-sd(AmbSW$TA) / sqrt(length(AmbSW$TA))
 
-max(AmbSW$NN_umolL, na.rm=TRUE)
-min(AmbSW$NN_umolL, na.rm=TRUE)
-mean(AmbSW$NN_umolL, na.rm=TRUE)
-sd(AmbSW$NN_umolL) / sqrt(length(AmbSW$NN_umolL))
 
-max(AmbSW$pH, na.rm=TRUE)
-min(AmbSW$pH, na.rm=TRUE)
-mean(AmbSW$pH, na.rm=TRUE)
-sd(AmbSW$pH) / sqrt(length(AmbSW$pH))
 
-max(AmbSW$Phosphate_umolL, na.rm=TRUE)
-min(AmbSW$Phosphate_umolL, na.rm=TRUE)
-mean(AmbSW$Phosphate_umolL, na.rm=TRUE)
 
-max(AmbSW$Silicate_umolL, na.rm=TRUE)
-min(AmbSW$Silicate_umolL, na.rm=TRUE)
-mean(AmbSW$Silicate_umolL, na.rm=TRUE)
+
 
 ###
 ###
@@ -60,6 +45,8 @@ Varari_March <- MooreaMarch_full %>%
 
 V_August <- MooreaAugust2 %>% 
   filter(Location=="Varari") 
+
+
 
 ### 
 max(Varari_March$TA, na.rm=TRUE)
@@ -73,8 +60,31 @@ mean(Varari_March$NN_umolL, na.rm=TRUE)
 max(Varari_March$pH, na.rm=TRUE)
 min(Varari_March$pH, na.rm=TRUE)
 mean(Varari_March$pH, na.rm=TRUE)
-#
-max(V_August$NN_umolL, na.rm=TRUE)
+
+
+SiteData_MinMaxMean <- tribble(~Site, ~Parameter, ~Min, ~Max,
+                               "Varari", "pH", "7.73", "NA", 
+                               "Cabral", "pH", "6.89", "NA",
+                               "Offshore", "pH", "7.92", "8.08", 
+                               "Varari", "salinity (psu)", "", "NA", 
+                               "Cabral", "salinity (psu)", "", "NA", 
+                               "Offshore", "salinity (psu)", "36.29", "36.7", 
+                               "Varari", "Nitrates (umol/L)", "279.15", "NA", 
+                               "Cabral", "Nitrates (umol/L)", "18.24", "NA", 
+                               "Offshore", "Nitrates (umol/L)","0.23", "0.58", 
+                               "Varari", "TA (umol/kg-1)", "5393.3", "NA", 
+                               "Cabral", "TA (umol/kg-1)", "1755.18", "NA", 
+                               "Offshore", "TA (umol/kg-1)", "2342.51", "2386.84", 
+                               "Varari", "Silicate (umol/L)", "", "NA", 
+                               "Cabral", "Silicate (umol/L)", "", "NA", 
+                               "Offshore", "Silicate (umol/L)", "0.85", "3.68") %>% 
+  mutate(Site= as.factor(Site)) %>% 
+  pivot_longer(cols = c(Min:Max), names_to = "type", values_to = "value")
+
+
+
+
+
 max(V_August$TA, na.rm=TRUE)
 max(V_August$pH, na.rm=TRUE)
 min(V_August$pH, na.rm=TRUE)
@@ -162,16 +172,18 @@ NNgraph
 ############################## 
 ### plots for CSUNposium 
 ###############################
+
+
 sitecomparison_maxdata <- tribble(~Site, ~Parameter, ~Value, 
-        "Varari", "pH", "7.73", 
-        "Cabral", "pH", "6.89", 
-        "Offshore", "pH", "7.9", 
-        "Varari", "Nitrates (umol/L)", "279.15", 
-        "Cabral", "Nitrates (umol/L)", "18.24", 
-        "Offshore", "Nitrates (umol/L)", "0.58", 
-        "Varari", "TA (umol/kg-1)", "5393.3", 
-        "Cabral", "TA (umol/kg-1)", "1755.18", 
-        "Offshore", "TA (umol/kg-1)", "2386.84") %>% 
+                                  "Varari", "pH", "7.73", 
+                                  "Cabral", "pH", "6.89", 
+                                  "Offshore", "pH", "7.9", 
+                                  "Varari", "Nitrates (umol/L)", "279.15", 
+                                  "Cabral", "Nitrates (umol/L)", "18.24", 
+                                  "Offshore", "Nitrates (umol/L)", "0.58", 
+                                  "Varari", "TA (umol/kg-1)", "5393.3", 
+                                  "Cabral", "TA (umol/kg-1)", "1755.18", 
+                                  "Offshore", "TA (umol/kg-1)", "2386.84") %>% 
   mutate(Site= as.factor(Site))
 
 ## nitrates 
@@ -240,6 +252,26 @@ SiteComparisons_TA
 ############################## 
 ### df for thesis defense plots 
 ###############################
+
+AllChemData_August2 <- AllChemData_August %>% 
+  select(!c("Top_Plate_ID":"Plate_Seep", "Time", "DateTime", "M_C":"Lignin_Like")) %>% 
+  filter(CowTagID!="CSEEP", CowTagID!="VSEEP", CowTagID!="CSPRING", CowTagID!="Varari_Well") %>% 
+  group_by(Location, Tide, Date) %>% 
+  filter(Date!="2021-08-06") 
+
+AllChemData_March$Date <- mdy(AllChemData_March$Date)
+
+AllChemData_March2 <- AllChemData_March %>% 
+  select(!c("Top_Plate_ID":"Plate_Seep", "Time", "DateTime", "TimeBlock", "M_C":"Lignin_Like")) %>% 
+  filter(CowTagID!="CSEEP", CowTagID!="VSEEP", CowTagID!="VRC", CowTagID!="CRC", CowTagID!="CPIT", CowTagID!="CPIT_Bottom", CowTagID!="CSPRING_ROAD", CowTagID!="CSPRING_BEACH", CowTagID!="CSPRING_BEACH2", CowTagID!="VSPRING") %>% 
+  filter(TA > 2096) ##outlier TA 
+
+##### tidy and join dfs with percent cover data 
+
+AllChemData_seasonaverage <- AllChemData_August2 %>% 
+  full_join(AllChemData_March2)
+
+
 SiteData_MinMaxMean <- tribble(~Site, ~Parameter, ~Min, ~Max, ~Mean, ~SE,
                                "Varari", "pH", "7.73", "NA", "NA", "NA",  
                                "Cabral", "pH", "6.89", "NA", "NA", "NA",
@@ -264,25 +296,37 @@ View(SiteData_MinMaxMean)
 ### plots for thesis defense plots 
 ###############################
 
-TA_scatterplot <- SiteData_MinMaxMean %>% 
+#### TA 
+SiteComparisons_TA <- sitecomparison_maxdata %>% 
   filter(Parameter=="TA (umol/kg-1)")  %>% 
   ggplot(aes(x=Site,
-             y=Min, 
+             y=Value, 
              fill=Site)) + 
-  geom_boxplot() + 
-  scale_x_discrete(limits = c("Offshore", "Cabral", "Varari")) + 
+  geom_col()  + 
+  scale_x_discrete(limits = c("Reef Crest", "Cabral", "Varari")) + 
   scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
-                    limits=c("Offshore", "Cabral", "Varari")) +
- # scale_y_log10() + 
+                    limits=c("Reef Crest", "Cabral", "Varari"), 
+                    guide="none") +
   theme_classic() + 
-  labs(x="Location", 
-       y="TA (umol/kg-1)") + 
+  labs(x="Location",
+       y = expression(TA~(mu*mol~kg^-1))) +
   theme(axis.text.x=element_text(size=25), 
         axis.text.y=element_text(size=25), 
         axis.title.x=element_text(size=25), 
         axis.title.y=element_text(size=25))
 
-TA_scatterplot
+
+#### Salinity 
+
+
+#### NN 
+
+
+
+#### pH
+
+
+
 
 
 ###

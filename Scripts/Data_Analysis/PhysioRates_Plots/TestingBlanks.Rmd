@@ -173,6 +173,20 @@ normalizingR_with_avgblanks <- avgblanks %>%
   filter(new_colonynumber!=19, new_colonynumber!=20,sample_ID!="Varari_Col5_Dil1_Dark") 
 ## trying to eliminate the potential for errors here -- so remove the whole colony 5 from Varari (Dark for Respo, Light for GP/NP)
 
+##########
+## Dec 5: try without removing blanks for oxygen evolution table request from Craig 
+normalizingR_with_avgblanks2 <- avgblanks %>% 
+  ungroup() %>% 
+  dplyr::select(SGD_number, light_dark, blank.rate, site) %>%
+  right_join(RespoR2) %>% # join with the respo data
+  mutate(umol.sec.corr = umol.sec - blank.rate, # subtract the blank rates from the raw rates
+         umol.cm2.hr = (umol.sec.corr*3600)/SA_cm2) %>% 
+ # filter(new_colonynumber!="BLANK") %>% # remove the Blank data
+  #ungroup() %>%
+  dplyr::select(date, sample_ID, light_dark, SA_cm2, umol.cm2.hr, umol.sec, blank.rate, Temp.C, new_colonynumber, salinity, pH, site, SGD_number, umol.sec.corr, phosphate_umolL, silicate_umolL, NN_umolL, ammonia_umolL) %>%  
+  filter(new_colonynumber!=19, new_colonynumber!=20,sample_ID!="Varari_Col5_Dil1_Dark") 
+
+
 
 ###############################
 ### calculate R 

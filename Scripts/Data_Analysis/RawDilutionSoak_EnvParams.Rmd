@@ -1,0 +1,289 @@
+---
+title: "Table_PostSoakEnvParams"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# This script used Respirometry data to create a table used in Thesis Defense (written) (Nov 20th, 2024) to show the changes in TA before and after respirometry in coral and seawater only samples. 
+
+## Load libraries 
+```{r, echo=FALSE, message = FALSE}
+library(tidyverse)
+library(here)
+library(kableExtra)
+library(webshot2)
+library(ggridges)
+library(ggplot2)
+library(viridis)
+library(hrbrthemes)
+library(magick)
+```
+
+## Read in Data 
+```{r, echo=FALSE, message = FALSE}
+RespoR_Normalized_Full_withNEC_nutrients <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
+## full datasheet with GP, R, and C rates along with all env data 
+
+RespoR2 <- read_csv(here("Data","RespoR2.csv")) 
+
+TAdata <- read_csv(here("Data", "TA_NEC_Calculations", "calc_data_InitalPost_wblanks.csv"))
+
+```
+
+## Tidy Data 
+
+```{r}
+
+################ 
+## one way 
+################ 
+EnvParams_edit <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+  filter(P_R=="C") %>% 
+  dplyr::select(-c("new_colonynumber", "sample_ID", "date", "umol.cm2.hr", "log_silicate", "log_silicate2", "P_R", "ammonia_umolL")) %>% 
+  group_by(site) %>%
+  dplyr::summarize(Min_Salinity = min(salinity), 
+                   Max_Salinity = max(salinity), 
+                   Min_pH = min(new_pH), 
+                   Max_pH = max(new_pH), 
+                   Min_TA = min(TA_initial), 
+                   Max_TA = max(TA_initial),
+                   Min_Temp = min(temp_C), 
+                   Max_Temp = max(temp_C),
+                   Min_Phosphate = min(phosphate_umolL),
+                   Max_Phosphate = max(phosphate_umolL), 
+                   Min_Nitrate = min(NN_umolL),
+                   Max_Nitrate = max(NN_umolL), 
+                   Min_Silicate = min(silicate_umolL),
+                   Max_Silicate = max(silicate_umolL))
+
+################ 
+## can also pivot 
+################ 
+
+EnvParams_pivot <- EnvParams_edit %>% 
+  pivot_longer(cols=Min_Salinity:Max_Silicate, names_to = "Parameters", values_to = "Values")
+
+```
+
+## Make a table 
+
+```{r}
+
+######################
+## turn into table
+######################
+#expression(Silicate~(mu*mol~L^-1))
+
+##### first need to manually enter in ranges 
+ SGD_Dilution_Characterization <- tribble(~SourceWater, ~Parameter, ~Minimum, ~Maximum, 
+        "Cabral", "Salinity (psu)", "35.10", "36.60", 
+        "Cabral", "pH", "7.96", "8.01",
+        "Cabral", "TA (µmol kg⁻¹)", "2366.43", "2437.47",
+        "Cabral", "Temperature (C)", "26.91", "28.90",
+        "Cabral", "Silicate (µmol L⁻¹)", "2.58", "25.70",
+        "Cabral", "Nitrate (µmol L⁻¹)", "0.04", "3.25",
+        "Cabral", "Phosphate (µmol L⁻¹)", "0.03", "0.13", 
+        "Varari", "Salinity (psu)", "35.00", "37.40", 
+        "Varari", "pH", "7.93", "8.07",
+        "Varari", "TA (µmol kg⁻¹)", "2344.52", "2580.24",
+        "Varari", "Temperature (C)", "27.54", "29.19",
+        "Varari", "Silicate (µmol L⁻¹)", "1.78", "22.86",
+        "Varari", "Nitrate (µmol L⁻¹)", "0.28", "4.67",
+        "Varari", "Phosphate (µmol L⁻¹)", "0.02", "1.07") 
+
+SGD_Dilution_Characterization2 <- SGD_Dilution_Characterization %>% 
+  rename("Groundwater Source"= SourceWater, 
+         "Minimum Value" = Minimum, 
+         "Maximum Value" = Maximum) 
+
+SGD_Dilution_EnvCharacterization <- SGD_Dilution_Characterization2 %>%
+  arrange('Groundwater Source') %>%  # Arrange by the ordered factor
+  kbl() %>%
+  kable_classic(html_font = "Times New Roman", font_size = 18) %>%
+  row_spec(0, italic = TRUE, bold = TRUE) %>%
+  pack_rows("Cabral", 1, 7) %>%
+  pack_rows("Varari", 8, 14) #%>%
+  #column_spec(1:6, background = "white")
+
+SGD_Dilution_EnvCharacterization
+
+######################
+## save table 
+######################
+SGD_Dilution_EnvCharacterization %>% 
+  as_image(file = here("Outputs", "PaperFigures", "SGD_Dilution_EnvCharacterization.jpg"))
+
+```
+
+## Tidy data for RespoR2 
+
+```{r}
+
+RespoR2_edit <- RespoR2 %>% 
+  dplyr::select(!c("FileID_csv", "Intercept", "Temp.C":"colony_number", "SGD_dil", "run_block":"color_code", "weight_g":"date_block"))
+  
+RespoR2_edit2 <- RespoR2_edit %>% 
+  mutate(group_colonynumber = ifelse(new_colonynumber == "BLANK", "Seawater Control", "Coral"), 
+         light_dark = ifelse(light_dark == "DARK", "Dark", "Light")) %>%
+  group_by(light_dark, site, group_colonynumber, SGD_number) %>% 
+  dplyr::summarise(meanrate = mean(umol.L.sec)) %>% 
+  rename("Groundwater Source"= site, 
+         "Light or Dark Run" = light_dark, 
+         "Coral or Control" = group_colonynumber, 
+         "SGD Dilution" = SGD_number, 
+         "µmol L⁻¹ second⁻¹" = meanrate)
+
+#############################
+#############################
+
+### split up dark and light 
+RespoR2_dark <- RespoR2_edit %>% 
+  mutate(group_colonynumber = ifelse(new_colonynumber == "BLANK", "Seawater Control", "Coral"), 
+         light_dark = ifelse(light_dark == "DARK", "Dark", "Light")) %>%
+  group_by(light_dark, site, group_colonynumber, SGD_number) %>% 
+  dplyr::summarise(meanrate = mean(umol.L.sec), 
+                   serate = sd(umol.L.sec, na.rm = TRUE) / sqrt(sum(!is.na(umol.L.sec)))) %>% 
+  filter(light_dark=="Dark") %>% 
+  mutate(meanrate = round(meanrate, 4), 
+         serate = round(serate, 4)) %>% 
+  rename("Groundwater Source"= site, 
+         "Light or Dark Run" = light_dark, 
+         "Coral or Control" = group_colonynumber, 
+         "SGD Dilution" = SGD_number, 
+         "Mean µmol L⁻¹ second⁻¹" = meanrate, 
+         "SE µmol L⁻¹ second⁻¹" = serate)
+
+
+#############################
+##### tidy TA data to join with light df 
+#############################
+TAdata_edit <- TAdata %>% 
+  dplyr::select(!c("date":"salinity_insitu", "salinity_insitu_initial", "sample_ID_initial", "SGD_number_initial"))
+  
+TAdata_edit2 <- TAdata_edit %>% 
+  mutate(TAdifference = TA_initial-TA) %>% 
+  mutate(new_colonynumber = ifelse(new_colonynumber == "BLANK", "Seawater Control", "Coral")) %>% 
+  dplyr::select(!c("mean_blanks", "sample_ID", "TA_initial", "TA")) %>% 
+  group_by(site, new_colonynumber, SGD_number) %>% 
+  dplyr::summarise(mean_deltaTA = mean(TAdifference), 
+                   se_deltaTA = sd(TAdifference, na.rm = TRUE) / sqrt(sum(!is.na(TAdifference)))) %>% 
+  mutate(mean_deltaTA = round(mean_deltaTA, 2), 
+         se_deltaTA = round(se_deltaTA, 2))
+
+#############################
+#############################
+
+
+#RespoR2_light <- RespoR2_edit %>% 
+ # right_join(TAdata_edit2) %>% 
+  #filter(light_dark=="LIGHT") %>% 
+  #mutate(group_colonynumber = ifelse(new_colonynumber == "BLANK", "Seawater Control", "Coral"), 
+         #light_dark = ifelse(light_dark == "DARK", "Dark", "Light")) %>%
+#  group_by(light_dark, site, group_colonynumber, SGD_number) %>% 
+ # dplyr::summarise(meanrate = mean(umol.L.sec), 
+             #      serate = sd(umol.L.sec, na.rm = TRUE) / sqrt(sum(!is.na(umol.L.sec)))) %>% 
+#  filter(light_dark=="Light") %>% 
+#  mutate(meanrate = round(meanrate, 4), 
+      #   serate = round(serate, 4)) %>% 
+  #rename("Groundwater Source"= site, 
+      #   "Light or Dark Run" = light_dark, 
+      #   "Coral or Control" = group_colonynumber, 
+     #    "SGD Dilution" = SGD_number, 
+      #   "Mean µmol L⁻¹ second⁻¹" = meanrate, 
+      #   "SE µmol L⁻¹ second⁻¹" = serate) 
+  
+
+```
+
+
+## Make a table with RespoR2 
+
+```{r}
+
+#############################
+#############################
+
+RespoR2_dark_table <- RespoR2_dark %>% 
+  pivot_wider(names_from = 'Coral or Control', values_from = 'Mean µmol L⁻¹ second⁻¹':"SE µmol L⁻¹ second⁻¹") %>% 
+  rename('Coral mean (µmol L⁻¹ second⁻¹)' = "Mean µmol L⁻¹ second⁻¹_Coral", 
+         'Coral se (µmol L⁻¹ second⁻¹)' = "SE µmol L⁻¹ second⁻¹_Coral", 
+         'Seawater Control mean (µmol L⁻¹ second⁻¹)' = "Mean µmol L⁻¹ second⁻¹_Seawater Control", 
+         'Seawater Control se (µmol L⁻¹ second⁻¹)' = "SE µmol L⁻¹ second⁻¹_Seawater Control") %>% 
+  dplyr::select(`SGD Dilution`, 
+                `Coral mean (µmol L⁻¹ second⁻¹)`,
+                `Coral se (µmol L⁻¹ second⁻¹)`,
+                `Seawater Control mean (µmol L⁻¹ second⁻¹)`,
+                `Seawater Control se (µmol L⁻¹ second⁻¹)`) %>% 
+  arrange('SGD_number') %>%  # Arrange by the ordered factor
+  kbl() %>%
+  kable_classic(html_font = "Times New Roman", font_size = 24) %>%
+  row_spec(0, italic = TRUE, bold = TRUE) %>% 
+  pack_rows("Cabral", 1, 9) %>% 
+  pack_rows("Varari", 10, 18)
+
+RespoR2_dark_table
+
+RespoR2_dark_table %>% 
+  as_image(file = here("Outputs", "PaperFigures", "OxygenEvolution_Dark.jpg"))
+
+#########################
+
+RespoR2_light_table <- RespoR2_light %>% 
+  pivot_wider(names_from = 'Coral or Control', values_from = 'Mean µmol L⁻¹ second⁻¹':"SE µmol L⁻¹ second⁻¹") %>% 
+  rename('Coral mean (µmol L⁻¹ second⁻¹)' = "Mean µmol L⁻¹ second⁻¹_Coral", 
+         'Coral se (µmol L⁻¹ second⁻¹)' = "SE µmol L⁻¹ second⁻¹_Coral", 
+         'Seawater Control mean (µmol L⁻¹ second⁻¹)' = "Mean µmol L⁻¹ second⁻¹_Seawater Control", 
+         'Seawater Control se (µmol L⁻¹ second⁻¹)' = "SE µmol L⁻¹ second⁻¹_Seawater Control") %>% 
+  dplyr::select(`SGD Dilution`,
+                `Coral mean (µmol L⁻¹ second⁻¹)`,
+                `Coral se (µmol L⁻¹ second⁻¹)`,
+                `Seawater Control mean (µmol L⁻¹ second⁻¹)`,
+                `Seawater Control se (µmol L⁻¹ second⁻¹)`) %>% 
+  arrange('SGD_number') %>%  # Arrange by the ordered factor
+  kbl() %>%
+  kable_classic(html_font = "Times New Roman", font_size = 24) %>%
+  row_spec(0, italic = TRUE, bold = TRUE) %>%
+  pack_rows("Cabral", 1, 9) %>% 
+  pack_rows("Varari", 10, 18)
+
+RespoR2_light_table
+
+RespoR2_light_table %>% 
+  as_image(file = here("Outputs", "PaperFigures", "OxygenEvolution_Light.jpg"))
+
+#########################
+
+TAdata_edit2_table <- TAdata_edit2 %>% 
+  pivot_wider(names_from = 'new_colonynumber', values_from = 'mean_deltaTA':"se_deltaTA") %>% 
+   rename('Coral Mean Delta TA' = "mean_deltaTA_Coral", 
+         'Coral SE Delta TA' = "se_deltaTA_Coral", 
+         'Seawater Control Mean Delta TA' = "mean_deltaTA_Seawater Control", 
+         'Seawater Control SE Delta TA' = "se_deltaTA_Seawater Control", 
+         'Groundwater Source' = "site", 
+         'SGD Dilution' = "SGD_number") %>% 
+  dplyr::select(`SGD Dilution`,
+                `Coral Mean Delta TA`,
+                `Coral SE Delta TA`,
+                `Seawater Control Mean Delta TA`,
+                `Seawater Control SE Delta TA`) %>%  
+  arrange('SGD_number') %>%  # Arrange by the ordered factor
+  kbl() %>%
+  kable_classic(html_font = "Times New Roman", font_size = 24) %>%
+  row_spec(0, italic = TRUE, bold = TRUE) %>%
+  pack_rows("Cabral", 1, 9) %>% 
+  pack_rows("Varari", 10, 18)
+
+TAdata_edit2_table
+
+TAdata_edit2_table %>% 
+  as_image(file = here("Outputs", "PaperFigures", "DeltaTA.jpg"))
+
+
+```
+
+

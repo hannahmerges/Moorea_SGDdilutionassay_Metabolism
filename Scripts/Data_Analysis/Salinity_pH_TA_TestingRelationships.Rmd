@@ -1,0 +1,744 @@
+---
+title: "Salinity_pH_TA_TestingRelationships"
+author: "Hannah Merges"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# This script explores the relationship between silicate and the other environmental parameters we measured (pH, NN, Phosphate, TA, and salinity). It also calculates the z-scores and plots a standardized effects plot for the relationship between silicate and the environmental parameters at both Varari and Cabral. 
+
+## Load libraries 
+```{r, echo=FALSE, message=FALSE}
+library(lubridate)
+library(patchwork)
+library(tidyverse)
+library(here)
+library(car)
+library(GGally)
+library(corrplot) 
+library(ggcorrplot) 
+library(corrr) 
+library(PNWColors) 
+library(seacarb) 
+library(broom)
+library(agricolae) 
+library(lme4)
+library(ggsci) 
+library(see) 
+library(cowplot)
+library(lmerTest)
+library(modelsummary) 
+library(performance)
+library(emmeans)
+library(MuMIn)
+library(broom.mixed) 
+library(kableExtra) 
+library(reshape2) 
+theme_set(theme_classic()) ### This sets the default ggplot theme
+library(Hmisc) 
+require(effects)
+```
+
+## Read in data 
+```{r, echo=FALSE, message=FALSE}
+fulldata <- read_csv(here::here("Data", "RespoR_Normalized_Full_withNEC_andallnutrients.csv"))
+Salinity_from_TA <- read_csv(here::here("Data", "Titrations", "TitrationNation_SGD.csv"))
+
+```
+
+## Basic exploratory plots 
+1. Scatterplots to show silicate compared to all other env parameters 
+2. Notes from a meeting with Nyssa, isolating Varari since that was the site with the one really weird day that is possibly/likley driving the lack of significance in salinity vs silicate correlation. SO create some z-scores and tested significance keeping day in mind
+```{r}
+
+#################################
+### testing silicate by all other env params 
+### looking for daily anomolies to explain significance/non-significance 
+#################################
+
+###########################
+## silicate by phosphate 
+
+silicate_phos <- fulldata %>% 
+  filter(phosphate_umolL < 0.9) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=phosphate_umolL, 
+             color=date)) + 
+  geom_point(size=3) + 
+  theme_bw() + 
+  facet_wrap(~site) 
+
+silicate_phos
+
+
+###########################
+## silicate by NN  
+
+silicate_NN <- fulldata %>% 
+ # filter(phosphate_umolL < 0.9) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=NN_umolL, 
+             color=date)) + 
+  geom_point(size=3) + 
+  theme_bw() + 
+  facet_wrap(~site) 
+
+silicate_NN
+
+
+###########################
+## silicate by pH 
+
+silicate_pH <- fulldata %>% 
+ # filter(phosphate_umolL < 0.9) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=new_pH, 
+             color=date)) + 
+  geom_point(size=3) + 
+  theme_bw() + 
+  facet_wrap(~site) 
+
+silicate_pH
+
+###########################
+## silicate by TA 
+
+silicate_TA <- fulldata %>% 
+  filter(P_R == "C") %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=TA_initial, 
+             color=date)) + 
+  geom_point(size=3) + 
+  theme_bw() + 
+  facet_wrap(~site) 
+
+silicate_TA
+
+###########################
+## silicate by salinity 
+
+silicate_salinity <- fulldata %>% 
+ # filter(phosphate_umolL < 0.9) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=salinity, 
+             color=date)) + 
+  geom_point(size=3) + 
+  theme_bw() + 
+  facet_wrap(~site) 
+
+silicate_salinity
+
+######################
+## add all the plots together 
+
+silicate_pH + silicate_NN + silicate_phos + silicate_TA
+
+```
+
+
+### Cross reference salinities from in lab and in field 
+```{r}
+
+### first clean up that data 
+
+Salinity_inlab <- Salinity_from_TA %>% 
+  filter(sample_info != "seawater", 
+         site != "Cabral") %>% 
+  group_by(date, SGD_number) %>% 
+  summarize(mean_sal = mean(salinity_psu_calibr0915))
+
+
+### join with other dataset to compare Varari salinities 
+
+salinity_comparisons <- Salinity_inlab %>% 
+  left_join(fulldata)
+
+
+### now compare two salinities 
+
+salinity_comparison_plot <- salinity_comparisons %>% 
+  ggplot(aes(x=salinity, 
+             y=mean_sal, 
+             color=date)) + 
+  geom_point(size=3, alpha = 0.5) + 
+  theme_bw() #+ 
+ # facet_wrap(~site) 
+
+salinity_comparison_plot ### two salinity measurements are pretty well aligned 
+
+salinity_comparison_plot2 <- salinity_comparisons %>% 
+  ggplot(aes(x=SGD_number, 
+             y=mean_sal, 
+             color=date)) + 
+  geom_point(size=3, alpha = 0.5) + 
+  theme_bw() 
+
+salinity_comparison_plot2
+
+
+##########################
+#### so go ahead and substract 1 psu from 6/17 which was a wonkyyy day
+##########################
+
+fulldata_newsalinity <- fulldata %>% 
+  mutate(salinity = if_else(date == "6/17/23", salinity - 1, salinity))
+  
+
+### test to make sure I did it correctly 
+
+salinity_test <- fulldata %>%  ## switch out fulldata & fulldata_newsalinity to test if addition evened out salinities
+  ggplot(aes(x=SGD_number, 
+             y=salinity, 
+             color=date)) + 
+  geom_point(size=3) + 
+  theme_bw()
+
+salinity_test
+
+salinity_test2 <- fulldata_newsalinity %>%  ## switch out fulldata & fulldata_newsalinity to test if addition evened out salinities
+  ggplot(aes(x=SGD_number, 
+             y=salinity, 
+             color=date)) + 
+  geom_point(size=3) + 
+  theme_bw()
+
+salinity_test2 + salinity_test
+```
+
+
+## Calculating the average and standard error of temperature during the experiment 
+- Calculated by using the sd and sample size of all the samples, not separated by site 
+```{r}
+fulldata_temp <- fulldata %>% 
+  select(c("sample_ID", "site", "temp_C")) 
+
+max(fulldata_temp$temp_C)
+min(fulldata_temp$temp_C)
+mean(fulldata_temp$temp_C)
+sd <- sd(fulldata_temp$temp_C)
+se <- sd/sqrt(500)
+
+(fulldata_temp$temp_C)
+
+```
+
+
+
+## compare respiration rates by day to see if 6/17 had different respo rates 
+Conclusion: looks relatively even throughout and compared to other dates, does not stand out 
+
+```{r}
+respo_test <- fulldata %>% 
+  filter(P_R=="R") %>% 
+  filter(site=="Varari") %>% 
+  filter(!is.infinite(umol.cm2.hr)) %>% 
+  ggplot(aes(x=silicate_umolL, 
+             y=umol.cm2.hr)) + 
+  geom_point(size=4, aes(color=date)) +
+ # scale_color_manual(values=c("darkgoldenrod2", "firebrick4")) +
+  theme_classic() + 
+  coord_trans(x ="log") +
+  labs(y = expression(Respiration~Rate~(mu*mol~O[2]~cm^-2~hr^-1)),
+       color = "Site") +
+   theme(axis.text.x=element_text(size=18), 
+        axis.text.y=element_text(size=18), 
+        axis.title.x=element_text(size=15, face="bold"),
+        axis.title.y=element_text(size=15, face="bold"),
+        legend.title = element_text(size=18, 
+                                    face="bold"), 
+        legend.text = element_text(size=18), 
+        plot.title=element_text(hjust=0.5, ## centers title 
+                                size=20, 
+                                face="bold"))
+respo_test
+  
+
+
+```
+
+
+## Reran the correlation matrix in Plots_Based_on_Model_Selection, line 1389
+on March 21st, 2025 
+
+# Ultimate decision: Run z-score random effects model
+-  Run independently by site - effect size
+-  Believe that salinity and silicate are in fact correlated... Just maybe not being shown properly in the Spearman correlation because Spearman does not group by day like a regression would ... and that one day is really wonky 
+-  Based on plots above, it seems like every other env parameter is not too wonky on 6/17/23, but since salinity is such a key part of the story, going to use the z-scores for the analysis 
+```{r}
+###################################
+## example to show that z-score is in fact the way to go 
+###################################
+
+### create new dataset to try this with only Varari for right now since that is the site NOT correlated 
+fulldata_2 <- fulldata %>% 
+  filter(site=="Varari")
+  
+cor(fulldata_2$salinity, fulldata_2$silicate_umolL, method="spearman") ## not correlated because not grouping by anything -- indicates a calibration error probably
+
+## try with lab salinity data -- need to get single calibration point 
+
+fulldata_2_lmer <- lmer(salinity ~ silicate_umolL + (1|date), data=fulldata_2) ## takes salinity by day 
+
+summary(fulldata_2_lmer)
+
+## run standardized effects plot using z-scores 
+
+fulldata_2 <- fulldata_2 %>% 
+  mutate(salinity_scale = as.numeric(scale(salinity)), 
+         silicate_scale = as.numeric(scale(silicate_umolL))) ##makes zscores a number 
+
+
+fulldata_2_lmer_wScales <- lmer(salinity_scale ~ silicate_scale + (1|date), data=fulldata_2)
+
+anova(fulldata_2_lmer_wScales)
+summary(fulldata_2_lmer_wScales)
+
+##################
+## Notes: 
+
+#### Estimate # in the summary = effect size. If close to 1 = strong 
+#### Different from correlation 
+#### Matrix using standardized effect sizes 
+#### Should be colored to the standardized effect size NOT Spearman 
+
+
+###################################
+## Run actual model and collect z-score info for each parameter and re-run matrix using the z-scores rather than the Spearman corr. 
+## Need to still separate by site 
+###################################
+
+###################################
+## VARARI  
+###################################
+
+### create separate df 
+zscores_Varari <- fulldata %>% 
+  filter(site=="Varari") %>% 
+  filter(P_R=="C") %>% 
+  mutate(salinity_scale = as.numeric(scale(salinity)),
+         pH_scale = as.numeric(scale(new_pH)), 
+         TA_scale = as.numeric(scale(TA_initial)), 
+         NN_scale = as.numeric(scale(NN_umolL)), 
+         phos_scale = as.numeric(scale(phosphate_umolL)),
+         silicate_scale = as.numeric(scale(silicate_umolL))) ##makes zscores a number 
+
+
+## salinity 
+salinity_V_zscores <- lmer(salinity_scale ~ silicate_scale + (1|date), data=zscores_Varari) ## takes salinity by day 
+
+anova(salinity_V_zscores)
+summary(salinity_V_zscores) #### -0.71
+
+
+## pH 
+pH_V_zscores <- lmer(pH_scale ~ silicate_scale + (1|date), data=zscores_Varari)
+
+anova(pH_V_zscores)
+summary(pH_V_zscores) #### -0.30
+
+
+## TA 
+
+TA_V_zscores <- lmer(TA_scale ~ silicate_scale + (1|date), data=zscores_Varari)
+
+anova(TA_V_zscores)
+summary(TA_V_zscores)  #### 0.71
+
+
+## NN 
+
+NN_V_zscores <- lmer(NN_scale ~ silicate_scale + (1|date), data=zscores_Varari)
+
+anova(NN_V_zscores)
+summary(NN_V_zscores) #### 0.32
+
+## Phos 
+
+Phos_V_zscores <- lmer(phos_scale ~ silicate_scale + (1|date), data=zscores_Varari)
+
+anova(Phos_V_zscores)
+summary(Phos_V_zscores) #### 0.31
+
+############# 
+## Summary: 
+
+## so the significant ones are salinity and TA 
+## this differs from the previous matrix which JUST showed TA as significant 
+## other params are actually even LESS correlated this way 
+
+
+###################################
+## CABRAL   
+###################################
+
+#### create separate df 
+zscores_Cabral <- fulldata %>% 
+  filter(site=="Cabral") %>% 
+  filter(P_R=="C") %>% 
+  mutate(salinity_scale = as.numeric(scale(salinity)),
+         pH_scale = as.numeric(scale(new_pH)), 
+         TA_scale = as.numeric(scale(TA_initial)), 
+         NN_scale = as.numeric(scale(NN_umolL)), 
+         phos_scale = as.numeric(scale(phosphate_umolL)),
+         silicate_scale = as.numeric(scale(silicate_umolL)))
+
+## salinity 
+salinity_C_zscores <- lmer(salinity_scale ~ silicate_scale + (1|date), data=zscores_Cabral) ## takes salinity by day 
+
+anova(salinity_C_zscores)
+summary(salinity_C_zscores) #### -0.97
+
+
+## pH 
+pH_C_zscores <- lmer(pH_scale ~ silicate_scale + (1|date), data=zscores_Cabral)
+
+anova(pH_C_zscores)
+summary(pH_C_zscores) #### 0.18, though there was a note of a singular boundary 
+
+
+## TA 
+
+TA_C_zscores <- lmer(TA_scale ~ silicate_scale + (1|date), data=zscores_Cabral)
+
+anova(TA_C_zscores)
+summary(TA_C_zscores)  #### 0.08
+
+
+## NN 
+
+NN_C_zscores <- lmer(NN_scale ~ silicate_scale + (1|date), data=zscores_Cabral)
+
+anova(NN_C_zscores)
+summary(NN_C_zscores) #### 0.17
+
+## Phos 
+
+Phos_C_zscores <- lmer(phos_scale ~ silicate_scale + (1|date), data=zscores_Cabral)
+
+anova(Phos_C_zscores)
+summary(Phos_C_zscores) #### 0.51
+
+############# 
+## Summary: 
+
+## so the significant ones are salinity and mayyybe phosphate 
+## this differs from the previous matrix which was salinity and definitively phosphate -- phosphate was weakened by 0.1 here 
+## other params remain relatively the same 
+```
+
+
+# Create the matrix using standardized z-scores 
+```{r}
+
+#####################
+## VARARI 
+#####################
+### pearson correlation assumes/uses z-scores 
+
+zscores_Varari2 <- zscores_Varari %>% 
+  mutate("Salinity"=salinity_scale, 
+         "TA" = TA_scale, 
+         "pH" = pH_scale, 
+         "N+N" = NN_scale, 
+         "Phosphate" = phos_scale,
+         "Silicate" = silicate_scale) %>% 
+  select(!c("salinity", "silicate_umolL", "log_silicate", "log_silicate2", "TA_initial", "new_pH", "phosphate_umolL", "NN_umolL", "umol.cm2.hr", "SGD_number", "temp_C", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL", "NN_scale", "phos_scale", "silicate_scale", "pH_scale", "TA_scale", "salinity_scale")) 
+
+
+## version 2.0 
+corr_Varari_pearson <- round(cor(zscores_Varari2, method="pearson"), 1)
+
+# Compute a matrix of correlation p-values
+p.mat_Varari_pearson <- cor_pmat(corr_Varari_pearson)
+
+# Extract the correlations involving "Silicate"
+corr_silicate_V <- corr_Varari_pearson[, "Silicate", drop = FALSE]
+
+# Transpose the matrix to make "Silicate" the row instead of the column
+corr_silicate_matrix_V <- t(as.matrix(corr_silicate_V))
+
+# Convert the matrix to a long format
+corr_melted_V <- melt(corr_silicate_matrix_V)
+
+# Plot the correlation matrix vertically
+Varari_corr_matrix_pearson <- ggplot(corr_melted_V, aes(x=Var2, y=Var1, fill=value)) +
+  geom_tile(color = "white") +  # Adjust width of the tiles to make the plot narrower
+  scale_fill_gradient2(low = "steelblue3", high = "tomato3", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 5) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12, face = "bold", color="black"),
+        axis.text.y = element_text(size = 12, face = "bold", color="black")) +  
+  coord_flip() +  # Flip coordinates for vertical layout
+  labs(x = "", y = "")
+
+# Display the plot
+Varari_corr_matrix_pearson
+
+
+
+#####################
+## CABRAL 
+#####################
+### pearson correlation assumes/uses z-scores 
+
+zscores_Cabral2 <- zscores_Cabral %>% 
+  mutate("Salinity"=salinity_scale, 
+         "TA" = TA_scale, 
+         "pH" = pH_scale, 
+         "N+N" = NN_scale, 
+         "Phosphate" = phos_scale,
+         "Silicate" = silicate_scale) %>% 
+  select(!c("salinity", "silicate_umolL", "log_silicate", "log_silicate2", "TA_initial", "new_pH", "phosphate_umolL", "NN_umolL", "umol.cm2.hr", "SGD_number", "temp_C", "new_colonynumber", "sample_ID", "site", "date", "P_R", "ammonia_umolL", "NN_scale", "phos_scale", "silicate_scale", "pH_scale", "TA_scale", "salinity_scale")) 
+
+
+## version 2.0 
+corr_Cabral_pearson <- round(cor(zscores_Cabral2, method="pearson"), 1)
+
+# Compute a matrix of correlation p-values
+p.mat_Cabral_pearson <- cor_pmat(corr_Cabral_pearson)
+
+# Extract the correlations involving "Silicate"
+corr_silicate_C <- corr_Cabral_pearson[, "Silicate", drop = FALSE]
+
+# Transpose the matrix to make "Silicate" the row instead of the column
+corr_silicate_matrix_C <- t(as.matrix(corr_silicate_C))
+
+# Convert the matrix to a long format
+corr_melted_C <- melt(corr_silicate_matrix_C)
+
+# Plot the correlation matrix vertically
+Cabral_corr_matrix_pearson <- ggplot(corr_melted_C, aes(x=Var2, y=Var1, fill=value)) +
+  geom_tile(color = "white") +  # Adjust width of the tiles to make the plot narrower
+  scale_fill_gradient2(low = "steelblue3", high = "tomato3", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 5) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12, face = "bold", color="black"),
+        axis.text.y = element_text(size = 12, face = "bold", color="black")) +  
+  coord_flip() +  # Flip coordinates for vertical layout
+  labs(x = "", y = "")
+
+# Display the plot
+Cabral_corr_matrix_pearson
+
+
+########################### 
+## PATCH TOGETHER 
+###########################
+
+#### remove x-axis labels 
+p_Ccorr_silicate <- Cabral_corr_matrix_pearson
+p_Vcorr_silicate <- Varari_corr_matrix_pearson
+ 
+combined_corr_plot_silicate <- p_Ccorr_silicate/p_Vcorr_silicate + plot_layout(guides = 'collect')
+
+combined_corr_plot_silicate + 
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.margin = unit(c(1, 1, 1, 1), "cm"), 
+        plot.tag = element_text(size = 18, face = "bold"))
+
+ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"), 
+       width=10, height=15)
+
+
+
+```
+
+
+# Try again, but make a standardized effects plot 
+-  Used the code from Figure 3 
+
+```{r}
+
+############################################
+## going to need two separate sep for Varari and Cabral, each with 5 stacked points 
+############################################
+
+###########
+### get standardized effect sizes 
+
+## For Varari 
+plot_model(salinity_V_zscores, type = "std") 
+plot_model(pH_V_zscores, type = "std")
+plot_model(NN_V_zscores, type = "std")
+plot_model(Phos_V_zscores, type = "std")
+plot_model(TA_V_zscores, type = "std")
+
+## For Cabral 
+plot_model(salinity_C_zscores, type = "std") 
+plot_model(pH_C_zscores, type = "std")
+plot_model(NN_C_zscores, type = "std")
+plot_model(Phos_C_zscores, type = "std")
+plot_model(TA_C_zscores, type = "std")
+
+###########
+### Put it all on the same plot though for comparison
+### First need to extract the data from plot_model
+
+### for Varari 
+
+V_sal<-tibble(plot_model(salinity_V_zscores, type = "std")$data) %>%
+  mutate(Parameter = "Salinity", 
+         Significant = "Yes", 
+         Site= "Varari")
+
+V_pH<-tibble(plot_model(pH_V_zscores, type = "std")$data) %>%
+  mutate(Parameter = "pH", 
+         Significant = "Yes", 
+         Site= "Varari")
+
+V_NN<-tibble(plot_model(NN_V_zscores, type = "std")$data) %>%
+  mutate(Parameter = "Nitrate", 
+         Significant = "Yes", 
+         Site= "Varari")
+
+V_phos<-tibble(plot_model(Phos_V_zscores, type = "std")$data) %>%
+  mutate(Parameter = "Phosphate", 
+         Significant = "Yes", 
+         Site= "Varari")
+
+V_TA<-tibble(plot_model(TA_V_zscores, type = "std")$data) %>%
+  mutate(Parameter = "Total Alkalinity", 
+         Significant = "Yes", 
+         Site= "Varari")
+
+### for Cabral 
+
+C_sal<-tibble(plot_model(salinity_C_zscores, type = "std")$data) %>%
+  mutate(Parameter = "Salinity", 
+         Significant = "Yes", 
+         Site= "Cabral")
+
+C_pH<-tibble(plot_model(pH_C_zscores, type = "std")$data) %>%
+  mutate(Parameter = "pH",
+         Significant = "No", 
+         Site= "Cabral")
+
+C_NN<-tibble(plot_model(NN_C_zscores, type = "std")$data) %>%
+  mutate(Parameter = "Nitrate", 
+         Significant = "No", 
+         Site= "Cabral")
+
+C_phos<-tibble(plot_model(Phos_C_zscores, type = "std")$data) %>%
+  mutate(Parameter = "Phosphate", 
+         Significant = "Yes", 
+         Site= "Cabral")
+
+C_TA<-tibble(plot_model(TA_C_zscores, type = "std")$data) %>%
+  mutate(Parameter = "Total Alkalinity", 
+         Significant = "No", 
+         Site= "Cabral")
+
+#############
+### Bind them all together to be on same plot 
+
+### for Varari 
+all_V_params<-V_sal %>%
+  bind_rows(V_pH) %>%
+  bind_rows(V_NN) %>%
+  bind_rows(V_phos) %>%
+  bind_rows(V_TA)
+
+### for Cabral 
+all_C_params<-C_sal %>%
+  bind_rows(C_pH) %>%
+  bind_rows(C_NN) %>%
+  bind_rows(C_phos) %>%
+  bind_rows(C_TA)
+
+#################
+### time to plot
+
+### for Varari 
+standardized_effects_V <- all_V_params %>%
+ # mutate(term = case_when(term == "log_silicate"~ "Log Silicate",
+              #            term == "I(log_silicate^2)"~ "Quadratic Log Silicate")) %>% # Reverse the order of Rate
+#  mutate(Rate = factor(Rate, levels = c("Respiration","Gross Photosynthesis","Calcification"))) %>% # put the levels in an order I want for plotting
+  ggplot(aes(x = estimate, 
+             y = term, 
+             color = Parameter))+
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_point(size = 4, 
+             position = position_dodge(0.9)) + # dodge the points so not on top of each other
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0, position = position_dodge(0.9)) +
+  scale_color_manual(values=c("#b8b5b5", "#838282", "#484747", "blue", "red"), 
+                     guide="none") +
+  facet_wrap(~Parameter, nrow = 3) +
+  labs(x = "Standardized Effect",
+       y = "") +
+  theme_classic() +
+  theme(legend.text = element_text(size = 14),
+        axis.text = element_text(size = 14), 
+        axis.title = element_text(size = 12)) 
+
+standardized_effects_V 
+
+### for Cabral 
+standardized_effects_C <- all_C_params %>%
+ # mutate(term = case_when(term == "log_silicate"~ "Log Silicate",
+              #            term == "I(log_silicate^2)"~ "Quadratic Log Silicate")) %>% # Reverse the order of Rate
+#  mutate(Rate = factor(Rate, levels = c("Respiration","Gross Photosynthesis","Calcification"))) %>% # put the levels in an order I want for plotting
+  ggplot(aes(x = estimate, 
+             y = term, 
+             color = Parameter))+
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_point(size = 4, 
+             position = position_dodge(0.9)) + # dodge the points so not on top of each other
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0, position = position_dodge(0.9)) +
+  scale_color_manual(values=c("#b8b5b5", "#838282", "#484747", "blue", "red"), 
+                     guide="none") +
+  facet_wrap(~Parameter, nrow = 3) +
+  labs(x = "Standardized Effect",
+       y = "") +
+  theme_classic() +
+  theme(legend.text = element_text(size = 14),
+        axis.text = element_text(size = 14), 
+        axis.title = element_text(size = 12)) 
+
+standardized_effects_C
+```
+
+## Edit the plot: 
+-  Bring together both sites
+-  No facet, so it is easier to compare
+-  Parameters on the y-axis, color by Site 
+-  Alpha by significant or not
+```{r}
+both_sites_params <- all_C_params %>%
+  bind_rows(all_V_params) 
+
+bothsites_standardized_effects <- both_sites_params %>%
+  mutate(Parameter = factor(Parameter, levels = c("Salinity","pH","Total Alkalinity", "Nitrate", "Phosphate"))) %>% # put the levels in an order I want for plotting
+  ggplot(aes(x = estimate, 
+             y = Parameter, 
+             color = Site, 
+             alpha= Significant))+
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_point(size = 4, 
+             position = position_dodge(0.9)) + # dodge the points so not on top of each other
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0, position = position_dodge(0.9)) +
+  scale_color_manual(values=c("goldenrod", "firebrick")) +
+  scale_alpha_manual(values = c(0.47,1), 
+                     guide = "none") +
+  labs(x = "Standardized Effect",
+       y = "") +
+  theme_classic() +
+  theme(legend.text = element_text(size = 14),
+        axis.text = element_text(size = 14), 
+        axis.title = element_text(size = 12)) 
+  
+bothsites_standardized_effects
+
+ggsave(here::here("Outputs", "PaperFigures", "bothsites_standardized_effects.jpg"), 
+       width=12, height=10)
+  
+```
+
+

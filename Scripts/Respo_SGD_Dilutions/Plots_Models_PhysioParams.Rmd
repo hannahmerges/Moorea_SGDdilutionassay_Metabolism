@@ -48,7 +48,7 @@ library(sjPlot)
 ```
 
 ### Taking RespoR table from original script/for loop and loading it here
--  Plus all the pther DFs so things will knit properly 
+-  Plus all the other DFs so things will knit properly 
 
 ```{r}
 RespoMeta <- read_csv(here("Data","RespoFiles","Respo_Metadata_SGDDilutions_Cabral_Varari.csv"))
@@ -1039,5 +1039,3 @@ PhysioRatesSalinity_plotted
 ggsave(here("Outputs", "RespoOutput","PhysioRatesSalinity_plotted.png"), PhysioRatesSalinity_plotted, device = "png", width = 6, height = 6)
 
 ```
-
-

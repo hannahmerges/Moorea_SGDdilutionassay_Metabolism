@@ -1392,6 +1392,7 @@ ggsave(here::here("Outputs", "Results", "Final", "CorrMatrices.jpg"),
 ###################################
 ## data 
 corr_matrix_Varari_silicateonly <- RespoR_Normalized_Full_withNEC_nutrients %>% 
+#  mutate(salinity = if_else(date == "6/17/23", salinity - 1, salinity), ### correcting for the weird day of salinity on 6/17 that was way higher than any other days. See code in Salinity_pH_TA_TestingRelationships for the deduction/evidence. Edited on 03/21/2025
   mutate(N_P = NN_umolL/phosphate_umolL) %>% 
   filter(P_R=="C") %>% 
   mutate("Salinity"=salinity, 
@@ -1662,6 +1663,7 @@ sitecomparison_maxdata <- tribble(~Site, ~Parameter, ~Value,
         "Reef Crest", "Salinity (psu)", "36.7") %>% 
   mutate(Site= as.factor(Site))
 
+
 ### for pH 
 SiteComparisons_pH <- sitecomparison_maxdata %>% 
   filter(Parameter=="pH") %>% 
@@ -1670,7 +1672,7 @@ SiteComparisons_pH <- sitecomparison_maxdata %>%
              fill=Site)) + 
   geom_col()  + 
   scale_x_discrete(limits = c("Reef Crest", "Cabral", "Varari")) + 
-  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+  scale_fill_manual(values=c("deepskyblue3", "darkgoldenrod2", "firebrick4"), 
                     limits=c("Reef Crest", "Cabral", "Varari"), 
                     guide="none") +
   theme_classic() + 
@@ -1692,7 +1694,7 @@ SiteComparisons_TA <- sitecomparison_maxdata %>%
              fill=Site)) + 
   geom_col()  + 
   scale_x_discrete(limits = c("Reef Crest", "Cabral", "Varari")) + 
-  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+  scale_fill_manual(values=c("deepskyblue3", "darkgoldenrod2", "firebrick4"), 
                     limits=c("Reef Crest", "Cabral", "Varari"), 
                     guide="none") +
   theme_classic() + 
@@ -1715,7 +1717,7 @@ SiteComparisons_Salinity <- sitecomparison_maxdata %>%
   geom_col()  + 
   scale_x_discrete(limits = c("Reef Crest", "Cabral", "Varari")) + 
   scale_y_discrete(limits = c("5.79", "6.32", "36.7")) +
-  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+  scale_fill_manual(values=c("deepskyblue3", "darkgoldenrod2", "firebrick4"), 
                     limits=c("Reef Crest", "Cabral", "Varari"), 
                     guide="none") +
   theme_classic() + 
@@ -1737,7 +1739,7 @@ SiteComparisons_Phosphate <- sitecomparison_maxdata %>%
              fill=Site)) + 
   geom_col()  + 
   scale_x_discrete(limits = c("Reef Crest", "Cabral", "Varari")) + 
-  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+  scale_fill_manual(values=c("deepskyblue3", "darkgoldenrod2", "firebrick4"), 
                     limits=c("Reef Crest", "Cabral", "Varari"), 
                     guide="none") +
   theme_classic() + 
@@ -1759,7 +1761,7 @@ SiteComparisons_Silicate <- sitecomparison_maxdata %>%
              fill=Site)) + 
   geom_col()  + 
   scale_x_discrete(limits = c("Reef Crest", "Cabral", "Varari")) + 
-  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+  scale_fill_manual(values=c("deepskyblue3", "darkgoldenrod2", "firebrick4"), 
                     limits=c("Reef Crest", "Cabral", "Varari"), 
                     guide="none") +
   theme_classic() + 
@@ -1778,15 +1780,19 @@ ggsave(here::here("Outputs", "Results", "SitevOffshore", "Silicate.jpg"))
 SiteComparisons_Nitrates <- sitecomparison_maxdata %>% 
   filter(Parameter=="Nitrates + Nitrites (umol/L)") %>% 
   ggplot(aes(x=Site,
-             y=Value, 
+             y=as.numeric(Value), 
              fill=Site)) + 
   geom_col()  + 
   scale_x_discrete(limits = c("Reef Crest", "Cabral", "Varari")) + 
-  scale_y_discrete(limits = c("0.58", "8.22", "42.49")) +
-  scale_fill_manual(values=c("deepskyblue3", "burlywood3", "coral4"), 
+  scale_y_continuous(trans='log10') +
+  #scale_y_continuous(trans = "log10", # Apply logarithmic transformation
+           #         breaks = c(0.58, 8.22, 42.49),  # Set specific breaks
+              #     labels = c("0.58", "8.22", "42.49")) +  # Custom labels for clarity
+  scale_fill_manual(values=c("deepskyblue3", "darkgoldenrod2", "firebrick4"), 
                     limits=c("Reef Crest", "Cabral", "Varari"), 
                     guide="none") +
   theme_classic() + 
+  #scale_y_continuous(trans='log10') +
   labs(y = expression(Nitrate+Nitrite~(mu*mol~L^-1))) +
   theme(axis.text.x=element_text(size=25), 
         axis.text.y=element_text(size=25), 
@@ -3480,6 +3486,7 @@ C_only <- RespoR_Normalized_Full_withNEC_nutrients %>%
 
 
 ```
+
 
 
 

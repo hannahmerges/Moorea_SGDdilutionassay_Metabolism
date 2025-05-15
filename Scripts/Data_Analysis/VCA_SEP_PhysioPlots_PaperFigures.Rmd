@@ -10,12 +10,14 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# This script contains the code for several figures included in publication and information below on where to find code for the remaining figures 
+
 # Information on Paper Figures 
 -  **Figure 1:** Background figure showing Moorea, field sites, and experimental design - (created in ppt and Biorender)
--  **Figure 2:** Results of raw groundwater samples between Cabral and Varari compared to ambient seawater for six parameters (salinity, pH, temperature, TA, nitrates, phosphates, and silicate) - (see script: "Plots_Based_on_Model_Selection" for code, line 1505)
+-  **Figure 2:** Results of raw groundwater samples between Cabral and Varari compared to ambient seawater for six parameters (salinity, pH, temperature, TA, nitrates, phosphates, and silicate) - (see script: "ThesisDefense_RawGW_SW_plots" for code)
 -  **Figure 3:** Results for respiration, photosynthesis, and calcification along with standardized effect plot (see below)
 -  **Figure 4:** Variance Component Analysis plot showing percent of variance explained by random effects for R, GP, and C (see below)
--  **Supplementary Figure 1:** Correlation matrix showing differences between correlation of silicate to other parameters at Cabral vs Varari (see script: "Plots_Based_on_Model_Selection" for code, line 1373)
+-  **Supplementary Figure 1:** Correlation matrix showing differences between correlation of silicate to other parameters at Cabral vs Varari (see script: "Plots_Based_on_Model_Selection" for code, line 1389)
 -  **Supplementary Figure 2:** Stacked bar plot showing the dissolution of fragments at Cabral vs Varari for calcification (see script: "Plots_Based_on_Model_Selection" for code, line 916) 
 
 ### Load libraries
@@ -236,28 +238,34 @@ all_std<-GP_std %>%
 
 ### Plot a standardized effects with all three together
 standardized_effects <- all_std %>%
+#  filter(Rate=="Gross Photosynthesis") %>% 
   mutate(term = case_when(term == "log_silicate"~ "Log Silicate",
-                          term == "I(log_silicate^2)"~ "Quadratic Log Silicate")) %>% 
+                          term == "I(log_silicate^2)"~ "Quadratic Log Silicate")) %>% # Reverse the order of Rate
+  mutate(Rate = factor(Rate, levels = c("Respiration","Gross Photosynthesis","Calcification"))) %>% # put the levels in an order I want for plotting
   ggplot(aes(x = estimate, 
              y = term, 
-             color = Rate, 
-             shape = Rate))+
+             color = Rate))+
   geom_vline(xintercept = 0, linetype = 2) +
   geom_point(size = 4, 
              position = position_dodge(0.9)) + # dodge the points so not on top of each other
   geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0, position = position_dodge(0.9)) +
-  scale_color_manual(values=c("#b8b5b5", "#838282", "#484747")) +
+  scale_color_manual(values=c("#b8b5b5", "#838282", "#484747"), 
+                     guide="none") +
+  facet_wrap(~Rate, nrow = 3) +
   labs(x = "Standardized Effect",
        y = "") +
   theme_classic() +
-  theme(legend.position = c(0.3, 0.85), 
-        legend.text = element_text(size = 14),
+  theme(legend.text = element_text(size = 14),
         axis.text = element_text(size = 14), 
-        axis.title = element_text(size = 14)) 
-  
+        axis.title = element_text(size = 12)) 
 
 standardized_effects 
 
+ggsave(here::here("Outputs", "PaperFigures", "standardized_effects.jpg"), 
+       width=12, height=14)
+
+#legend.position = c(0.3, 0.85) 
+        
 ```
 
 ## Respiration plot
@@ -645,17 +653,6 @@ Net_CalcvsDissolution2
 ggsave(here::here("Outputs", "PaperFigures", "NetCalcifying_NetDissolving.jpg"), 
        width = 11, height=7)
 ```
-
-
-
-
-
-
-
-
-
-
-
 
 
 
